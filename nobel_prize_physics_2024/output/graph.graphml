@@ -1,0 +1,124 @@
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <graph edgedefault="undirected">
+    <node id="JOHN J. HOPFIELD" />
+    <node id="HOPFIELD NETWORK" />
+    <node id="GEOFFREY HINTON" />
+    <node id="BOLTZMANN MACHINE" />
+    <node id="ARTIFICIAL NEURAL NETWORK" />
+    <node id="MACHINE LEARNING" />
+    <node id="SPIN MODEL" />
+    <node id="IMAGE ANALYSIS" />
+    <node id="STATISTICAL PHYSICS" />
+    <node id="DATA CLASSIFICATION" />
+    <node id="HEBB RULE" />
+    <node id="JOHN HOPFIELD" />
+    <node id="MAGNETISM" />
+    <node id="ASSOCIATIVE MEMORY" />
+    <node id="ENERGY LANDSCAPE" />
+    <node id="NEURON" />
+    <node id="SYNAPSE" />
+    <node id="LUDWIG BOLTZMANN" />
+    <node id="GENERATIVE MODEL" />
+    <node id="VISIBLE NODES" />
+    <node id="HIDDEN NODES" />
+    <node id="DEEP LEARNING" />
+    <node id="PROTEIN STRUCTURE PREDICTION" />
+    <node id="EXOPLANET DETECTION" />
+    <node id="BLACK HOLE IMAGING" />
+    <node id="FUNCTIONAL MATERIALS" />
+    <node id="SUSTAINABLE SOCIETY" />
+    <node id="ALLOY THEORY" />
+    <node id="ASTROPHYSICS" />
+    <node id="PATTERN RECOGNITION" />
+    <node id="BIOLOGICAL SYSTEM" />
+    <node id="FEEDFORWARD NETWORK" />
+    <node id="RECURRENT NETWORK" />
+    <node id="RESTRICTED BOLTZMANN MACHINE" />
+    <node id="SIMULATED ANNEALING" />
+    <node id="QUANTUM ANNEALING" />
+    <node id="PHYSICS" />
+    <node id="CONTRASTIVE DIVERGENCE" />
+    <node id="BACKPROPAGATION" />
+    <node id="LONG SHORT-TERM MEMORY" />
+    <node id="CONVOLUTIONAL NEURAL NETWORK" />
+    <node id="AUTOENCODER" />
+    <node id="QUANTUM-MECHANICAL MANY-BODY PROBLEMS" />
+    <node id="PHASE TRANSITIONS" />
+    <node id="PHOTOVOLTAIC MATERIALS" />
+    <node id="PARTICLE PHYSICS" />
+    <node id="CLIMATE MODELING" />
+    <node id="HEALTHCARE APPLICATION" />
+    <node id="NEUTRINO DETECTION" />
+    <edge source="JOHN J. HOPFIELD" target="HOPFIELD NETWORK" />
+    <edge source="HOPFIELD NETWORK" target="ARTIFICIAL NEURAL NETWORK" />
+    <edge source="HOPFIELD NETWORK" target="SPIN MODEL" />
+    <edge source="HOPFIELD NETWORK" target="IMAGE ANALYSIS" />
+    <edge source="HOPFIELD NETWORK" target="JOHN HOPFIELD" />
+    <edge source="HOPFIELD NETWORK" target="ASSOCIATIVE MEMORY" />
+    <edge source="HOPFIELD NETWORK" target="ENERGY LANDSCAPE" />
+    <edge source="HOPFIELD NETWORK" target="BOLTZMANN MACHINE" />
+    <edge source="HOPFIELD NETWORK" target="MACHINE LEARNING" />
+    <edge source="HOPFIELD NETWORK" target="RECURRENT NETWORK" />
+    <edge source="HOPFIELD NETWORK" target="HEBB RULE" />
+    <edge source="HOPFIELD NETWORK" target="MAGNETISM" />
+    <edge source="HOPFIELD NETWORK" target="SIMULATED ANNEALING" />
+    <edge source="GEOFFREY HINTON" target="BOLTZMANN MACHINE" />
+    <edge source="GEOFFREY HINTON" target="ARTIFICIAL NEURAL NETWORK" />
+    <edge source="BOLTZMANN MACHINE" target="ARTIFICIAL NEURAL NETWORK" />
+    <edge source="BOLTZMANN MACHINE" target="STATISTICAL PHYSICS" />
+    <edge source="BOLTZMANN MACHINE" target="DATA CLASSIFICATION" />
+    <edge source="BOLTZMANN MACHINE" target="LUDWIG BOLTZMANN" />
+    <edge source="BOLTZMANN MACHINE" target="GENERATIVE MODEL" />
+    <edge source="BOLTZMANN MACHINE" target="MACHINE LEARNING" />
+    <edge source="BOLTZMANN MACHINE" target="DEEP LEARNING" />
+    <edge source="BOLTZMANN MACHINE" target="RECURRENT NETWORK" />
+    <edge source="BOLTZMANN MACHINE" target="RESTRICTED BOLTZMANN MACHINE" />
+    <edge source="BOLTZMANN MACHINE" target="FEEDFORWARD NETWORK" />
+    <edge source="BOLTZMANN MACHINE" target="PHYSICS" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="MACHINE LEARNING" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="HEBB RULE" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="DEEP LEARNING" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="PROTEIN STRUCTURE PREDICTION" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="EXOPLANET DETECTION" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="BLACK HOLE IMAGING" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="FUNCTIONAL MATERIALS" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="SUSTAINABLE SOCIETY" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="STATISTICAL PHYSICS" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="NEURON" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="SYNAPSE" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="SPIN MODEL" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="PATTERN RECOGNITION" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="BIOLOGICAL SYSTEM" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="FEEDFORWARD NETWORK" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="RECURRENT NETWORK" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="PARTICLE PHYSICS" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="ASTROPHYSICS" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="CLIMATE MODELING" />
+    <edge source="ARTIFICIAL NEURAL NETWORK" target="HEALTHCARE APPLICATION" />
+    <edge source="SPIN MODEL" target="STATISTICAL PHYSICS" />
+    <edge source="SPIN MODEL" target="MAGNETISM" />
+    <edge source="SPIN MODEL" target="ALLOY THEORY" />
+    <edge source="STATISTICAL PHYSICS" target="JOHN HOPFIELD" />
+    <edge source="STATISTICAL PHYSICS" target="LUDWIG BOLTZMANN" />
+    <edge source="HEBB RULE" target="SYNAPSE" />
+    <edge source="JOHN HOPFIELD" target="MAGNETISM" />
+    <edge source="NEURON" target="SYNAPSE" />
+    <edge source="VISIBLE NODES" target="HIDDEN NODES" />
+    <edge source="DEEP LEARNING" target="PROTEIN STRUCTURE PREDICTION" />
+    <edge source="DEEP LEARNING" target="RESTRICTED BOLTZMANN MACHINE" />
+    <edge source="DEEP LEARNING" target="CONVOLUTIONAL NEURAL NETWORK" />
+    <edge source="DEEP LEARNING" target="AUTOENCODER" />
+    <edge source="DEEP LEARNING" target="PHYSICS" />
+    <edge source="EXOPLANET DETECTION" target="ASTROPHYSICS" />
+    <edge source="BLACK HOLE IMAGING" target="ASTROPHYSICS" />
+    <edge source="FUNCTIONAL MATERIALS" target="SUSTAINABLE SOCIETY" />
+    <edge source="FUNCTIONAL MATERIALS" target="PHOTOVOLTAIC MATERIALS" />
+    <edge source="ASTROPHYSICS" target="NEUTRINO DETECTION" />
+    <edge source="FEEDFORWARD NETWORK" target="BACKPROPAGATION" />
+    <edge source="RECURRENT NETWORK" target="LONG SHORT-TERM MEMORY" />
+    <edge source="RESTRICTED BOLTZMANN MACHINE" target="CONTRASTIVE DIVERGENCE" />
+    <edge source="SIMULATED ANNEALING" target="QUANTUM ANNEALING" />
+    <edge source="PHYSICS" target="QUANTUM-MECHANICAL MANY-BODY PROBLEMS" />
+    <edge source="PHYSICS" target="PHASE TRANSITIONS" />
+  </graph>
+</graphml>
