@@ -1,0 +1,414 @@
+Nobel Prize in Physics 2024
+
+The Nobel Prize in Physics 2024 was awarded jointly to John J.
+Hopfield and Geoffrey Hinton "for foundational discoveries and inventions that enable machine learning with artificial neural networks".
+
+-- John J. Hopfield --
+-- Facts --
+
+Nobel Prize in Physics 2024
+
+Born: 15 July 1933, Chicago, IL, USA
+
+Affiliation at the time of the award: Princeton University, Princeton, NJ, USA
+
+Prize motivation: “for foundational discoveries and inventions that enable machine learning with artificial neural networks”
+
+Prize share: 1/2
+
+-- Work --
+
+When we talk about artificial intelligence, we often mean machine learning using artificial neural networks.
+This technology was originally inspired by the structure of the brain. In an artificial neural network, the brain’s neurons are represented by nodes that have different values.
+In 1982, John Hopfield invented a network that uses a method for saving and recreating patterns.
+He found inspiration in physics' models of how many small parts in a system affect the system as a whole. The invention became important in, for example, image analysis.
+
+-- Geoffrey Hinton --
+-- Facts --
+
+Nobel Prize in Physics 2024
+
+Born: 6 December 1947, London, United Kingdom
+
+Affiliation at the time of the award: University of Toronto, Toronto, Canada
+
+Prize motivation: “for foundational discoveries and inventions that enable machine learning with artificial neural networks”
+
+Prize share: 1/2
+
+-- Work --
+
+When we talk about artificial intelligence, we often mean machine learning using artificial neural networks. This technology was originally inspired by the structure of the brain. In an artificial neural network, the brain’s neurons are represented by nodes that have different values. In 1983–1985, Geoffrey Hinton used tools from statistical physics to create the Boltzmann machine, which can learn to recognise characteristic elements in a set of data. The invention became significant, for example, for classifying and creating images.
+
+<|Press release|>
+
+8 October 2024
+
+The Royal Swedish Academy of Sciences has decided to award the Nobel Prize in Physics 2024 to
+
+John J. Hopfield
+Princeton University, NJ, USA
+
+Geoffrey Hinton
+University of Toronto, Canada
+
+“for foundational discoveries and inventions that enable machine learning with artificial neural networks”
+
+They trained artificial neural networks using physics
+This year’s two Nobel Laureates in Physics have used tools from physics to develop methods that are the foundation of today’s powerful machine learning. John Hopfield created an associative memory that can store and reconstruct images and other types of patterns in data. Geoffrey Hinton invented a method that can autonomously find properties in data, and so perform tasks such as identifying specific elements in pictures.
+
+When we talk about artificial intelligence, we often mean machine learning using artificial neural networks. This technology was originally inspired by the structure of the brain. In an artificial neural network, the brain’s neurons are represented by nodes that have different values. These nodes influence each other through con­nections that can be likened to synapses and which can be made stronger or weaker. The network is trained, for example by developing stronger connections between nodes with simultaneously high values. This year’s laureates have conducted important work with artificial neural networks from the 1980s onward.
+
+John Hopfield invented a network that uses a method for saving and recreating patterns. We can imagine the nodes as pixels. The Hopfield network utilises physics that describes a material’s characteristics due to its atomic spin – a property that makes each atom a tiny magnet. The network as a whole is described in a manner equivalent to the energy in the spin system found in physics, and is trained by finding values for the connections between the nodes so that the saved images have low energy. When the Hopfield network is fed a distorted or incomplete image, it methodically works through the nodes and updates their values so the network’s energy falls. The network thus works stepwise to find the saved image that is most like the imperfect one it was fed with.
+
+Geoffrey Hinton used the Hopfield network as the foundation for a new network that uses a different method: the Boltzmann machine. This can learn to recognise characteristic elements in a given type of data. Hinton used tools from statistical physics, the science of systems built from many similar components. The machine is trained by feeding it examples that are very likely to arise when the machine is run. The Boltzmann machine can be used to classify images or create new examples of the type of pattern on which it was trained. Hinton has built upon this work, helping initiate the current explosive development of machine learning.
+
+“The laureates’ work has already been of the greatest benefit. In physics we use artificial neural networks in a vast range of areas, such as developing new materials with specific properties,” says Ellen Moons, Chair of the Nobel Committee for Physics.
+
+Prize amount: 11 million Swedish kronor, to be shared equally between the laureates.
+Further information: www.kva.se and www.nobelprize.org
+Press contact: Eva Nevelius, Press Secretary, +46 70 878 67 63, eva.nevelius@kva.se
+Experts: Olle Eriksson, +46 18 471 36 25, olle.eriksson@physics.uu.se and Anders Irbäck, +46 46 222 34 93, anders.irback@cec.lu.se, members of the Nobel Committee for Physics.
+
+The Royal Swedish Academy of Sciences, founded in 1739, is an independent organisation whose overall objective is to promote the sciences and strengthen their influence in society. The Academy takes special responsibility for the natural sciences and mathematics, but endeavours to promote the exchange of ideas between various disciplines.
+
+<|Popular information|>
+
+This year’s laureates used tools from physics to construct methods that helped lay the foundation for today’s powerful machine learning. John Hopfield created a structure that can store and reconstruct information. Geoffrey Hinton invented a method that can independently discover properties in data and which has become important for the large artificial neural networks now in use.
+
+They used physics to find patterns in information
+Illustration
+© Johan Jarnestad/The Royal Swedish Academy of Sciences
+Many people have experienced how computers can translate between languages, interpret images and even conduct reasonable conversations. What is perhaps less well known is that this type of technology has long been important for research, including the sorting and analysis of vast amounts of data. The development of machine learning has exploded over the past fifteen to twenty years and utilises a structure called an artificial neural network. Nowadays, when we talk about artificial intelligence, this is often the type of technology we mean.
+
+Although computers cannot think, machines can now mimic functions such as memory and learning. This year’s laureates in physics have helped make this possible. Using fundamental concepts and methods from physics, they have developed technologies that use structures in networks to process information.
+
+Machine learning differs from traditional software, which works like a type of recipe. The software receives data, which is processed according to a clear description and produces the results, much like when someone collects ingredients and processes them by following a recipe, producing a cake. Instead of this, in machine learning the computer learns by example, enabling it to tackle problems that are too vague and complicated to be managed by step by step instructions. One example is interpreting a picture to identify the objects in it.
+
+Mimics the brain
+An artificial neural network processes information using the entire network structure. The inspiration initially came from the desire to understand how the brain works. In the 1940s, researchers had started to reason around the mathematics that underlies the brain’s network of neurons and synapses. Another piece of the puzzle came from psychology, thanks to neuroscientist Donald Hebb’s hypothesis about how learning occurs because connections between neurons are reinforced when they work together.
+
+Later, these ideas were followed by attempts to recreate how the brain’s network functions by building artificial neural networks as computer simulations. In these, the brain’s neurons are mimicked by nodes that are given different values, and the synapses are represented by connections between the nodes that can be made stronger or weaker. Donald Hebb’s hypothesis is still used as one of the basic rules for updating artificial networks through a process called training.
+
+Illustration of natural and artificial neurons
+© Johan Jarnestad/The Royal Swedish Academy of Sciences
+At the end of the 1960s, some discouraging theoretical results caused many researchers to suspect that these neural networks would never be of any real use. However, interest in artificial neural networks was reawakened in the 1980s, when several important ideas made an impact, including work by this year’s laureates.
+
+Associative memory
+Imagine that you are trying to remember a fairly unusual word that you rarely use, such as one for that sloping floor often found in cinemas and lecture halls. You search your memory. It’s something like ramp… perhaps rad…ial? No, not that. Rake, that’s it!
+
+This process of searching through similar words to find the right one is reminiscent of the associative memory that the physicist John Hopfield discovered in 1982. The Hopfield network can store patterns and has a method for recreating them. When the network is given an incomplete or slightly distorted pattern, the method can find the stored pattern that is most similar.
+
+Hopfield had previously used his background in physics to explore theoretical problems in molecular biology. When he was invited to a meeting about neuroscience he encountered research into the structure of the brain. He was fascinated by what he learned and started to think about the dynamics of simple neural networks. When neurons act together, they can give rise to new and powerful characteristics that are not apparent to someone who only looks at the network’s separate components.
+
+In 1980, Hopfield left his position at Princeton University, where his research interests had taken him outside the areas in which his colleagues in physics worked, and moved across the continent. He had accepted the offer of a professorship in chemistry and biology at Caltech (California Institute of Technology) in Pasadena, southern California. There, he had access to computer resources that he could use for free experimentation and to develop his ideas about neural networks.
+
+However, he did not abandon his foundation in physics, where he found inspiration for his under­standing of how systems with many small components that work together can give rise to new and interesting phenomena. He particularly benefitted from having learned about magnetic materials that have special characteristics thanks to their atomic spin – a property that makes each atom a tiny magnet. The spins of neighbouring atoms affect each other; this can allow domains to form with spin in the same direction. He was able to make a model network with nodes and connections by using the physics that describes how materials develop when spins influence each other.
+
+The network saves images in a landscape
+The network that Hopfield built has nodes that are all joined together via connections of different strengths. Each node can store an individual value – in Hopfield’s first work this could either be 0 or 1, like the pixels in a black and white picture.
+
+Hopfield described the overall state of the network with a property that is equivalent to the energy in the spin system found in physics; the energy is calculated using a formula that uses all the values of the nodes and all the strengths of the connections between them. The Hopfield network is programmed by an image being fed to the nodes, which are given the value of black (0) or white (1). The network’s connections are then adjusted using the energy formula, so that the saved image gets low energy. When another pattern is fed into the network, there is a rule for going through the nodes one by one and checking whether the network has lower energy if the value of that node is changed. If it turns out that energy is reduced if a black pixel is white instead, it changes colour. This procedure continues until it is impossible to find any further improvements. When this point is reached, the network has often reproduced the original image on which it was trained.
+
+This may not appear so remarkable if you only save one pattern. Perhaps you are wondering why you don’t just save the image itself and compare it to another image being tested, but Hopfield’s method is special because several pictures can be saved at the same time and the network can usually differentiate between them.
+
+Hopfield likened searching the network for a saved state to rolling a ball through a landscape of peaks and valleys, with friction that slows its movement. If the ball is dropped in a particular location, it will roll into the nearest valley and stop there. If the network is given a pattern that is close to one of the saved patterns it will, in the same way, keep moving forward until it ends up at the bottom of a valley in the energy landscape, thus finding the closest pattern in its memory.
+
+The Hopfield network can be used to recreate data that contains noise or which has been partially erased.
+
+Illustration
+© Johan Jarnestad/The Royal Swedish Academy of Sciences
+Hopfield and others have continued to develop the details of how the Hopfield network functions, including nodes that can store any value, not just zero or one. If you think about nodes as pixels in a picture, they can have different colours, not just black or white. Improved methods have made it possible to save more pictures and to differentiate between them even when they are quite similar. It is just as possible to identify or reconstruct any information at all, provided it is built from many data points.
+
+Classification using nineteenth-century physics
+Remembering an image is one thing, but interpreting what it depicts requires a little more.
+
+Even very young children can point at different animals and confidently say whether it is a dog, a cat, or a squirrel. They might get it wrong occasionally, but fairly soon they are correct almost all the time. A child can learn this even without seeing any diagrams or explanations of concepts such as species or mammal. After encountering a few examples of each type of animal, the different categories fall into place in the child’s head. People learn to recognise a cat, or understand a word, or enter a room and notice that something has changed, by experiencing the environment around them.
+
+When Hopfield published his article on associative memory, Geoffrey Hinton was working at Carnegie Mellon University in Pittsburgh, USA. He had previously studied experimental psychology and artificial intelligence in England and Scotland and was wondering whether machines could learn to process patterns in a similar way to humans, finding their own categories for sorting and interpreting information. Along with his colleague, Terrence Sejnowski, Hinton started from the Hopfield network and expanded it to build something new, using ideas from statistical physics.
+
+Statistical physics describes systems that are composed of many similar elements, such as molecules in a gas. It is difficult, or impossible, to track all the separate molecules in the gas, but it is possible to consider them collectively to determine the gas’ overarching properties like pressure or temperature. There are many potential ways for gas molecules to spread through its volume at individual speeds and still result in the same collective properties.
+
+The states in which the individual components can jointly exist can be analysed using statistical physics, and the probability of them occurring calculated. Some states are more probable than others; this depends on the amount of available energy, which is described in an equation by the nineteenth-century physicist Ludwig Boltzmann. Hinton’s network utilised that equation, and the method was published in 1985 under the striking name of the Boltzmann machine.
+
+Recognising new examples of the same type
+The Boltzmann machine is commonly used with two different types of nodes. Information is fed to one group, which are called visible nodes. The other nodes form a hidden layer. The hidden nodes’ values and connections also contribute to the energy of the network as a whole.
+
+The machine is run by applying a rule for updating the values of the nodes one at a time. Eventually the machine will enter a state in which the nodes’ pattern can change, but the properties of the network as a whole remain the same. Each possible pattern will then have a specific probability that is determined by the network’s energy according to Boltzmann’s equation. When the machine stops it has created a new pattern, which makes the Boltzmann machine an early example of a generative model.
+
+Illustration of different types of network
+© Johan Jarnestad/The Royal Swedish Academy of Sciences
+The Boltzmann machine can learn – not from instructions, but from being given examples. It is trained by updating the values in the network’s connections so that the example patterns, which were fed to the visible nodes when it was trained, have the highest possible probability of occurring when the machine is run. If the same pattern is repeated several times during this training, the probability for this pattern is even higher. Training also affects the probability of outputting new patterns that resemble the examples on which the machine was trained.
+
+A trained Boltzmann machine can recognise familiar traits in information it has not previously seen. Imagine meeting a friend’s sibling, and you can immediately see that they must be related. In a similar way, the Boltzmann machine can recognise an entirely new example if it belongs to a category found in the training material, and differentiate it from material that is dissimilar.
+
+In its original form, the Boltzmann machine is fairly inefficient and takes a long time to find solutions. Things become more interesting when it is developed in various ways, which Hinton has continued to explore. Later versions have been thinned out, as the connections between some of the units have been removed. It turns out that this may make the machine more efficient.
+
+During the 1990s, many researchers lost interest in artificial neural networks, but Hinton was one of those who continued to work in the field. He also helped start the new explosion of exciting results; in 2006 he and his colleagues Simon Osindero, Yee Whye Teh and Ruslan Salakhutdinov developed a method for pretraining a network with a series of Boltzmann machines in layers, one on top of the other. This pretraining gave the connections in the network a better starting point, which optimised its training to recognise elements in pictures.
+
+The Boltzmann machine is often used as part of a larger network. For example, it can be used to recommend films or television series based on the viewer’s preferences.
+
+Machine learning – today and tomorrow
+Thanks to their work from the 1980s and onward, John Hopfield and Geoffrey Hinton have helped lay the foundation for the machine learning revolution that started around 2010.
+
+The development we are now witnessing has been made possible through access to the vast amounts of data that can be used to train networks, and through the enormous increase in computing power. Today’s artificial neural networks are often enormous and constructed from many layers. These are called deep neural networks and the way they are trained is called deep learning.
+
+A quick glance at Hopfield’s article on associative memory, from 1982, provides some perspective on this development. In it, he used a network with 30 nodes. If all the nodes are connected to each other, there are 435 connections. The nodes have their values, the connections have different strengths and, in total, there are fewer than 500 parameters to keep track of. He also tried a network with 100 nodes, but this was too complicated, given the computer he was using at the time. We can compare this to the large language models of today, which are built as networks that can contain more than one trillion parameters (one million millions).
+
+Many researchers are now developing machine learning’s areas of application. Which will be the most viable remains to be seen, while there is also wide-ranging discussion on the ethical issues that surround the development and use of this technology.
+
+Because physics has contributed tools for the development of machine learning, it is interesting to see how physics, as a research field, is also benefitting from artificial neural networks. Machine learning has long been used in areas we may be familiar with from previous Nobel Prizes in Physics. These include the use of machine learning to sift through and process the vast amounts of data necessary to discover the Higgs particle. Other applications include reducing noise in measurements of the gravitational waves from colliding black holes, or the search for exoplanets.
+
+In recent years, this technology has also begun to be used when calculating and predicting the properties of molecules and materials – such as calculating protein molecules’ structure, which determines their function, or working out which new versions of a material may have the best properties for use in more efficient solar cells.
+
+Further reading
+Additional information on this year’s prizes, including a scientific background in English, is available on the website of the Royal Swedish Academy of Sciences, www.kva.se, and at www.nobelprize.org, where you can watch video from the press conferences, the Nobel Lectures and more. Information on exhibitions and activities related to the Nobel Prizes and the Prize in Economic Sciences is available at www.nobelprizemuseum.se.
+
+<|Advanced information|>
+
+Introduction 
+With its roots in the 1940s, machine learning based on artificial neural networks (ANNs) has 
+developed over the past three decades into a versatile and powerful tool, with both everyday and 
+advanced scientific applications. With ANNs the boundaries of physics are extended to host 
+phenomena of life as well as computation. 
+Inspired by biological neurons in the brain, ANNs are large collections of “neurons”, or nodes, 
+connected by “synapses”, or weighted couplings, which are trained to perform certain tasks rather 
+than asked to execute a predetermined set of instructions. Their basic structure has close 
+similarities with spin models in statistical physics applied to magnetism or alloy theory. This 
+year’s Nobel Prize in Physics recognizes research exploiting this connection to make breakthrough 
+methodological advances in the field of ANN. 
+Historical background 
+The first electronic-based computers appeared in the 1940s, and were invented for military and 
+scientific purposes. They were intended to carry out computations that were cumbersome and 
+time-consuming for humans. In the 1950s, the opposite need emerged, namely to get computers 
+to do what humans and other mammals are good at – pattern recognition.  
+This artificial intelligence-oriented objective was first approached by mathematicians and 
+computer scientists, who developed programs based on logical rules. This approach was pursued 
+until the 1980s, but the computational resources that were required for the exact classifications, 
+for example, of images became prohibitive. 
+
+In parallel, efforts had been initiated to find out how biological systems solve the pattern 
+recognition problem. As early as 1943, Warren McCulloch and Walter Pitts [1], a neuroscientist 
+and a logician, respectively, had proposed a model for how the neurons in the brain cooperate. In 
+their model, a neuron formed a weighted sum of binary incoming signals from other neurons, 
+which determined a binary outgoing signal. Their work became a launch pad for later research 
+into both biological and artificial neural networks.  
+Another influential early contribution came from the psychologist Donald Hebb [2]. In 1949, 
+Hebb proposed a mechanism for learning and memories, where the simultaneous and repeated 
+activation of two neurons leads to an increased strength of the synapse between them.  
+In the ANN area, two architectures for systems of interconnected nodes were explored, 
+“recurrent” and “feedforward” networks, where the former allows for feedback interactions 
+(Figures 1 and 2). A feedforward network has input and output layers and may also contain 
+additional layers of hidden nodes sandwiched in-between.  
+In 1957, Frank Rosenblatt proposed a feedforward network for image interpretation, which was 
+also implemented in computer hardware [3]. It had three layers of nodes, with adjustable weights 
+only between the middle and output layers. Those weights were determined in a systematic 
+fashion.  
+Rosenblatt’s system attracted considerable attention, but it had limitations when it came to non
+linear problems. A simple example is the “one or the other but not both” (XOR) problem. These 
+limitations were pointed out in an influential book by Marvin Minsky and Seymour Papert in 1969 
+[4], which led to a hiatus funding-wise for ANN research.  
+A parallel development took inspiration from magnetic systems, which were to create models for 
+recurrent neural networks and investigate their collective properties [5-10].
+
+[5-10]. 
+2 (12) 
+Figure 1. Recurrent networks of 𝑁𝑁 binary nodes 𝑠𝑠𝑖𝑖 (0 or 1), with connection weights 𝑤𝑤𝑖𝑖𝑖𝑖. 
+(Left) The Hopfield model. (Centre) Boltzmann machine. The nodes are divided into two 
+groups, visible (open circles) and hidden (grey) nodes. The network is trained to 
+approximate the probability distribution of a given set of visible patterns. Once trained, the 
+network can be used to generate new instances from the learned distribution. (Right) 
+Restricted Boltzmann Machine (RBM). Same as the Boltzmann machine, but without any 
+couplings within the visible layer or between hidden nodes. This variant can be used for 
+layer-by-layer pre-training of deep networks. 
+The 1980s 
+The 1980s saw major breakthroughs in the areas of both recurrent and feedforward neural 
+networks, which led to a rapid expansion of the ANN field. 
+John Hopfield, a theoretical physicist, is a towering figure in biological physics. His seminal work 
+in the 1970s examined electron transfer between biomolecules [11] and error correction in 
+biochemical reactions (kinetic proofreading) [12]. 
+In 1982, Hopfield published a dynamical model for an associative memory based on a simple 
+recurrent neural network [13]. Collective phenomena frequently occur in physical systems, such 
+as domains in magnetic systems and vortices in fluid flow. Hopfield asked whether emergent 
+collective phenomena in large collections of neurons could give rise to “computational” abilities.  
+Noting that collective properties in many physical systems are robust to changes in model details, 
+he addressed this question using a neural network with N binary nodes si (0 or 1). The dynamics 
+were asynchronous with threshold updates of individual nodes at random times. The new value 
+of a node si was determined by a weighted sum over all other nodes, 
+3 (12) 
+ℎ𝑖𝑖 = ∑WijSj, j -neq i
+ and was set to si=1 if hi>0, and si=0 otherwise (with the threshold set to zero). The couplings wij 
+were assumed symmetric and to reflect pairwise correlations between the nodes in stored 
+memories, which is referred to as the Hebb rule. The symmetry of the weights guarantees stable 
+dynamics. Stationary states were identified as memories, distributed over the N nodes in a non
+local storage. Furthermore, the network was assigned an energy E given by  
+ 𝐸 =−∑i<jW𝑖𝑗S𝑖S𝑗, 
+which is a monotonically decreasing function under the dynamics of the network. Notable is that 
+the connection between the world of physics, as defined in the 1980s, and ANNs was obvious 
+already from these two equations. The first equation can be used to represent the Weiss molecular 
+field (after the French physicist Pierre Weiss) that describes how atomic magnetic moments align 
+in a solid, and the latter is often used to evaluate the energy of a magnetic configuration, e.g. a 
+ferromagnet. Hopfield was naturally well aware of how these equations were used to describe 
+magnetic materials. 
+Metaphorically, the dynamics drive the system with N nodes to the valleys of an N-dimensional 
+energy landscape, in which the stationary states are located. The stationary states represent 
+memories learned by the Hebb rule. Initially, the number of memories that could be stored in 
+Hopfield’s dynamical model was limited. Methods to alleviate this problem were developed in 
+later work [14]. 
+Hopfield used his model as an associative memory or as a method for error correction or pattern 
+completion. A system initialized with an incorrect pattern, perhaps a misspelled word, is attracted 
+to the nearest local energy minimum in his model, whereby a correction occurs. The model gained 
+additional traction when it became clear that basic properties, such as the storage capacity, could 
+be understood analytically, by using methods from spin glass theory [15,16]. 
+A legitimate question at the time was whether the properties of this model are an artifact of its 
+crude binary structure. Hopfield answered this question by creating an analog version of the 
+model [17], with continuous-time dynamics given by the equations of motion for an electronic 
+circuit. His analysis of the analog model demonstrated that the binary nodes could be replaced by 
+analog ones without losing the emergent collective properties of the original model. The 
+4 (12) 
+stationary states of the analog model corresponded to mean-field solutions of the binary system 
+at an effective adjustable temperature, and approached the stationary states of the binary model 
+at low temperature.  
+The close correspondence between the analog and binary models was subsequently used by 
+Hopfield and David Tank [18,19] to develop a method for solving difficult discrete optimization 
+problems based on the continuous-time dynamics of the analog model. Here, the optimization 
+problem to be solved, including constraints, is encoded in the interaction parameters (weights) of 
+the network.  They chose to use the dynamics of the analog model in order to have a “softer” energy 
+landscape and thereby facilitate the search. The above-mentioned effective temperature of the 
+analog system was gradually decreased, as in global optimization with simulated annealing [20]. 
+Optimization occurs through integration of the equations of motion of an electronic circuit, during 
+which the nodes evolve without instructions from a central unit. This approach constitutes a 
+pioneering example of using a dynamical system to seek solutions to difficult discrete 
+optimization problems [21]. A more recent example is quantum annealing [22]. 
+By creating and exploring the above physics-based dynamical models – not only the milestone 
+associative memory model but also those that followed – Hopfield made a foundational 
+contribution to our understanding of the computational abilities of neural networks. 
+In 1983–1985 Geoffrey Hinton, together with Terrence Sejnowski and other coworkers, developed 
+a stochastic extension of Hopfield’s model from 1982, called the Boltzmann machine [23,24]. 
+Here, each state s=(s1,…,sN) of the network is assigned a probability given by the Boltzmann 
+distribution
+ 𝑃(𝒔) ∝ 𝑒^-𝐸/𝑇                 
+ 𝐸 =−∑𝑖<𝑗W𝑖𝑗S𝑖S𝑗 −∑𝑖𝜃𝑖S𝑖 
+where T is a fictive temperature and 𝜃𝜃𝑖𝑖 is a bias, or local field.  
+The Boltzmann machine is a generative model. Unlike the Hopfield model, it focuses on statistical 
+distributions of patterns rather than individual patterns. It contains visible nodes that correspond 
+to the patterns to be learned as well as additional hidden nodes, where the latter are included to 
+enable modelling of more general probability distributions.  
+5 (12) 
+Figure 2. Feedward network with two layers of hidden nodes between the input and 
+output layers. 
+The weight and bias parameters of the network, which define the energy E, are determined so that 
+the statistical distribution of visible patterns generated by the model deviates minimally from the 
+statistical distribution of a given set of training patterns. Hinton and his colleagues developed a 
+formally elegant gradient-based learning algorithm for the parameter determination [24]; 
+however, each step of the algorithm involves time-consuming equilibrium simulations for two 
+different ensembles.  
+While theoretically interesting, in practice, the Boltzmann machine was initially of limited use. 
+However, a slimmed-down version of it with fewer weights, called the restricted Boltzmann 
+machine, developed into a versatile tool (see next section). 
+Both the Hopfield model and the Boltzmann machine are recurrent neural networks. The 1980s 
+also saw important progress on feedforward networks. A key advance was the demonstration by 
+David Rumelhart, Hinton and Ronald Williams in 1986 of how architectures with one or more 
+hidden layers could be trained for classification using an algorithm known as backpropagation 
+[25]. Here, the objective is to minimize the mean square deviation, D, between output from the 
+network and training data, by gradient descent. This requires computing the partial derivatives of 
+D with respect to all weights in the network. Rumelhart, Hinton and Williams reinvented a 
+scheme for this, which had previously been applied to related problems by others [26,27]. 
+Additionally, and more importantly, they demonstrated that networks with a hidden layer could 
+be trained by this method to perform tasks known to be unsolvable without such a layer. 
+Furthermore, they elucidated the function of hidden nodes.  
+6 (12) 
+Toward deep learning 
+The methodological breakthroughs in the 1980s were soon followed by successful applications, 
+including pattern recognition in images, languages and clinical data. An important method was 
+multilayered convolutional neural networks (CNN) trained by backpropagation, as advanced by 
+Yann LeCun and Yoshua Bengio [28,29]. The CNN architecture had its roots in the neocognitron 
+method created by Kunihiko Fukushima [30], who in turn was inspired by work of David Hubel 
+and Torsten Wiesel, Nobel Prize Laureates in Physiology or Medicine in 1981. The CNN approach 
+developed by LeCun and coworkers became used by several American banks for classifying 
+handwritten digits on checks from the mid-1990s. Another successful example from this period 
+is the long short-term memory method created by Sepp Hochreiter and Jürgen Schmidhuber [31]. 
+This is a recurrent network for processing sequential data, as in speech and language, and can be 
+mapped to a multilayered network by unfolding in time. 
+While certain multilayered architectures led to successful applications in the 1990s, it remained 
+a challenge to train deep multilayered networks with many connections between consecutive 
+layers. To many researchers in the field, training dense multilayered networks seemed out of 
+reach. The situation changed in the 2000s. A leading figure in this breakthrough was Hinton, 
+and an important tool was the restricted Boltzmann machine (RBM).  
+An RBM network has weights only between visible and hidden nodes, and no weights connect 
+two nodes of the same type. For RBMs, Hinton created an efficient approximate learning 
+algorithm [32], called contrastive divergence, which was much faster than that for the full 
+Boltzmann machine [24]. With Simon Osindero and Yee-Whye Teh, he then developed a pre
+training procedure for multilayer networks, in which the layers are trained one by one using an 
+RBM [33]. An early application of this approach was an autoencoder network for dimensional 
+reduction [34,35]. After pre-training, it became possible to perform a global parameter fine
+tuning using the backpropagation algorithm. The pre-training with RBMs picked up structures 
+in data, such as corners in images, without using labelled training data. Having found these 
+structures, labelling those by backpropagation turned out to be a relatively simple task.  
+By linking layers pre-trained in this way, Hinton was able to successfully implement examples of 
+deep and dense networks, a milestone toward what is now known as deep learning. Later on, it 
+became possible to replace RBM-based pre-training by other methods to achieve the same 
+performance of deep and dense ANNs. 
+7 (12) 
+ANNs as powerful tools in physics and other scientific disciplines 
+Much of the above discussion is focused on how physics has been a driving force underlying 
+inventions and development of ANNs. Conversely, ANNs are increasingly playing an important 
+role as a powerful tool for modelling and analysis in almost all of physics.  
+In some applications, ANNs are employed as a function approximator [36]; i.e. the ANNs are 
+used to provide a “copycat” for the physics model in question. This can significantly reduce the 
+computational resources required, thereby allowing larger systems to be probed at higher 
+resolution. Significant advances have been achieved in this way, e.g. for quantum-mechanical 
+many-body problems [37-39]. Here, deep learning architectures are trained to reproduce 
+energies of phases of materials, as well as the shape and strength of interatomic forces, with an 
+accuracy comparable to ab initio quantum-mechanical models. With these ANN trained atomic 
+models, considerably faster determination of phase stabilities and the dynamics of new materials 
+can be made. Examples showing the success of these methods involve the prediction of new 
+photovoltaic materials.  
+With these models, it is also possible to study phase transitions [40] as well as the 
+thermodynamical properties of water [41]. Similarly, the development of ANN representations 
+has made it possible to reach higher resolutions in explicit physics-based climate models [42,43] 
+without resorting to additional computing power. 
+During the 1990s, ANNs became a standard data analysis tool within particle physics 
+experiments of ever-increasing complexity. Highly sought-after fundamental particles, such as 
+the Higgs boson, only exist for a fraction of a second after being created in high-energy collisions 
+(e.g. ~10-22 s for the Higgs boson). Their presence needs to be inferred from tracking information 
+and energy deposits in large electronic detectors. Often the anticipated detector signature is very 
+rare and could be mimicked by more common background processes. To identify particle decays 
+and increase the efficiency of analyses, ANNs were trained to pick out specific patterns in the 
+large volumes of detector data being generated at a high rate.  
+ANNs improved the sensitivity of searches for the Higgs boson at the CERN Large Electron
+Positron (LEP) collider during the 1990s [44], and were used in the analysis of data that led to 
+its discovery at the CERN Large Hadron Collider in 2012 [45]. ANNs were also used in studies of 
+the top quark at Fermilab [46].  
+8 (12) 
+In astrophysics and astronomy, ANNs have also become a standard data analysis tool. A recent 
+example is an ANN-driven analysis of data from the IceCube neutrino detector at the South Pole, 
+which resulted in a neutrino image of the Milky Way [47]. Exoplanet transits have been identified 
+by the Kepler Mission using ANNs [48]. The Event Horizon Telescope image of the black hole at 
+the centre of the Milky Way used ANNs for data processing [49].  
+So far, the most spectacular scientific breakthrough using deep learning ANN methods is the 
+AlphaFold tool for prediction of three-dimensional protein structures, given their amino acid 
+sequences [50]. In modelling of industrial physics and chemistry applications, ANNs also play 
+an increasingly important role. 
+ANNs in everyday life 
+The list of applications used in everyday life that are based on ANNs is long. These networks are 
+behind almost everything we do with computers, such as image recognition, language 
+generation, and more.  
+Decision support within health care is also a well-established application for ANNs. For example, 
+a recent prospective randomized study of mammographic screening images showed a clear 
+benefit of using machine learning in improving detection of breast cancer [51]. Another recent 
+example is motion correction for magnetic resonance imaging (MRI) scans [52]. 
+Concluding remarks 
+The pioneering methods and concepts developed by Hopfield and Hinton have been 
+instrumental in shaping the field of ANNs. In addition, Hinton played a leading role in the efforts 
+to extend the methods to deep and dense ANNs.  
+With their breakthroughs, that stand on the foundations of physical science, they have showed a 
+completely new way for us to use computers to aid and to guide us to tackle many of the 
+challenges our society face. Simply put, thanks to their work Humanity now has a new item in its 
+toolbox, which we can choose to use for good purposes. Machine learning based on ANNs is 
+currently revolutionizing science, engineering and daily life. The field is already on its way to 
+enable breakthroughs toward building a sustainable society, e.g. by helping to identify new 
+functional materials. How deep learning by ANNs will be used in the future depends on how we 
+humans choose to use these incredibly potent tools, already present in many aspects of our lives. 
+
+<|END|>

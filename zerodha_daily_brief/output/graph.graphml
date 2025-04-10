@@ -1,0 +1,337 @@
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <graph edgedefault="undirected">
+    <node id="TRUMP TARIFFS" />
+    <node id="GLOBAL SUPPLY CHAINS" />
+    <node id="STOCK MARKETS" />
+    <node id="IMPORT TAXES" />
+    <node id="MODERN COMMERCE" />
+    <node id="LEAD PENCIL SUPPLY CHAIN" />
+    <node id="TOYOTA" />
+    <node id="BOEING" />
+    <node id="HYPER-SPECIALIZED BUSINESSES" />
+    <node id="ECONOMIST LEONARD REED" />
+    <node id="ACCELEROMETER SPRINGS" />
+    <node id="IPHONES" />
+    <node id="CAR BATTERIES" />
+    <node id="MOBILE PHONES" />
+    <node id="CHIP SHORTAGES" />
+    <node id="GLOBAL VALUE CHAINS" />
+    <node id="COVID-19 PANDEMIC" />
+    <node id="ACCELEROMETERS" />
+    <node id="SPRING MANUFACTURERS" />
+    <node id="SMARTPHONE SUPPLY CHAIN" />
+    <node id="INDIA" />
+    <node id="FRAGILITY OF SUPPLY CHAINS" />
+    <node id="CAPACITORS" />
+    <node id="SOUTHERN KARNATAKA" />
+    <node id="WORLD-WIDE TARIFFS" />
+    <node id="CHIP MANUFACTURERS" />
+    <node id="WORK-FROM-HOME POLICIES" />
+    <node id="CAR MANUFACTURERS" />
+    <node id="GLOBAL AUTOMOBILE PRODUCTION" />
+    <node id="POWER STEERING" />
+    <node id="SENSORS" />
+    <node id="INFOTAINMENT SYSTEMS" />
+    <node id="AMERICA" />
+    <node id="TARIFF RATES" />
+    <node id="ZHENGZHOU" />
+    <node id="APPLE" />
+    <node id="NIKE" />
+    <node id="ALL-AMERICAN MANUFACTURERS" />
+    <node id="SUPPLY SHORTAGES" />
+    <node id="HIGHER PRICES" />
+    <node id="INFLATIONARY IMPACT OF TARIFFS" />
+    <node id="NORTH AMERICAN AUTOMOBILE INDUSTRY" />
+    <node id="CAR DASHBOARD" />
+    <node id="UNITED STATES AUTOMOBILE PRODUCTION" />
+    <node id="CANADA" />
+    <node id="MEXICO" />
+    <node id="CAR MANUFACTURING SUPPLY CHAIN" />
+    <node id="STEEL" />
+    <node id="ALUMINUM" />
+    <node id="ELECTRONIC MODULES" />
+    <node id="WIRING HARNESSES" />
+    <node id="PLASTIC SHELL" />
+    <node id="TATA TECHNOLOGIES" />
+    <node id="CHIPS" />
+    <node id="SOUTH KOREA" />
+    <node id="TAIWAN" />
+    <node id="UNITED STATES" />
+    <node id="CHILE" />
+    <node id="SPECIALTY POLYMERS" />
+    <node id="MEXICAN MANUFACTURER" />
+    <node id="DEDICATED SUPPLIERS IN ASIA" />
+    <node id="OEM ASSEMBLY PLANT" />
+    <node id="PAINTING AND COATING" />
+    <node id="CANADIAN MOULDING FACILITIES" />
+    <node id="BUTTONS AND CONTROL KNOBS" />
+    <node id="LASER ETCHING" />
+    <node id="CAR COMPANY" />
+    <node id="25% TAX" />
+    <node id="RESHORING" />
+    <node id="AMERICA'S BORDERS" />
+    <node id="MULTI-NATIONAL PROCESS" />
+    <node id="SUPPLY CHAINS" />
+    <node id="DE-INDUSTRIALIZATION" />
+    <node id="COVID-19 DISRUPTION" />
+    <node id="GLOBAL ECONOMY" />
+    <node id="INDUSTRIAL RELAY SYSTEM" />
+    <node id="INTERNATIONAL ENERGY AGENCY (IEA)" />
+    <node id="GLOBAL ELECTRICITY REVIEW 2025" />
+    <node id="WORLD ENERGY OUTLOOK" />
+    <node id="EMBER ENERGY" />
+    <node id="ELECTRICITY" />
+    <node id="ENERGY" />
+    <node id="SOLAR ENERGY" />
+    <node id="COAL" />
+    <node id="POWER PLANTS" />
+    <node id="INDIA&#8217;S ELECTRICITY GENERATION" />
+    <node id="RENEWABLE ENERGY MIX" />
+    <node id="ELECTRICITY SUPPLY" />
+    <node id="ELECTRICITY DEMAND" />
+    <node id="GLOBAL ELECTRICITY REVIEW" />
+    <node id="CHINA" />
+    <node id="HEATWAVES" />
+    <node id="ELECTRIFICATION" />
+    <node id="AI" />
+    <node id="AIR CONDITIONERS" />
+    <node id="GLOBAL ELECTRICITY DEMAND" />
+    <node id="RECORD-BREAKING TEMPERATURES" />
+    <node id="STRUCTURAL SHIFT IN ENERGY DEMAND" />
+    <node id="CRUDE DERIVATIVES" />
+    <node id="ELECTRIC VEHICLES" />
+    <node id="HEAT PUMPS" />
+    <node id="CRYPTO MINING" />
+    <node id="RENEWABLE ENERGY" />
+    <node id="CLEAN ELECTRICITY" />
+    <node id="WIND ENERGY" />
+    <node id="HYDRO ENERGY" />
+    <node id="NUCLEAR ENERGY" />
+    <node id="RENEWABLES" />
+    <node id="EXTREME HEAT" />
+    <node id="SOLAR CAPACITY" />
+    <node id="PAKISTAN" />
+    <node id="THERMAL POWER CONTRACTS" />
+    <node id="ROOFTOP SOLAR" />
+    <node id="SOLAR PANELS" />
+    <node id="FOSSIL FUELS" />
+    <node id="GLOBAL WARMING" />
+    <node id="GLOBAL ELECTRICITY MIX" />
+    <node id="HYDROPOWER" />
+    <node id="RAINFALL" />
+    <node id="WIND" />
+    <node id="WEAKER WINDS" />
+    <node id="ENERGY STORAGE SOLUTIONS" />
+    <node id="SOLAR" />
+    <node id="CLEAN TECH" />
+    <node id="US" />
+    <node id="GAS GENERATION" />
+    <node id="ENERGY SECURITY" />
+    <node id="PHIL MACDONALD" />
+    <node id="SPECIAL ADDITIONAL EXCISE DUTY" />
+    <node id="PETROL" />
+    <node id="DIESEL" />
+    <node id="DOMESTIC LPG CYLINDERS" />
+    <node id="OIL MARKETING COMPANIES (OMCS)" />
+    <node id="PMUY BENEFICIARIES" />
+    <node id="SHRIRAM FINANCE LTD." />
+    <node id="RESERVE BANK OF INDIA" />
+    <node id="SOVEREIGN BOND MARKET" />
+    <node id="FEDERAL GOVERNMENT BONDS" />
+    <node id="PLI SCHEME" />
+    <node id="SMARTPHONE EXPORTS" />
+    <node id="MARCH IPHONE SHIPMENTS" />
+    <node id="JANUARY IPHONE SHIPMENTS" />
+    <node id="FEBRUARY IPHONE SHIPMENTS" />
+    <edge source="TRUMP TARIFFS" target="GLOBAL SUPPLY CHAINS" />
+    <edge source="TRUMP TARIFFS" target="STOCK MARKETS" />
+    <edge source="TRUMP TARIFFS" target="IMPORT TAXES" />
+    <edge source="TRUMP TARIFFS" target="AMERICA" />
+    <edge source="TRUMP TARIFFS" target="TARIFF RATES" />
+    <edge source="TRUMP TARIFFS" target="SUPPLY CHAINS" />
+    <edge source="TRUMP TARIFFS" target="UNITED STATES" />
+    <edge source="TRUMP TARIFFS" target="DE-INDUSTRIALIZATION" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="MODERN COMMERCE" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="LEAD PENCIL SUPPLY CHAIN" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="TOYOTA" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="BOEING" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="HYPER-SPECIALIZED BUSINESSES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="ECONOMIST LEONARD REED" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="ACCELEROMETER SPRINGS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="IPHONES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="CAR BATTERIES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="MOBILE PHONES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="CHIP SHORTAGES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="GLOBAL VALUE CHAINS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="ACCELEROMETERS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="SPRING MANUFACTURERS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="SMARTPHONE SUPPLY CHAIN" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="INDIA" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="FRAGILITY OF SUPPLY CHAINS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="COVID-19 PANDEMIC" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="WORLD-WIDE TARIFFS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="ZHENGZHOU" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="APPLE" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="NIKE" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="TARIFF RATES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="WORK-FROM-HOME POLICIES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="ALL-AMERICAN MANUFACTURERS" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="SUPPLY SHORTAGES" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="NORTH AMERICAN AUTOMOBILE INDUSTRY" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="25% TAX" />
+    <edge source="GLOBAL SUPPLY CHAINS" target="MULTI-NATIONAL PROCESS" />
+    <edge source="HYPER-SPECIALIZED BUSINESSES" target="GLOBAL VALUE CHAINS" />
+    <edge source="ACCELEROMETER SPRINGS" target="SOUTHERN KARNATAKA" />
+    <edge source="IPHONES" target="APPLE" />
+    <edge source="CHIP SHORTAGES" target="COVID-19 PANDEMIC" />
+    <edge source="COVID-19 PANDEMIC" target="CHIP MANUFACTURERS" />
+    <edge source="COVID-19 PANDEMIC" target="WORK-FROM-HOME POLICIES" />
+    <edge source="ACCELEROMETERS" target="SPRING MANUFACTURERS" />
+    <edge source="SMARTPHONE SUPPLY CHAIN" target="CAPACITORS" />
+    <edge source="INDIA" target="ELECTRICITY" />
+    <edge source="INDIA" target="COAL" />
+    <edge source="INDIA" target="EXTREME HEAT" />
+    <edge source="INDIA" target="SOLAR" />
+    <edge source="INDIA" target="WIND" />
+    <edge source="FRAGILITY OF SUPPLY CHAINS" target="CAPACITORS" />
+    <edge source="WORLD-WIDE TARIFFS" target="AMERICA" />
+    <edge source="WORLD-WIDE TARIFFS" target="HIGHER PRICES" />
+    <edge source="CHIP MANUFACTURERS" target="CAR MANUFACTURERS" />
+    <edge source="CHIP MANUFACTURERS" target="GLOBAL AUTOMOBILE PRODUCTION" />
+    <edge source="CHIP MANUFACTURERS" target="WORK-FROM-HOME POLICIES" />
+    <edge source="CAR MANUFACTURERS" target="POWER STEERING" />
+    <edge source="CAR MANUFACTURERS" target="SENSORS" />
+    <edge source="CAR MANUFACTURERS" target="INFOTAINMENT SYSTEMS" />
+    <edge source="TARIFF RATES" target="ALL-AMERICAN MANUFACTURERS" />
+    <edge source="TARIFF RATES" target="INFLATIONARY IMPACT OF TARIFFS" />
+    <edge source="APPLE" target="PLI SCHEME" />
+    <edge source="APPLE" target="SMARTPHONE EXPORTS" />
+    <edge source="SUPPLY SHORTAGES" target="HIGHER PRICES" />
+    <edge source="NORTH AMERICAN AUTOMOBILE INDUSTRY" target="CAR DASHBOARD" />
+    <edge source="NORTH AMERICAN AUTOMOBILE INDUSTRY" target="UNITED STATES AUTOMOBILE PRODUCTION" />
+    <edge source="NORTH AMERICAN AUTOMOBILE INDUSTRY" target="CANADA" />
+    <edge source="NORTH AMERICAN AUTOMOBILE INDUSTRY" target="MEXICO" />
+    <edge source="CAR DASHBOARD" target="CAR MANUFACTURING SUPPLY CHAIN" />
+    <edge source="CAR DASHBOARD" target="STEEL" />
+    <edge source="CAR DASHBOARD" target="ALUMINUM" />
+    <edge source="CAR DASHBOARD" target="ELECTRONIC MODULES" />
+    <edge source="CAR DASHBOARD" target="WIRING HARNESSES" />
+    <edge source="CAR DASHBOARD" target="PLASTIC SHELL" />
+    <edge source="CAR DASHBOARD" target="TATA TECHNOLOGIES" />
+    <edge source="CANADA" target="STEEL" />
+    <edge source="CANADA" target="ALUMINUM" />
+    <edge source="MEXICO" target="STEEL" />
+    <edge source="MEXICO" target="ALUMINUM" />
+    <edge source="ELECTRONIC MODULES" target="CHIPS" />
+    <edge source="ELECTRONIC MODULES" target="SOUTH KOREA" />
+    <edge source="WIRING HARNESSES" target="UNITED STATES" />
+    <edge source="WIRING HARNESSES" target="CHILE" />
+    <edge source="PLASTIC SHELL" target="SPECIALTY POLYMERS" />
+    <edge source="PLASTIC SHELL" target="CANADIAN MOULDING FACILITIES" />
+    <edge source="CHIPS" target="TAIWAN" />
+    <edge source="UNITED STATES" target="SPECIALTY POLYMERS" />
+    <edge source="UNITED STATES" target="MEXICAN MANUFACTURER" />
+    <edge source="UNITED STATES" target="CANADIAN MOULDING FACILITIES" />
+    <edge source="UNITED STATES" target="DE-INDUSTRIALIZATION" />
+    <edge source="UNITED STATES" target="ELECTRICITY" />
+    <edge source="CHILE" target="MEXICAN MANUFACTURER" />
+    <edge source="SPECIALTY POLYMERS" target="CANADIAN MOULDING FACILITIES" />
+    <edge source="MEXICAN MANUFACTURER" target="DEDICATED SUPPLIERS IN ASIA" />
+    <edge source="MEXICAN MANUFACTURER" target="OEM ASSEMBLY PLANT" />
+    <edge source="MEXICAN MANUFACTURER" target="PAINTING AND COATING" />
+    <edge source="DEDICATED SUPPLIERS IN ASIA" target="OEM ASSEMBLY PLANT" />
+    <edge source="DEDICATED SUPPLIERS IN ASIA" target="LASER ETCHING" />
+    <edge source="OEM ASSEMBLY PLANT" target="CANADIAN MOULDING FACILITIES" />
+    <edge source="OEM ASSEMBLY PLANT" target="CAR COMPANY" />
+    <edge source="CANADIAN MOULDING FACILITIES" target="BUTTONS AND CONTROL KNOBS" />
+    <edge source="25% TAX" target="RESHORING" />
+    <edge source="25% TAX" target="AMERICA'S BORDERS" />
+    <edge source="SUPPLY CHAINS" target="COVID-19 DISRUPTION" />
+    <edge source="SUPPLY CHAINS" target="GLOBAL ECONOMY" />
+    <edge source="SUPPLY CHAINS" target="INDUSTRIAL RELAY SYSTEM" />
+    <edge source="INTERNATIONAL ENERGY AGENCY (IEA)" target="GLOBAL ELECTRICITY REVIEW 2025" />
+    <edge source="INTERNATIONAL ENERGY AGENCY (IEA)" target="WORLD ENERGY OUTLOOK" />
+    <edge source="INTERNATIONAL ENERGY AGENCY (IEA)" target="EMBER ENERGY" />
+    <edge source="GLOBAL ELECTRICITY REVIEW 2025" target="EMBER ENERGY" />
+    <edge source="GLOBAL ELECTRICITY REVIEW 2025" target="ELECTRICITY" />
+    <edge source="ELECTRICITY" target="ENERGY" />
+    <edge source="ELECTRICITY" target="SOLAR ENERGY" />
+    <edge source="ELECTRICITY" target="COAL" />
+    <edge source="ELECTRICITY" target="GLOBAL ELECTRICITY REVIEW" />
+    <edge source="ELECTRICITY" target="CHINA" />
+    <edge source="ELECTRICITY" target="HEATWAVES" />
+    <edge source="ELECTRICITY" target="ELECTRIFICATION" />
+    <edge source="ELECTRICITY" target="AI" />
+    <edge source="ELECTRICITY" target="CRUDE DERIVATIVES" />
+    <edge source="ELECTRICITY" target="ELECTRIC VEHICLES" />
+    <edge source="ELECTRICITY" target="HEAT PUMPS" />
+    <edge source="ELECTRICITY" target="CRYPTO MINING" />
+    <edge source="SOLAR ENERGY" target="POWER PLANTS" />
+    <edge source="SOLAR ENERGY" target="RENEWABLE ENERGY" />
+    <edge source="SOLAR ENERGY" target="CLEAN ELECTRICITY" />
+    <edge source="SOLAR ENERGY" target="RENEWABLES" />
+    <edge source="SOLAR ENERGY" target="SOLAR CAPACITY" />
+    <edge source="SOLAR ENERGY" target="PAKISTAN" />
+    <edge source="COAL" target="INDIA&#8217;S ELECTRICITY GENERATION" />
+    <edge source="COAL" target="POWER PLANTS" />
+    <edge source="COAL" target="RENEWABLE ENERGY" />
+    <edge source="COAL" target="EXTREME HEAT" />
+    <edge source="COAL" target="CHINA" />
+    <edge source="COAL" target="GLOBAL ELECTRICITY MIX" />
+    <edge source="RENEWABLE ENERGY MIX" target="ELECTRICITY SUPPLY" />
+    <edge source="ELECTRICITY SUPPLY" target="ELECTRICITY DEMAND" />
+    <edge source="CHINA" target="EXTREME HEAT" />
+    <edge source="CHINA" target="SOLAR" />
+    <edge source="CHINA" target="WIND" />
+    <edge source="HEATWAVES" target="AIR CONDITIONERS" />
+    <edge source="HEATWAVES" target="GLOBAL ELECTRICITY DEMAND" />
+    <edge source="HEATWAVES" target="RECORD-BREAKING TEMPERATURES" />
+    <edge source="ELECTRIFICATION" target="GLOBAL ELECTRICITY DEMAND" />
+    <edge source="ELECTRIFICATION" target="STRUCTURAL SHIFT IN ENERGY DEMAND" />
+    <edge source="AI" target="GLOBAL ELECTRICITY DEMAND" />
+    <edge source="AI" target="STRUCTURAL SHIFT IN ENERGY DEMAND" />
+    <edge source="GLOBAL ELECTRICITY DEMAND" target="CRYPTO MINING" />
+    <edge source="RENEWABLE ENERGY" target="CLEAN ELECTRICITY" />
+    <edge source="CLEAN ELECTRICITY" target="WIND ENERGY" />
+    <edge source="CLEAN ELECTRICITY" target="HYDRO ENERGY" />
+    <edge source="CLEAN ELECTRICITY" target="NUCLEAR ENERGY" />
+    <edge source="CLEAN ELECTRICITY" target="RENEWABLES" />
+    <edge source="CLEAN ELECTRICITY" target="EXTREME HEAT" />
+    <edge source="CLEAN ELECTRICITY" target="GLOBAL ELECTRICITY MIX" />
+    <edge source="CLEAN ELECTRICITY" target="ENERGY STORAGE SOLUTIONS" />
+    <edge source="CLEAN ELECTRICITY" target="SOLAR" />
+    <edge source="CLEAN ELECTRICITY" target="CLEAN TECH" />
+    <edge source="CLEAN ELECTRICITY" target="FOSSIL FUELS" />
+    <edge source="CLEAN ELECTRICITY" target="ENERGY SECURITY" />
+    <edge source="RENEWABLES" target="SOLAR" />
+    <edge source="RENEWABLES" target="WIND" />
+    <edge source="RENEWABLES" target="ENERGY STORAGE SOLUTIONS" />
+    <edge source="RENEWABLES" target="ENERGY SECURITY" />
+    <edge source="EXTREME HEAT" target="FOSSIL FUELS" />
+    <edge source="EXTREME HEAT" target="GLOBAL WARMING" />
+    <edge source="PAKISTAN" target="THERMAL POWER CONTRACTS" />
+    <edge source="PAKISTAN" target="SOLAR PANELS" />
+    <edge source="ROOFTOP SOLAR" target="SOLAR PANELS" />
+    <edge source="GLOBAL ELECTRICITY MIX" target="HYDROPOWER" />
+    <edge source="GLOBAL ELECTRICITY MIX" target="WIND" />
+    <edge source="HYDROPOWER" target="RAINFALL" />
+    <edge source="WIND" target="WEAKER WINDS" />
+    <edge source="ENERGY STORAGE SOLUTIONS" target="CLEAN TECH" />
+    <edge source="CLEAN TECH" target="PHIL MACDONALD" />
+    <edge source="US" target="GAS GENERATION" />
+    <edge source="SPECIAL ADDITIONAL EXCISE DUTY" target="PETROL" />
+    <edge source="SPECIAL ADDITIONAL EXCISE DUTY" target="DIESEL" />
+    <edge source="SPECIAL ADDITIONAL EXCISE DUTY" target="DOMESTIC LPG CYLINDERS" />
+    <edge source="PETROL" target="OIL MARKETING COMPANIES (OMCS)" />
+    <edge source="DIESEL" target="OIL MARKETING COMPANIES (OMCS)" />
+    <edge source="DOMESTIC LPG CYLINDERS" target="PMUY BENEFICIARIES" />
+    <edge source="DOMESTIC LPG CYLINDERS" target="OIL MARKETING COMPANIES (OMCS)" />
+    <edge source="SHRIRAM FINANCE LTD." target="RESERVE BANK OF INDIA" />
+    <edge source="RESERVE BANK OF INDIA" target="SOVEREIGN BOND MARKET" />
+    <edge source="SOVEREIGN BOND MARKET" target="FEDERAL GOVERNMENT BONDS" />
+    <edge source="PLI SCHEME" target="SMARTPHONE EXPORTS" />
+    <edge source="SMARTPHONE EXPORTS" target="MARCH IPHONE SHIPMENTS" />
+    <edge source="SMARTPHONE EXPORTS" target="JANUARY IPHONE SHIPMENTS" />
+    <edge source="SMARTPHONE EXPORTS" target="FEBRUARY IPHONE SHIPMENTS" />
+  </graph>
+</graphml>
