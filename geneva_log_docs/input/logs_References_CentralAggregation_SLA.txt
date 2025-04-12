@@ -1,0 +1,32 @@
+# Central Derived Event Processing Limits and SLA
+
+>[!IMPORTANT]
+> Central Derived Events for non-billing events are deprecated and no longer supported.
+
+As the CDE pipeline is being leveraged by several Microsoft teams, regardless of the source event all jobs must abide by certain limits to ensure pipeline health and fairness to other customers and their jobs.
+
+## Limits
+
+- No more than 1,000 central scheduled aggregation jobs per hour and service
+- Each job processes no more than 1 million source events if it uses JOIN or VAR operators and no more than 20 million rows otherwise
+- Each group contains no more than 300k rows when groupby is used
+- Each job outputs no more than 0.5 million rows
+- Jobs are validated successfully in the Geneva Logs **TEST** environment
+
+## SLA:
+The CDE pipeline supports a job processing SLA of 99.9% of jobs completing on time within the bounds of their specified iteration period.
+
+The specified SLA applies to jobs that adhere to the defined limits and  
+  - complete within their iteration period **IF** iteration period > 15 minutes
+  - complete within 15 minutes **IF** iteration period < 15 minutes
+
+
+
+
+
+
+
+
+
+
+

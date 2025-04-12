@@ -1,0 +1,27 @@
+# What are Logs?
+Geneva Logs collects diagnostic, audit and security logs from your service. Log collection is supported in both Windows and Linux platforms. In addition, log collection is supported in Service Fabric, PaaS v1 services, Azure Web Service apps, Linux and Windows containers, Autopilot and baremetal environments. On Windows platform Geneva Logs enable easy collection of ETW events, performance counters, IFx logs, IIS logs and text logs. On Linux platform rsyslog, OMI data collection are supported. In addition, JSON and BOND format data can be directly ingested to Linux agent. Refer to the [Collect section][Collect] for a complete list of supported environments and log collection capabilities of Geneva Logs. 
+
+> [!NOTE]
+> Geneva Logs is also referred to by it previous name of Geneva Warm Path, and yet older name of MDS, in parts of the Geneva services, applications, documentation, code samples etc. These are equivalent to each other. Over time we will converge on the new terminology. 
+
+## Why use Geneva Logs?
+
+### Meet your diagnostics, audit and security requirements
+Diagnostic logs are critical for your DRIs to drill down on failures and understand/debug your service behavior at run time. In addition, by enabling audit and security logs collection by using Azure Security Pack, which is natively integrated with Geneva log collection, you will benefit from Azure-wide security monitoring and auditing that is provided by Azure Security team. 
+
+### Diagnostics applications
+Geneva provides a rich collection of diagnostic applications out-of-box in [Jarvis portal][JarvisPortal]. Geneva provided applications include Log Search (aka DGrep) and Node Diagnostics. In addition, Geneva integrates natively with partner teams to enable crashdump monitoring through Azure Watson, and performance monitoring through Azure Profiler.  
+
+### Cross-service integrations
+Geneva integrates with other services, both upstream and downstream, to stream monitoring data to and from these services. These services include Kusto, Cosmos, Geneva Metrics, Application Insights and Aria. For a detailed look at all the data connectors supported by Geneva refer to the [Connectors][Connectors] section. 
+
+### Next steps
+Review the Concepts to understand the basics about collecting logs for your service and managing access to them. 
+Follow our guide to [see your first log][SeeYourFirstLog].
+
+<!-- Reference Links -->
+[Collect]: ../collect/overview.md "Collection capabilities"
+[JarvisPortal]: https://aka.ms/Jarvis "Jarvis portal"
+[DiagnosticApps]: ../diagnostics_apps/intro.md "Diagnostic applications"
+[Connectors]: ../connectors/intro.md "Data connectors"
+[SeeYourFirstLog]: ./firstlog.md "See your first log"

@@ -1,0 +1,65 @@
+# dSTS Corp Lockdown and Changes to Domain Access for Logs Management
+**dSTS** is removing corp account (e.g., @microsoft.com) sign-in, which impacts the ability to view or edit Geneva Logs-related configuration through the Geneva Portal or Logs clients (mds.exe, Warm Path cmdlets, or DGrep SDK). 
+The tentative date for this lockdown is April 30th, 2024. Please follow the steps below to ensure you still have access to your account.
+
+### Actions needed
+* Add users or Security Groups from either \*ME or Torus production domains in the Admin group to retain access. Visit the [Logs Account Settings page in the Geneva Portal](https://portal.microsoftgeneva.com/account/logs/configurations) or use [PowerShell cmdlets](https://eng.ms/docs/products/geneva/logs/howtoguides/powershell) `Set-WarmPathUserRole` to add this. Make sure there is at least one *ME account added to the list. [Further guidance and FAQ on this step is here](https://identitydivision.visualstudio.com/IdentityWiki/_wiki/wikis/IdentityWiki.wiki/42165/Geneva-Logs-Accounts).
+
+![Account Tab](../images/AccountsTab.png)
+ 
+* If you dont have a *ME/Torus account, follow the instructions to get this for your org [Account Creation](https://dev.azure.com/msazure/AzureWiki/_wiki/wikis/AzureWiki.wiki/29758/Account-Creation-and-Security-Devices-for-MFA)
+* For those who cannot obtain production accounts, there is a set of changes that the central team is currently working on to provide continued access for corp accounts for Public Logs endpoints (ETA May 30th). This will provide UI-only support; no updates to user-authenticated tooling currently have an ETA. The set of pages in the Geneva Portal that this pathway that are impacted by this lockdown, and that the continued support will gradually enable:
+    * Logs management pages (configuration management, account management) 
+    * Logs-to-Metrics rule management 
+    * Onboarding
+    * GitOps onboarding for Logs 
+    * Logs troubleshooting 
+    * Agent Explorer 
+    * Agent Update 
+    * Test Standing Query
+    * Editing DGrep Enrichment in Monitors
+
+If you require more information or have questions that will prevent you from moving to \*ME/Torus production access for Logs Management, please use the  [Logs Infrastructure and Management](https://teams.microsoft.com/l/channel/19%3Aac95169b5f744409944749123f597c0e%40thread.skype/Logs%20Infrastructure%20and%20Management?groupId=5658f840-c680-4882-93be-7cc69578f94e&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) Teams channel. 
+
+**Note** this change does **not** affect DGrep UI corp access for Public endpoints which will continue to work as before. Non-UI uses of DGrep with user authentication through the DGrep **SDK** are impacted, and [SDK](https://eng.ms/docs/products/geneva/logs/references/dgrepsdk/sdk) access will not operate through corp.
+
+
+**Note** If you have used "Switch Account" to switch to Prod identies (Torus, *ME) in the profile picker in Jarvis, and would like to move back to your **corp AAD account**, you need to clear your [cookies](https://eng.ms/docs/products/geneva/logs/troubleshooting/tshootauth) or open a new browser tab. There is a set of changes that the team is working to switch between AAD and dSTS auth pathways. (ETA June 30th)
+
+
+# dSTS IP Restriction impact on Logs Management
+
+**dSTS** has removed all dSTS instances from the Internet and locked down endpoints to only CORP or SAW clients. dSTS will start enforcing IP restrictions on December 7th, 2023 (subject to change) which will impact remote users using dSTS to authenticate to the Geneva Portal or client tools. With this change, you can only be able to use dSTS auth if you are on a SAW, use Azure VPN, or if you are physically in the Microsoft campus, accessing via a corp machine. Entra ID  authentication in Jarvis is not impacted with this change.
+
+### Who is impacted by the dSTS lockdown
+Non-Corp users who do not have a SAW machine or have not set up [Azure VPN](https://aka.ms/azvpn-onboard-rqst) in their client machine cannot Jarvis Logs Management Pages and Onboarding. This applies to users from Torus, CME, GME, MSFTGreen, USME, ANME, and DCME domains.
+
+The scope of the impact does not include **DGrep UI access** with CORP credentials in Public Endpoints. There should be no login prompt when accessing the DGrep UI, if you are logged in with AAD. However, access to DGrep is in scope for non-Public endpoints with non-corp Credentials.
+
+Almost all users from domains, such as AME and PME, are on SAW devices which will continue to have access. Users who are on a CORP machine (in a office physical location) do not need AzureVPN on their machines to access Jarvis.
+
+### When did the lockdown start ?
+The lockdown started mid-December, 2023.
+
+# FAQ
+
+### I am having issues logging into the Jarvis Portal. What should I do?
+Please connect your device with AzureVPN to access Geneva Logs. If AzureVPN is not already installed in your machine, you can request onboarding to Azure VPN at https://aka.ms/azvpn-onboard-rqst. Learn more on AzureVPN at [aka.ms/AzureVPN](https://aka.ms/AzureVPN).
+
+If you are connected to Azure VPN or using SAW and still seeing Auth issues, try following DGrep [Troubleshooting steps here](https://eng.ms/docs/products/geneva/logs/troubleshooting/tshootauth).
+
+You can choose to install [Remote DevBox](https://devbox.microsoft.com/) to enable Corp Access remotely.
+
+### I am having issues logging into the Logs Manage Pages, Logs to Metrics, Onboarding pages, Agent Explorer, Monitor DGrep Enrichment?
+Follow the steps above to log on to Azure VPN to unblock.
+If you have followed the steps above, please look into additional [Security Groups Membership](https://eng.ms/docs/products/geneva/logs/howtoguides/manageconfig/securitygroups) to see if your Token has the correct permissions to access these.
+
+
+### I can't login with Torus credential with a non-corp and non-SAW machine
+Follow the steps above to log on to Azure VPN. Refer to the links below for Torus Onboarding.
+
+* Torus Onboarding : https://aka.ms/torusonboarding  
+* [Torus Office Hours](https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODU3MTljMjgtNTgwNC00M2JjLTllZjctNGVkOThjMzM1ODI0%40thread.v2/0?context=%7b%22Tid%22%3a%2272f988bf-86f1-41af-91ab-2d7cd011db47%22%2c%22Oid%22%3a%22791b6e35-5a03-428f-a494-aa4aa9bea17a%22%7d) on Tuesdays at 9am PST  
+
+### My S360 item for adding a produdction account is due 6/30 but this is due 4/30, what is going on?
+dSTS lockdown was accelerated due to a security compliance push. [Learn More](https://identitydivision.visualstudio.com/IdentityWiki/_wiki/wikis/IdentityWiki.wiki/42165/Geneva-Logs-Accounts)

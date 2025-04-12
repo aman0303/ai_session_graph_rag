@@ -1,0 +1,35 @@
+# How do I delete a Logs namespace?
+
+### Using Jarvis UI
+To delete Logs namespace from Jarvis UI, Navigate to the [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select the respective endpoint & account for namespace you are trying to delete -> **Namespaces** tab.
+
+> [!IMPORTANT]  
+> You need to be an account admin to perform this operation. If you don't have access to the account, please see [this][AccessTroubleshoot] documentation to find the owners of the account to gain access.
+
+![Delete Namespace][DeleteNamespace]
+
+To delete the namespace, you need to delete all its assets first in the same (below) order: 
+1. Account Configurations
+    -  Please follow [this](../../FAQ/ConfigFAQ.md#3-how-do-i-delete-logs-account-configuration) documentation to delete configurations for a namespace
+2. Storage Groups/Monikers
+    - For GSM accounts, please follow [this](./monikerdelete.md#how-to-delete-a-geneva-storage-management-gsm-moniker) documentation to delete Storage Groups
+    - For GCS (Non GSM) accounts, please follow [this](./monikerdelete.md#how-to-delete-non-gsm-monikers) documentation to delete Monikers
+3. Agent claim for namespace  
+    - Please follow [this](../../troubleshooting/tshoot.md#unable-to-delete-namespace-remove-agent-claim) documentation to delete Agent claim for your namespace 
+       
+Please wait for 5-10 minutes after deletion of the assets and then delete the namespace by clicking on **X** button
+
+
+### Using Powershell Cmdlets
+This functionality can also be achieved in CLI through Geneva Logs [Powershell Cmdlets][GenevaLogsCmdlets]. Please follow these steps mentioned in [documentation](../powershell.md#delete-a-namespace) in that specific order for deletion of namespace through Powershell.
+
+
+<!-- Reference links -->
+[GenevaLogsCmdlets]: ../powershell.md "Geneva Logs Cmdlets"
+[LogsAccount]: https://portal.microsoftgeneva.com/account/logs "Logs Account"
+[AccessTroubleshoot]: ../../troubleshooting/tshoot.md#how-to-find-logs-account-owners-administrators "Troubleshooting Access"
+
+
+<!-- Image links -->
+[DeleteNamespace]: ../images/DeleteNamespace.png "Delete Namespace"
+

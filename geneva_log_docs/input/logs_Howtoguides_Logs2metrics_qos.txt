@@ -1,0 +1,69 @@
+# Quality of Service Dashboard
+
+To check the health of your conversion rules, you can view the LogsToMetricsQos dashboard.
+
+This dashboard helps understand and diagnose the Logs To Metrics connector service.
+ It gives an overview of:
+
+* Service usage per Geneva Logs namespace
+* Performance and latencies
+* Processing failures
+* Throttling
+
+To access this dashboard, follow these steps:
+
+1. Go to [Manage->Connectors->Logs to metrics](https://portal.microsoftgeneva.com/?page=settings&mode=connectors&tab=dgrep)
+2. Select an *endpoint*.
+3. Select a Geneva Logs *namespace* containing your LTM rules.
+4. Click on **Rule Health** link for a rule whose health you want to observe.
+
+## *Usage* section
+
+The *Usage* section of the dashboard shows the following charts:
+
+1. **Processed blobs/s** : The number of blobs processed per second by the LogsToMetrics connector service for each Geneva Logs namespace.
+2. **Processed bytes/s** : The number of bytes processed per second by the LogsToMetrics connector service for each Geneva Logs namespace.
+3. **Consumed computation units/s** : The number of computation units consumed per second by each LogsToMetrics rule. A computation unit is equivalent to a millisecond of CPU time.
+4. **Published metrics/s** : The number of metrics published to Geneva Metrics service per second by each LogsToMetrics rule.
+
+## *Throttling* section
+
+The *Throttling* section of the dashboard shows the following charts:
+
+1. **Throttled blobs/s** : The number of blobs throttled per second by the LogsToMetrics connector service for each Geneva Logs namespace.
+2. **Throttled bytes/s** : The number of bytes throttled per second by the LogsToMetrics connector service for each Geneva Logs namespace.
+3. **Throttled computation units/s** : The estimated number of computation units throttled per second for each LogsToMetrics rule. A computation unit is equivalent to a millisecond of CPU time.
+4. **Throttled metrics/s** : The estimated number of metrics throttled per second for each LogsToMetrics rule.
+
+See [Limits and Quotas](./quota.md), for more details about throttling.
+
+## *Latency* section
+
+The *Latency* section of the dashboard shows the following charts:
+
+1. **Rule processing time** : Time spent running a rule against the contents of a blob. This is a product of the average blob size and the rule's computational complexity.
+2. **Blob processing time** : Time spent processing each blob. This includes the time spent downloading the blob from storage and the rule processing time.
+3. **Geneva latency per blob** : Time elapsed from the moment a blob is uploaded to Geneva until the corresponding metrics are published to Geneva Metrics. This includes the blob processing time and queueing time.
+4. **End-to-end metric latency** : Average time spent from the moment a log event is emitted from your service until the corresponding metrics are published to Geneva Metrics. This includes the Geneva latency per blob and the blob upload period.
+
+>[!Note]  
+>This metric relies on the timestamp contained in the log event, so it is only as accurate as the timestamps provided by your service.  
+>
+## *Processing failures* section
+
+The *Processing failures* section shows the following charts:
+(Note, please, see our [troubleshooting documentation](../../Troubleshooting/L2Mtroubleshooting.md) for help fixing some of these errors).
+
+1. **Metric publishing failures** : The number of metrics that failed to be emitted, along with a status code. These are the possible status codes:
+   * *OldMetric*: The metric timestamp is more than 20 minutes in the past.
+   * *FutureMetric*: The metric timestamp is more than 5 minutes in the future.
+   * *NullDimension*: A dimension value was null or empty.
+   * *LongDimension*: A dimension value length is greater than the maximum allowed (1024 characters).
+   * *NegativeMetricValue*: The metric value was negative.
+   * *MetricValueOverflow*: The metric value is greater than the maximum allowed (Int64.MaxValue).
+2. **Rule processing failures** : The number of failures while trying to apply a rule to a blob, along with a status code. These are the possible status codes:
+     * *ParsingError*: There was an error parsing the rule.
+     * *PropertyNotPresent*: A property specified in the rule does not exist in the blob.
+     * *NoTimePropertyDefined*: The rule output contains no timestamp column (please, see our [documentation](gettingstarted.md) about defining rules).
+     * *NoMetricDefined*: The rule output contains no metric column (please, see our [documentation](gettingstarted.md) about defining rules).
+3. **Blob processing failures** : The number of failures while trying to process a blob. These errors should be rare and usually indicate an issue deserializing the blob. If you see these errors and are unsure about the cause, please, contact [Geneva Support](https://aka.ms/genevasupport).

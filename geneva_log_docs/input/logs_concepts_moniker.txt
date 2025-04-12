@@ -1,0 +1,4 @@
+# What is a moniker?
+In Geneva Monitoring, a moniker is a logical pairing of an Azure storage account and an Event Hub namespace. Storage and transfer of logs depends on the presence of both of these components. 
+
+If your account is [Geneva Storage Management (GSM) enabled](../Howtoguides/Manageaccount/gsm_gcsenabled.md), GSM will provision and manage monikers on your behalf.

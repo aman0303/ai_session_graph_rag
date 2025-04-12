@@ -1,0 +1,307 @@
+# KQL
+
+
+
+KQL is the language used in Kusto and is also available to third party customers through [Azure Data Explorer](https://azure.microsoft.com/en-us/services/data-explorer/). We plan to adopt KQL as the main query language for all Geneva services, starting with DGrep.
+
+## Language reference
+
+The definitive reference for KQL is found [here](https://kusto.azurewebsites.net/docs/kusto/query/index.html).
+
+## Example
+
+Here is an example of a KQL query:
+
+```javascript
+source
+| where ActivityId == "383112e4-a7a8-4b94-a701-4266dfc18e41"
+| project PreciseTimeStamp, Message
+```
+
+The identifier `source` denotes the source data being queried. In a server query, source represents the table(s), time range and scoping conditions selected in the UI. In a client query, `source` represents the data produced by the server query.
+
+## The subset of KQL available in DGrep
+
+Geneva currently supports a subset of the full Kusto language. This subset covers all main capabilities expected of a query language and we plan to keep expading it in the future. This section lists the operators and functions available in DGrep. 
+
+> [!Note]  
+> If an operator or function is not listed here, it means we do not support it in DGrep yet. If you would like a specific operator or function to be added in DGrep, please [add or upvote on UserVoice](https://cloudes.uservoice.com/forums/364053-geneva-monitoring)
+
+### Query Statements
+
+ 1.  [let statement](https://kusto.azurewebsites.net/docs/kusto/query/let-statement.html)
+
+     The right-hand side of let can be a scalar expression, a tabular expression or a [user-defined function](https://kusto.azurewebsites.net/docs/kusto/query/functions/user-defined-functions.html). However, we only support user-defined functions with scalar arguments.
+
+ 1.  [tabular expression statement](https://kusto.azurewebsites.net/docs/kusto/query/tabular-expression-statements.html)
+
+     The only data sources supported are these:
+
+      *  source: In a server query, source represents the table(s), time range and scoping conditions selected in the UI; in a client query, source represents the data produced by the server query. For example:
+    
+            ```javascript
+            source
+            | where ActivityId == "383112e4-a7a8-4b94-a701-4266dfc18e41"
+            | project PreciseTimeStamp, Message
+            ```
+
+      *  print operator, which always produces a single row. For example:
+
+            ```javascript
+            print x = 2 + 2, y = 5
+            | extend z = exp2(x) + exp2(y)
+            ```
+
+### Tabular Operators
+ 1.  [extend](https://kusto.azurewebsites.net/docs/kusto/query/extend-operator.html)
+ 1.  [limit or take](https://kusto.azurewebsites.net/docs/kusto/query/take-operator.html)
+ 1.  [mvexpand](https://kusto.azurewebsites.net/docs/kusto/query/mv-expand-operator.html) (In DGREP KQL, use mvexpand instead of mv-expand)
+ 1.  [order or sort](https://kusto.azurewebsites.net/docs/kusto/query/sort-operator.html)
+ 1.  [project](https://kusto.azurewebsites.net/docs/kusto/query/project-operator.html)
+ 1.  [print](https://kusto.azurewebsites.net/docs/kusto/query/print-operator.html)
+ 1.  [summarize](https://kusto.azurewebsites.net/docs/kusto/query/summarize-operator.html) (please read [Server Side Query -> Distributed Nature](../../concepts/serverquery.md#distributed-nature) first.)
+ 1.  [where](https://kusto.azurewebsites.net/docs/kusto/query/where-operator.html)
+ 1.  [parse](https://kusto.azurewebsites.net/docs/kusto/query/parse-operator.html)
+ 1.  [project-away](https://kusto.azurewebsites.net/docs/kusto/query/project-away-operator.html)
+ 1.  [project-rename](https://kusto.azurewebsites.net/docs/kusto/query/project-rename-operator.html)
+ 1.  [columnifexists](https://kusto.azurewebsites.net/docs/kusto/query/column-ifexists-function.html) (In DGREP KQL, use columnifexists instead of column_ifexists)
+ 1.  [categorize](categorize.md) (this operator is only available for DGREP KQL.)
+ 1.  [join](https://kusto.azurewebsites.net/docs/kusto/query/join-operator.html#inner-join-flavor) (In DGREP KQL, inner join is the only supported type)
+
+### Scalar Operators
+
+ 1.  [Numerical Operators](https://kusto.azurewebsites.net/docs/kusto/query/numerical-operators.html)
+     
+     Full parity with Kusto.
+
+ 1.  [Date & Time Arithmetic Operators](https://kusto.azurewebsites.net/docs/kusto/query/datetime-timespan-arithmetic.html)
+     
+     Full parity with Kusto.
+
+ 1.  [String Operators](https://kusto.azurewebsites.net/docs/kusto/query/datatypes-string-operators.html)
+     
+     *	 ==
+     *   !=
+     *   =~
+     *   !~
+     *   contains
+     *   !contains
+     *   contains_cs
+     *   !contains_cs
+     *   startswith
+     *   !startswith
+     *   startswith_cs
+     *   !startswith_cs
+     *   endswith
+     *   !endswith
+     *   endswith_cs
+     *   !endswith_cs
+     *   matches regex
+     *   in
+     *   !in
+
+ 1.  [Bitwise operators](https://kusto.azurewebsites.net/docs/kusto/query/bin-operators.html): 
+	 *  binary_and()
+	 *  binary_or()
+	 *  binary_xor()
+	 *  binary_not()
+	 *  binary_shift_left()
+	 *  binary_shift_right()
+    
+### Scalar Functions
+
+ 1.  Bitwise
+
+     *  [binary_and](https://kusto.azurewebsites.net/docs/kusto/query/binary-andfunction.html)
+     *  [binary_or](https://kusto.azurewebsites.net/docs/kusto/query/binary-orfunction.html)
+     *  [binary_not](https://kusto.azurewebsites.net/docs/kusto/query/binary-notfunction.html)
+     *  [binary_shift_left](https://kusto.azurewebsites.net/docs/kusto/query/binary-shift-leftfunction.html)
+     *  [binary_shift_right](https://kusto.azurewebsites.net/docs/kusto/query/binary-shift-rightfunction.html)
+     *  [binary_xor](https://kusto.azurewebsites.net/docs/kusto/query/binary-xorfunction.html)
+
+ 1.  Conversion
+
+     *  [tobool](https://kusto.azurewebsites.net/docs/kusto/query/toboolfunction.html)
+     *  [todatetime](https://kusto.azurewebsites.net/docs/kusto/query/todatetimefunction.html)
+     *  [todouble/toreal](https://kusto.azurewebsites.net/docs/kusto/query/todoublefunction.html)
+     *  [toguid](https://kusto.azurewebsites.net/docs/kusto/query/toguid.html)
+     *  [toint](https://kusto.azurewebsites.net/docs/kusto/query/toint.html)
+     *  [tolong](https://kusto.azurewebsites.net/docs/kusto/query/tolong.html)
+     *  [tostring](https://kusto.azurewebsites.net/docs/kusto/query/tostringfunction.html)
+     *  [totimespan](https://kusto.azurewebsites.net/docs/kusto/query/totimespanfunction.html)
+
+ 1.  DateTime/TimeSpan
+
+     *  [ago](https://kusto.azurewebsites.net/docs/kusto/query/agofunction.html)
+     *  [datetime_add](https://kusto.azurewebsites.net/docs/kusto/query/datetime-addfunction.html)
+     *  [datetime_diff](https://kusto.azurewebsites.net/docs/kusto/query/datetime-difffunction.html)
+     *  [datetime_part](https://kusto.azurewebsites.net/docs/kusto/query/datetime-partfunction.html)
+     *  [dayofmonth](https://kusto.azurewebsites.net/docs/kusto/query/dayofmonthfunction.html)
+     *  [dayofweek](https://kusto.azurewebsites.net/docs/kusto/query/dayofweekfunction.html)
+     *  [dayofyear](https://kusto.azurewebsites.net/docs/kusto/query/dayofyearfunction.html)
+     *  [endofday](https://kusto.azurewebsites.net/docs/kusto/query/endofdayfunction.html)
+     *  [endofmonth](https://kusto.azurewebsites.net/docs/kusto/query/endofmonthfunction.html)
+     *  [endofweek](https://kusto.azurewebsites.net/docs/kusto/query/endofweekfunction.html)
+     *  [endofyear](https://kusto.azurewebsites.net/docs/kusto/query/endofyearfunction.html)
+     *  [getmonth](https://kusto.azurewebsites.net/docs/kusto/query/getmonthfunction.html)
+     *  [getyear](https://kusto.azurewebsites.net/docs/kusto/query/getyearfunction.html)
+     *  [hourofday](https://kusto.azurewebsites.net/docs/kusto/query/hourofdayfunction.html)
+     *  [make_datetime](https://kusto.azurewebsites.net/docs/kusto/query/make-datetimefunction.html)
+     *  [make_timespan](https://kusto.azurewebsites.net/docs/kusto/query/make-timespanfunction.html)
+     *  [now](https://kusto.azurewebsites.net/docs/kusto/query/nowfunction.html)
+     *  [startofday](https://kusto.azurewebsites.net/docs/kusto/query/startofdayfunction.html)
+     *  [startofmonth](https://kusto.azurewebsites.net/docs/kusto/query/startofmonthfunction.html)
+     *  [startofweek](https://kusto.azurewebsites.net/docs/kusto/query/startofweekfunction.html)
+     *  [startofyear](https://kusto.azurewebsites.net/docs/kusto/query/startofyearfunction.html)
+     *  [todatetime](https://kusto.azurewebsites.net/docs/kusto/query/todatetimefunction.html)
+     *  [totimespan](https://kusto.azurewebsites.net/docs/kusto/query/totimespanfunction.html)
+     *  [weekofyear](https://kusto.azurewebsites.net/docs/kusto/query/weekofyearfunction.html)
+
+ 1.  Dynamic/Array
+
+     *  [array_concat](https://kusto.azurewebsites.net/docs/kusto/query/arrayconcatfunction.html)
+     *  [array_length](https://kusto.azurewebsites.net/docs/kusto/query/arraylengthfunction.html)
+     *  [pack_array](https://kusto.azurewebsites.net/docs/kusto/query/packarrayfunction.html)
+     *  [pack](https://kusto.azurewebsites.net/docs/kusto/query/packfunction.html)
+     *  [parse_json](https://kusto.azurewebsites.net/docs/kusto/query/parsejsonfunction.html)
+     *  [parse_xml](https://kusto.azurewebsites.net/docs/kusto/query/parse-xmlfunction.html)
+     *  [zip](https://kusto.azurewebsites.net/docs/kusto/query/zipfunction.html)
+
+ 1.  Mathematical
+
+     *  [abs](https://kusto.azurewebsites.net/docs/kusto/query/abs-function.html)
+     *  [bin/floor](https://kusto.azurewebsites.net/docs/kusto/query/binfunction.html)
+     *  [ceiling](https://kusto.azurewebsites.net/docs/kusto/query/ceilingfunction.html)
+     *  [exp](https://kusto.azurewebsites.net/docs/kusto/query/exp-function.html)
+     *  [exp10](https://kusto.azurewebsites.net/docs/kusto/query/exp10-function.html)
+     *  [exp2](https://kusto.azurewebsites.net/docs/kusto/query/exp2-function.html)
+     *  [isfinite](https://kusto.azurewebsites.net/docs/kusto/query/isfinitefunction.html)
+     *  [isinf](https://kusto.azurewebsites.net/docs/kusto/query/isinffunction.html)
+     *  [isnan](https://kusto.azurewebsites.net/docs/kusto/query/isnanfunction.html)
+     *  [log](https://kusto.azurewebsites.net/docs/kusto/query/log-function.html)
+     *  [log10](https://kusto.azurewebsites.net/docs/kusto/query/log10-function.html)
+     *  [log2](https://kusto.azurewebsites.net/docs/kusto/query/log2-function.html)
+     *  [pow](https://kusto.azurewebsites.net/docs/kusto/query/powfunction.html)
+     *  [round](https://kusto.azurewebsites.net/docs/kusto/query/roundfunction.html)
+     *  [sign](https://kusto.azurewebsites.net/docs/kusto/query/signfunction.html)
+
+ 1.  Conditional
+
+     *  [case](https://kusto.azurewebsites.net/docs/kusto/query/casefunction.html)
+     *  [iif](https://kusto.azurewebsites.net/docs/kusto/query/iiffunction.html)
+     *  [max_of](https://kusto.azurewebsites.net/docs/kusto/query/max-offunction.html)
+     *  [min_of](https://kusto.azurewebsites.net/docs/kusto/query/min-offunction.html)
+
+ 1.  String
+
+     *  [base64_encodestring](https://kusto.azurewebsites.net/docs/kusto/query/base64_encode_tostringfunction.html) (In DGREP KQL, use base64_encodestring instead of base64_encode_tostring)
+     *  [base64_decodestring](https://kusto.azurewebsites.net/docs/kusto/query/base64_decode_tostringfunction.html) (In DGREP KQL, use base64_decodestring instead of base64_decode_tostring)
+     *  [countof](https://kusto.azurewebsites.net/docs/kusto/query/countoffunction.html)
+     *  [extract](https://kusto.azurewebsites.net/docs/kusto/query/extractfunction.html) 
+     *  [extractall](https://kusto.azurewebsites.net/docs/kusto/query/extractallfunction.html) (In DGREP KQL, use extractall instead of extract_all)
+     *  [indexof](https://kusto.azurewebsites.net/docs/kusto/query/indexoffunction.html)
+     *  [isempty](https://kusto.azurewebsites.net/docs/kusto/query/isemptyfunction.html)
+     *  [isnotempty](https://kusto.azurewebsites.net/docs/kusto/query/isnotemptyfunction.html)
+     *  [parse_json](https://kusto.azurewebsites.net/docs/kusto/query/parsejsonfunction.html)
+     *  [parse_xml](https://kusto.azurewebsites.net/docs/kusto/query/parse-xmlfunction.html)
+     *  [split](https://kusto.azurewebsites.net/docs/kusto/query/splitfunction.html)
+     *  [strcat](https://kusto.azurewebsites.net/docs/kusto/query/strcatfunction.html)
+     *  [strcat_delim](https://kusto.azurewebsites.net/docs/kusto/query/strcat-delimfunction.html)
+     *  [strlen](https://kusto.azurewebsites.net/docs/kusto/query/strlenfunction.html)
+     *  [substring](https://kusto.azurewebsites.net/docs/kusto/query/substringfunction.html)
+     *  [tolower](https://kusto.azurewebsites.net/docs/kusto/query/tolowerfunction.html)
+     *  [toupper](https://kusto.azurewebsites.net/docs/kusto/query/toupperfunction.html)
+     *  [hash_sha256](https://kusto.azurewebsites.net/docs/kusto/query/sha256hashfunction.html)
+
+ 1.  Type
+
+     *  [gettype](https://kusto.azurewebsites.net/docs/kusto/query/gettypefunction.html)
+     *  [isnotnull](https://kusto.azurewebsites.net/docs/kusto/query/isnotnullfunction.html)
+     *  [isnull](https://kusto.azurewebsites.net/docs/kusto/query/isnullfunction.html)
+     
+### Aggregation Functions
+
+ *  [avg](https://kusto.azurewebsites.net/docs/kusto/query/avg-aggfunction.html)
+ *  [count](https://kusto.azurewebsites.net/docs/kusto/query/count-aggfunction.html)
+ *  [countif](https://kusto.azurewebsites.net/docs/kusto/query/countif-aggfunction.html)
+ *  [dcount](https://kusto.azurewebsites.net/docs/kusto/query/dcount-aggfunction.html) (In DGrep KQL, dcount does not support the Accuracy argument and is 100% accurate)
+ *  [dcountif](https://kusto.azurewebsites.net/docs/kusto/query/dcountif-aggfunction.html)
+ *  [makeset](https://kusto.azurewebsites.net/docs/kusto/query/makeset-aggfunction.html)
+ *  [max](https://kusto.azurewebsites.net/docs/kusto/query/max-aggfunction.html)
+ *  [min](https://kusto.azurewebsites.net/docs/kusto/query/min-aggfunction.html)
+ *  [percentile](https://kusto.azurewebsites.net/docs/kusto/query/percentiles-aggfunction.html)
+ *  [sum](https://kusto.azurewebsites.net/docs/kusto/query/sum-aggfunction.html)
+ *  [any](https://kusto.azurewebsites.net/docs/kusto/query/any-aggfunction.html) (In DGrep KQL, Any supports only one argument)
+
+### Misc features
+
+ 1.  [Identifier quoting](https://kusto.azurewebsites.net/docs/kusto/query/schema-entities/entity-names.html?q=identifier#identifier-quoting)
+
+ 1.  Implicit conversion of dynamic expressions: A scalar expression of type dynamic can be used as an operand or function argument without the need to explicitly cast it to another scalar type.  
+	For example: Assume that ‘product’ is a dynamic column in the source table containing a bag of properties, one of which is ‘price’.  
+	Before, to calculate, say, a discounted price you had to do this:  
+    
+            source
+			| extend discounted_price = toreal(product.price) * 0.90  
+			
+		Now, you can simply do this:
+    
+            source
+			| extend discounted_price = product.price * 0.90 
+
+### Other Differences
+
+KQL in DGrep does not support [dynamic literals](https://kusto.azurewebsites.net/docs/kusto/query/scalar-data-types/dynamic.html#dynamic-literals), as in the following query, for example:
+
+```javascript
+print d=dynamic(
+ -- openCurlyBracket -- 
+"a":123, "b":"hello", "c":[1,2,3], "d":
+ -- openCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+)
+```
+
+You can use the [parse_json](https://kusto.azurewebsites.net/docs/kusto/query/parsejsonfunction.html) function as a workaround, though:
+
+```javascript
+print d=parse_json('
+ -- openCurlyBracket -- 
+"a":123, "b":"hello", "c":[1,2,3], "d":
+ -- openCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+')
+```
+
+
+KQL in DGrep only supports [inner join](https://kusto.azurewebsites.net/docs/kusto/query/joinoperator.html#inner-join-flavor), as in the following two queries, for example:
+
+```javascript
+source 
+| where Name == "Start"
+| project Name, City, SessionId, StartTime = Timestamp
+| join kind = inner (source
+        | where Name == "Stop"
+        | project SessionId, StopTime = Timestamp)
+    on SessionId;
+```
+
+```javascript
+source 
+| where Name == "Start"
+| project Name, City, SessionId, StartTime = Timestamp
+| join (source
+        | where Name == "Stop"
+        | project SessionId, StopTime = Timestamp)
+    on $left.SessionId == $right.SessionId;
+```
+
+> [!NOTE]
+> Inner join operator is only supported in [client queries](https://genevamondocs.azurewebsites.net/logs/concepts/clientquery.html).
+     

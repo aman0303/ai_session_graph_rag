@@ -1,0 +1,136 @@
+# Troubleshooting
+
+
+## Authentication
+### DGrep Search doesn't work in Microsoft Edge and throws the following error in a popup dialog: "Hmm, we can't reach this page".
+
+Reason:
+
+http://blogs.msdn.com/b/ieinternals/archive/2012/03/23/understanding-ie10-enhanced-protected-mode-network-security-addons-cookies-metro-desktop.aspx?Redirected=true has some background about the privateNetworkClientServer app capability which Modern IE (and Microsoft Edge) lack. Adding our site to the trusted sites will resolve this issue.
+
+Steps to Fix:
+* Open Control Panel > Network and Internet > Internet Options
+* Goto Security tab and click on Trusted sites and Click the Sites button to bring up the sites
+* Add the portal url to the list of trusted sites and click on Add and reload the Microsoft Edge browser
+
+> [!NOTE]
+> Add all our test and production URLs listed below so that this works both in test and prod
+> * https://portal-east-int.microsoftgeneva.com/
+> * https://portal-int.microsoftgeneva.com/ 
+> * https://portal-east.microsoftgeneva.com/
+> * https://portal.microsoftgeneva.com/
+
+Please note that we don't recommend use of https://portal-east.microsoftgeneva.com , though the team may sometimes guide users there.
+
+![InternetExplorerImage][InternetExplorerImage]
+
+
+![Add Layer](../images/dgrep_AuthFix.png)
+
+### Having trouble authenticating with a non-Corp account?
+
+If you select a non-Corp account, including AME, GME, or Torus when prompted with a two-factor
+authentication popup, you may see an error message like the following:
+> User account 'genevauser@ame.gbl' from identity provider '...' does not exist in tenant 'Microsoft' and cannot access the application 'http://GenevaMDM/'(Geneva MDM [wsfed enabled]) in that tenant. The account needs to be added as an external user in the tenant first. Sign out and sign in again with a different Azure Active Directory account.
+
+In this case, please navigate to Jarvis using https://aka.ms/jarvis-dsts. This ensures that Jarvis will authenticate you using DSTS rather than to our AAD app, which currently only permits Redmond identities.
+
+### The authentication pop-up goes away, but the "Authenticate to continue" dialog on the portal itself does not
+Please avoid using IE, and try the following:
+
+* Press F12 and on the "Network" tab ensure the "always refresh from server" or "disable cache" option is checked. You may close the resulting window if the authentication window closes
+* Clear your browser's cache
+* Use https://aka.ms/jarvis-dsts
+
+### I am presented with the authentication popup, but something else goes wrong
+In general, please first visit https://tokendiagnosticprod.azurewebsites.net, selecting MSIT-ADFS-Federation *, and verify that you can successfully log in. If not, there may be something wrong with the access method you are using to authenticate; please ensure that you can access this site (escalating to helpdesk if necessary). If you can successfully authenticate to that site, please provide the output shown there when contacting the Geneva team for support.
+
+> [!NOTE]
+> * For Mooncake, https://tokendiagnosticmooncake.azurewebsites.net, with MC-ADFS-Federation
+> * For BlackForest, https://tokendiagnosticblackforest.azurewebsites.net, with BF-ADFS-Federation
+
+### I am trying to access the Kusto tab and am getting an error in the right side pane
+
+Please ensure your cluster name does not include :443 - just use the name without the port, e.g., https://mykustocluster.kusto.windows.net
+
+# Server query errors
+
+## Error executing query: ...
+
+The query could not be parsed or could not be executed on some of the logs. The error message should provide enough details to narrow down the problem. For more information about our query languages, please follow the links below:
+* [KQL documentation](../References/DGrepQueryLanguage/kql.md)
+* [MQL documentation](../References/DGrepQueryLanguage/mql.md)
+
+Here are some common errors:
+####Column having empty or blank records.
+* “Error executing query: No property or field <’column name'> found”
+* "Error executing query: No property or field <'column name'> exists in type 'DynamicClass_4237'"
+* “Error executing query: Failed to run the query on the BLOB: No property or field <'column name'> found”
+* “Error executing query: SemanticError:0x00000006 at 3:8: Undefined symbol: <'column name'>”
+
+DGrep is a distributed service and by design the server query is executed independently on each blob that is uploaded by the Monitoring Agent. Therefore, when any record in a blob misses the column that is being queried, the query fails for the entire blob and shows partial results.
+
+To avoid this, one can assign default/dummy values to blank records using operations on the type of language used.
+* KQL: use tabular operator columnifexists. [KQL documentation](../References/DGrepQueryLanguage/kql.md) 
+* MQL: If you are facing such errors it is recommended to switch to KQL and follow the above KQL documentation.
+* Simple: Simple query language is now translated to KQL. If you are facing such errors it is recommended to switch to KQL and follow the KQL documentation.
+> [!NOTE]
+> You may identify blank records/columns containing blank records by removing all filtering conditions.
+
+
+## Encountered authorization errors in the following storage accounts: ...
+
+DGrep was not able to authenticate to one or more storage accounts using the key contained in the Geneva Logs account. If your storage account is manually managed, this means that either the storage key was not correctly configured in the Geneva Logs account or that the storage key was rotated without being updated in Geneva.
+
+In those cases, the Geneva Logs account administrator should update the storage key in Geneva to resolve the issue. Note, however, that this mitigation might take up to 6 hours to take effect due to caching.
+
+If your storage accounts are managed by Geneva (i.e., through [GSM](../concepts/WhatIsGSM.md)) or if you believe the storage keys are correctly set in your Geneva Logs account, please [contact us](~/support/supportpolicy.md).
+
+## Could not find the following storage accounts: ...
+
+DGrep was not able to resolve the domain name of one of more storage accounts containing the logs to be searched. This likely means that those storage accounts have been deleted by someone with access to the subscription.
+
+To resolve this, the Geneva Logs account administrator must either update the corresponding resource with credentials to a new storage account or remove the resource from the Geneva Logs account. In any case, data that was in the storage account before the deletion is permanently lost.
+
+## Encountered throttling errors in the following storage accounts: ...
+
+DGrep was unable to read logs from storage due to storage throttling. This could mean that those storage accounts are overloaded.
+
+To resolve this, the Geneva Logs account administrator must scale out the Storage Group. If you are seeing this error consistenty and believe the storage account is not overloaded, please [contact us](../../support/supportpolicy.md).
+
+## Encountered connection failures in the following storage accounts: ...
+
+DGrep was unable to connect to one or more storage accounts. This happens when:
+* There is an Azure Storage incident impacting those accounts, or
+* There is an issue in DGrep causing connection failures
+
+The DGrep team monitors these failures and will try to address them if they are caused by DGrep specific issues. If you are getting these errors consistently and you don't believe there is an Azure Storage outage, please [contact us](../../support/supportpolicy.md).
+
+## Found corrupted logs in storage.
+
+DGrep was unable to read data from storage because it was corrupted. This is usually caused by one of the DateTime columns not being in the correct format. Simple query language and KQL enforce a ISO UTC format for DateTime columns. 
+As a short term mitigation queries can be run via MQL. For the long term it is recommended to check where the logs are emited and verify that all DateTime columns are ISO UTC format.
+
+This could also be caused by bugs either in the Monitoring Agent, the Ingestion Gateway or DGrep.
+
+The DGrep team monitors these failures and will try to track down the root cause. If you are unable to search your logs due to this failure and have verified that it is not a DateTime format issue, please [contact us](../../support/supportpolicy.md).
+
+## Encountered an internal server error.
+
+There was an internal server error in DGrep which caused the query to fail partially or completely.
+
+The DGrep team is monitoring these failures and actively trying to eliminate them. If you are unable to search your logs due to this failure, please [contact us](../../support/supportpolicy.md).
+
+## Encountered an internal server error in the following regions: ...
+
+There was an internal server error in DGrep which caused the query to fail partially or completely in a specific region. Search results from other Azure regions should still be accurate and complete.
+
+The DGrep team is monitoring these failures and actively trying to eliminate them. If you are unable to search your logs due to this failure, please [contact us](../../support/supportpolicy.md).
+
+## Reached maximum schema count.
+
+DGrep and other Geneva services impose a limit on the number of schemas per event. This error occurs when more than 255 schemas are detected for a given event in a query. There are many reasons that can cause an excessive number of schemas, but these are the most common ones:
+* The logs are coming from a Linux application instrumented with fluentd and collected by the Linux monitoring agent (MDSD). In some versions of the fluentd SDK, field orders are not deterministic, and that causes a combinatorial explosion in the number of schemas. More details can be found [here](../../collect/instrument/linux/fluentd.md).
+* The logs are coming as schemaless JSON records through the [Interchange](../../connectors/asimov_to_geneva/overview.md) pipeline. In this case, the event configuration should define a fixed schema to be enforced during ingestion. More details can be found [here](../../connectors/asimov_to_geneva/management.md).
+
+If neither of those is the case, please [contact us](../../support/supportpolicy.md).

@@ -1,0 +1,121 @@
+# Using the Logs To Metrics Geneva Actions Extension
+
+LogsToMetrics Geneva Actions (LTM GA) extension allows for programmatic creation of LTM rules as a part of your EV2 deployment. In this document, we will go over the prerequisites, the setup process and usage of LTM GA extension.
+
+## Availability
+
+LTM GA extension is available in the following regions and environments:
+
+| Ev2 Rollout Infra | Geneva Environment | Supported |
+| --- | --- | --- |
+| Test | Test | Yes |
+| Test | Smoke | Yes |
+| Test | Stage | Yes |
+| Prod | DiagnosticsProd | Yes |
+| Prod | FirstpartyProd | Yes |
+| Prod | BillingProd | Yes |
+| Prod | ExternalProd | Yes |
+| Fairfax | CaFairfax | Yes |
+| Mooncake | CaMooncake | Yes |
+| USSec | USSec | Yes |
+| USNat | USNat | Yes |
+
+## Onboarding
+
+### Prepare an AAD identity that will be used to execute the extension
+
+Authentication in the LogsToMetrics Geneva Actions extension is based on AAD application backed by a certificate.
+Inside the extension, this AAD application will be used to perform RBAC checks against Geneva Logs and Geneva Metrics accounts.
+
+Here are the steps for creating a new AAD application and granting EV2 with access to the certificate, so EV2 can call the extension:
+
+1. Register a unique subject name with OneCert. This domain will be used as the subject name for the certificate in the next steps.
+2. Create a Key Vault (KV) that will store the certificate, and grant EV2 access to the Key Vault. See [EV2 Permissions](https://ev2docs.azure.net/features/security/secrets/permissions.html).
+3. Create a AME-signed certificate in KV with the unique subject name that was registered in OneCert in previous step.
+4. Create an AAD app registration. Refer to [Using AAD app authentication with Geneva Actions](https://eng.ms/docs/products/geneva/actions/howdoi/useaad) for details.
+
+    - Set uniqueName to be some unique string (like `
+ -- openCurlyBracket -- 
+tenant
+ -- closeCurlyBracket -- 
+/
+ -- openCurlyBracket -- 
+appId
+ -- closeCurlyBracket -- 
+` or something else)
+    - Include the certificate subject name from step #3 in the ARM manifest under trustedCertificateSubjects.
+    - Assign a claim with scope "LogsToMetrics" and role "PlatformServiceOperator" by following the steps under [Assign claims to your AAD Service Principal using Powershell cmdlets](https://eng.ms/docs/products/geneva/actions/howdoi/useaad#assign-claims-to-your-aad-service-principal-using-powershell-cmdlets)
+        - This step is required because Geneva Actions blocked the default claim PlatformServiceViewer for security.
+        - Currently there is no way to automate this step, however, based on the doc, the claim assigned in Public environment will be replicated to sovereign clouds, if you are using an AAD app with same unique name.
+
+### Grant the AAD identity with permissions on Logs and Metrics accounts
+
+The AAD application created in the previous section is used for authenticating and authorizing access to the resources that LTM GA needs - Geneva Logs account/namespace and Geneva Metrics account.
+Therefore, you need to grant sufficient permissions for the AAD application to allow creating and updating LTM rules in these accounts.
+
+- For Geneva Logs Account
+
+    1. Open the [Logs Account Settings](https://portal-int.microsoftgeneva.com/account/logs) page and select the endpoint and account name.
+    2. Click User Roles and find a role with enough permissions on your namespace (needs to be able to update configuration).
+    3. Click the "Managed Certs/Identities" link for the role you found on previous step.
+    4. Expand "Managed Identities", add the Object ID and Tenant ID of your AAD App and click Save.
+
+- For Geneva Metrics Account
+
+    1. Open the [Metrics Account Settings](https://portal-int.microsoftgeneva.com/account/metrics) page and select the account name.
+    2. Click "Machine Access"
+    3. Expand Managed Identities, add the Object ID and Tenant ID, select the ConfigurationEditor role and click Save.
+
+## Using the extension
+
+Use the [following samples](https://msazure.visualstudio.com/One/_git/Mgmt-Observability-LogsToMetrics?path=/GenevaActions/EV2/Sample&version=GBmain) to configure and use LTM GA extension for your needs.
+
+Please note that these samples assume that you are using [managed SDP](https://ev2docs.azure.net/getting-started/managed-sdp.html), as "classic" EV2 is considered deprecated and should not be used.
+Refer to the [following article](https://ev2docs.azure.net/getting-started/ra-classic-landing.html?q=classic) for more details.
+
+### Configuration files
+
+1. Use `RolloutSpec.json` as a root EV2 file for running the extension.
+2. Modify `ServiceModel.json` with:
+
+    - `serviceIdentifier` - this should be your service-tree ID.
+    - `serviceGroup` - should be changed to reflect your org, see [ServiceGroup naming convention](https://ev2docs.azure.net/features/service-artifacts/serviceModel.html#servicegroup-naming-convention)
+    - `displayName` - change to whatever you like.
+    - All other properties that have `SampleExecuteLogsToMetricsExtension` - change to something that would make sense to your team.
+
+3. Modify `Parameters/RolloutParameters.json` in the following way:
+
+    - `extensions/connectionProperties/authentication/.../secretId` - Link to the secret in your Key Vault that contains the certificate you will use to authenticate with. This should be linked to the AAD application you are using, which you will grant permissions on your Geneva Logs and Metrics accounts.
+    - `extensions/connectionProperties/authentication/properties` - will contain the application ID and tenant ID of your AAD application.
+    - `extensions/payloadProperties` - this section has several parts to it:
+        - Referencing the LTM extension using the properties `ga-extension-name`, `ga-endpoint` and `extension`.
+        - Determining which operation to execute - here you will most likely want to execute `SetLogsToMetricsRuleByName` - keep this value for both `ga-operation-id` and "operation".
+        - Rest of the properties - these are the details of the LTM rule you are about to create/update. Parameterize that as well.
+
+4. `ScopeBindings.json` - This file is a part of the parameterization of EV2 spec files. Everything you want to have parameterized should also be included here. See [Scope bindings](https://ev2docs.azure.net/getting-started/tutorial/parameterize/scope-bindings.html)
+5. `Configuration/ServiceConfiguration.<ENV>.json` - This is how EV2 region-agnostic is implementing parameterization across environments. You'll probably want to have the information here somehow, and consume it in ScopeBindings.json. See [Configuration settings](https://ev2docs.azure.net/getting-started/tutorial/parameterize/configuration-settings.html?tabs=tabid-1)
+
+### Setup code, build and release pipelines
+
+1. Add the modified files from the previous section in your repo, parameterize and commit.
+
+    - You can use [EV2 feature called 'Repeat extension calls'](https://ev2docs.azure.net/features/service-artifacts/actions/http-extensions/repeatover.html) to deploy multiple rules using a single operation execution.
+
+2. Include the files in your official build drop.
+3. Create a release pipeline that will run these EV2 spec files.
+
+For testing, you can use the EV2 client and test locally on the PPE environment (Geneva Logs endpoints Test/Smoke/Stage).
+See [Download the Ev2 command files to your local client](https://ev2docs.azure.net/getting-started/tutorial/prepare.html?tabs=tabid-1%2Ctabid-3#download-the-ev2-command-files-to-your-local-client).
+
+### Troubleshooting
+
+- If your LTM rule does not produce any results and does not return any errors, verify that its scoping conditions do not use columns subject to [selective indexing](../dgrep/selectiveindexing/selectiveindexing.md), as such columns are not supported.
+- To help diagnose failures, you can collect activity id from an execution of your LTM rule deployment and follow [these steps to query Geneva Actions logs](../../../actions/How%20Do%20I/queryandpublishlogs.md#geneva-log-search-dgrep) to obtain and examine the logs related to it. To narrow down logs to only those emitted by LTM GA extension use `TraceMessage contains "[LogsToMetrics Extension]"` condition in the client query.
+  - You can use this [example Kusto query](https://dataexplorer.azure.com/clusters/genevaactions/databases/Production?query=H4sIAAAAAAAAA22OXQuCMBiF7%2F0VL7sq6KZuw0DKYpEYcwoSXYz5pgt1so0%2BoB9fEYhRlwfOc55TowMhnbood6cF%2BEDyOGUQLDnNKM9hk9IVrFkcwTZgGU0gZp8YZjMy97gRUrWl94BrhQZhb1Aqi1w1mDjRdLAAUerRtBj3lWBg8wfuvvDexAitFSVCJSyQw06XlusInVHSQnhz2Fql2yMB0RZ%2FgJNQNRbkNdkZfUbpfo5NvqgnAkN0vQYBAAA%3D), replace the placeholder at the top with the activity id you collected.
+
+## References
+
+- [Geneva Actions Bootcamp](https://eng.ms/docs/products/geneva/actions/bootcamp/bootcamppart1)
+- [Run Geneva Actions Operations via Ev2 Http Extensions](https://eng.ms/docs/products/geneva/actions/howdoi/runoperationviaev2)
+- [Using AAD app authentication with Geneva Actions](https://eng.ms/docs/products/geneva/actions/howdoi/useaad)
+- [EV2 specification for creating a new extension, including auth types](https://ev2docs.azure.net/features/service-artifacts/actions/http-extensions/custom-extensions/spec.html)

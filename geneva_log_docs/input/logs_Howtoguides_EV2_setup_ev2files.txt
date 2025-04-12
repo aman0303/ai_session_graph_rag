@@ -1,0 +1,19 @@
+# Configure EV2 files
+
+1. Install [Ev2 PowerShell cmdlets]( https://ev2docs.azure.net/references/cmdlets/Intro.html). 
+
+2. Download the [Geneva Logs EV2 example rollout](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample). These files contain information to configure the Geneva.Extension.Rollout.Parameters file.
+
+3. Change the parameters in the **Geneva.Extension.RolloutParamaters** file using the information provided in the sample.
+
+> [!NOTE]
+> The **namespace configuration version** is inferred from the .xml file itself. The EV2 extension will either publish a new minor version or new major version depending on what already exists. This is the same format used by the GenevaRP plugin that some teams already use.
+
+> [!IMPORTANT]
+> defaultAzureRegion is an optional value. It defines the region in which the first set of accounts are created when adding a new storage group.The default is **westus**.
+
+Use this information to identify the correct Geneva Logs extension name to reference in your EV2 deployment.
+
+  - **SMOKE**: Microsoft.Geneva.Logs
+  - **PPE**: Microsoft.Geneva.Logs/ConfigureLogsTestAccount
+  - **All other environments**: Microsoft.Geneva.Logs/ConfigureLogsAccount

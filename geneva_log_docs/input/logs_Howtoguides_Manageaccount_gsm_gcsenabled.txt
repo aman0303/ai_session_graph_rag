@@ -1,0 +1,18 @@
+# Verify if logs account is GSM/GCS enabled or Hybrid
+
+### Verify if an account is GSM enabled:
+
+In Jarvis, go to **Account** > **Logs Account Settings**. Select the **Account** tab, choose the **Logs Endpoint**, and select the appropriate **Logs Account**. The following message should be displayed. “GSM is enabled for this account”.
+
+![GSM Enabled](../images/GSM_En.png "GSM Enabled")
+
+### Check if an account is in a hybrid state (some namespaces are migrated to GSM and some are in GCS):
+
+If the logs account is hybrid then the following message is displayed in the above path: "This account is in a hybrid state".
+
+Learn how to [update your hybrid account](UpdateHybridAccount.md) to a GSM account. 
+
+### Verify if an account is GCS enabled:
+
+Similarily if the logs account is GCS enabled then the following message appears: "GCS is enabled for this account".
+

@@ -1,0 +1,239 @@
+# How to give Geneva access to your Azure subscription
+
+To enable Geneva to provision necessary storage accounts and Event Hub namespaces in your Azure subscription, you're required to configure an RBAC role that will give Geneva RW access to your subscription.
+
+To configure an RBAC role:
+- Register `Microsoft.Storage`, `Microsoft.EventHub`, and `Microsoft.insights` resource providers with your subscription.
+- Grant Geneva principal access to your subscription to create and manage monitoring resources.
+
+These steps can be performed through PowerShell or directly from Azure portal. Learn how to set up permissions using your preferred mode.
+
+[!include[dedicatedSub](~/logs/dedicateSub.md)]  
+
+#### For National Clouds   
+[!include[RD_Task_Links](../../RDTaskLinks.md)]
+
+## Configure Subscription in Azure Portal
+
+### Register Resource Providers
+1. Go to [portal.azure.com](https://portal.azure.com/) (or the appropriate portal for sovereign clouds).
+
+2. From the menu, select **Subscriptions** and choose your subscription, or click **Add** for a new subscription.
+
+    ![Add new subscription](../images/ProvisioningPermissions1.png)
+
+3. Select **Resource providers** and register `Microsoft.Storage`, `Microsoft.EventHub` and `Microsoft.Insights` providers if they are not registered already. This image shows an example of registering `Microsoft.Storage`.
+
+    ![Register storage](../images/ProvisioningPermissions2.png)
+
+### Grant Geneva permissions to manage monitoring resources
+
+1. From the subscription tab, select **Access Control (IAM)**, and then click **Add**.
+
+    ![Access control](../images/ProvisioningPermissions5.png)
+
+2. From the **Select a role** dropdown menu, select GenevaWarmPathResourceContributor. 
+
+>[!NOTE] 
+>If you can't see the GenevaWarmPathResourceContributor role, you can create it by [Setting up permissions through PowerShell](#create-genevawarmpathresourcecontributor-role-definition-in-your-tenant) first.
+
+3. From the **Search by name or email address** drop-down menu, find GenevaWarmPathMultiTenantRM, select it and click **Save**. 
+
+![search role](../images/ProvisioningPermissions6.png)
+
+> [!Note]
+> For Mooncake the name is GenevaWarmPathMooncakeRM, not GenevaWarmPathMultiTenantRM
+
+Your subscription is now configured for Geneva Logs to manage storage accounts and event hub namespaces on your behalf. 
+
+## Configure Subscription in Azure PowerShell
+
+The following example shows you how to use PowerShell commands to configure your subscription.
+
+1.  Create "GenevaWarmPathResourceContributor" role definition in your tenant.
+2.  Create service principal for application in your tenant.
+3.  Assign "GenevaWarmPathResourceContributor" role to service principal scoped to your subscription.
+4.  Register resource providers in your subscription.
+
+### Setup Az PowerShell environment and scope it to your Azure subscription
+
+Install Az module [here](https://docs.microsoft.com/en-us/powershell/azure/?view=azps-4.7.0).
+
+#### Login to your Azure account
+```powershell
+Login-AzAccount
+Get-AzContext
+```
+#### Verify if context points to the Azure subscription in which you want to configure RBAC
+
+```powershell
+Login-AzAccount
+Get-AzContext
+```
+If not, run the following command to scope the context to the desired subscription:
+
+```powershell
+Set-AzContext -SubscriptionId <subscriptionId>
+```
+
+### Create "GenevaWarmPathResourceContributor" role definition in your tenant
+
+#### Fetch the role definition
+
+```powershell
+$role = Get-AzRoleDefinition -Name "GenevaWarmPathResourceContributor"
+```
+
+If ``` Get-AzRoleDefinition ``` returns the role definition, then the tenant your subscription is in already has the role definition and you can skip the following steps. Otherwise, run these commands to create the role definition:
+
+ >[!NOTE]
+ >These commands are typically run by tenant admins. [Contact your tenant admin](#how-to-find-your-tenant-admin) for assistance.
+
+```powershell
+New-AzRoleDefinition -InputFile ".\GenevaWarmPathResourceContributor.json"
+$role = Get-AzRoleDefinition -Name "GenevaWarmPathResourceContributor"
+
+// Add your subscription to the scope
+$role.AssignableScopes.Add("/subscriptions/<subscriptionId>")
+Set-AzRoleDefinition -Role $role
+```
+
+#### GenevaWarmPathResourceContributor.json file content
+
+In AssignableScopes, add your subscription Id: /subscriptions/```<subscriptionId>```:
+
+```json
+
+ -- openCurlyBracket -- 
+
+    "Name":  "GenevaWarmPathResourceContributor",
+    "Id":  "9f15f5f5-77bd-413a-aa88-4b9c68b1e7bc",
+    "IsCustom":  true,
+    "Description":  "Can manage service bus and storage accounts.",
+    "Actions":  [
+                    "Microsoft.EventHub/checkNameAvailability/action",
+                    "Microsoft.EventHub/namespaces/authorizationRules/listKeys/action",
+                    "Microsoft.EventHub/namespaces/authorizationRules/regenerateKeys/action",
+                    "Microsoft.EventHub/namespaces/read",
+                    "Microsoft.EventHub/namespaces/virtualNetworkRules/read",
+                    "Microsoft.EventHub/namespaces/write",
+                    "Microsoft.insights/diagnosticSettings/read",
+                    "Microsoft.Resources/subscriptions/providers/read",
+                    "Microsoft.Resources/subscriptions/read",
+                    "Microsoft.Resources/subscriptions/resourcegroups/read",
+                    "Microsoft.Resources/subscriptions/resourcegroups/write",
+                    "Microsoft.Security/advancedThreatProtectionSettings/read",
+                    "Microsoft.Storage/checkNameAvailability/read",
+                    "Microsoft.Storage/operations/read",
+                    "Microsoft.Storage/skus/read",
+                    "Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies/lock/action",
+                    "Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies/read",
+                    "Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies/write",
+                    "Microsoft.Storage/storageAccounts/blobServices/containers/write",
+                    "Microsoft.Storage/storageAccounts/listKeys/action",
+                    "Microsoft.Storage/storageAccounts/read",
+                    "Microsoft.Storage/storageAccounts/regenerateKey/action",
+                    "Microsoft.Storage/storageAccounts/write",
+                    "Microsoft.Storage/storageAccounts/managementPolicies/write",
+                    "Microsoft.Storage/storageAccounts/managementPolicies/read",
+                    "Microsoft.Storage/storageAccounts/managementPolicies/delete",
+                    "Microsoft.Authorization/denyAssignments/read",
+                    "Microsoft.Authorization/denyAssignments/write",
+                    "Microsoft.Authorization/denyAssignments/delete"
+                ],
+    "NotActions":  [
+                   ],
+    "DataActions":  [
+                    ],
+    "NotDataActions":  [
+                       ],
+    "AssignableScopes":  [
+                             "/subscriptions/<subscriptionId>"
+                         ]
+
+ -- closeCurlyBracket -- 
+
+```
+
+### Create service principal for application in your tenant.
+
+#### Verify if service principal already exists
+
+Public:
+
+```powershell
+Get-AzADServicePrincipal -ServicePrincipalName '0b03d5c1-b575-4d80-a203-3aed0ea6c051'
+```
+Fairfax:
+```powershell
+Get-AzADServicePrincipal -ServicePrincipalName '53e90d3b-4bb4-46bf-84c3-5432595193f2'
+```
+Mooncake:
+```powershell
+Get-AzADServicePrincipal -ServicePrincipalName 'fb3dc61b-866d-45cf-ac6d-fb83fff9a51f'
+```
+Blackforest:
+```powershell
+Get-AzADServicePrincipal -ServicePrincipalName '8cb47779-ae42-446e-beac-f6479f4c7cd3'
+```
+
+#### If service principal does not exists, create service principal. 
+
+>[!NOTE]
+>These commands are typically run by tenant admins. [Contact your tenant admin](#how-to-find-your-tenant-admin) for assistance.
+
+Public:
+
+```powershell
+New-AzADServicePrincipal -ApplicationId '0b03d5c1-b575-4d80-a203-3aed0ea6c051'
+```
+Fairfax:
+```powershell
+New-AzADServicePrincipal -ApplicationId '53e90d3b-4bb4-46bf-84c3-5432595193f2'
+```
+Mooncake:
+```powershell
+New-AzADServicePrincipal -ApplicationId 'fb3dc61b-866d-45cf-ac6d-fb83fff9a51f'
+```
+Blackforest:
+````powershell
+New-AzADServicePrincipal -ApplicationId '8cb47779-ae42-446e-beac-f6479f4c7cd3'
+````
+
+### Assign "GenevaWarmPathResourceContributor" role to service principal scoped to your subscription.
+
+Bind the role definition to the service principal and scope it to your subscription. Using ``` Get-AzADServicePrincipal ``` seek the service principal objectId.
+
+```powershell
+New-AzRoleAssignment -ObjectId <service principal objectId> -RoleDefinitionName GenevaWarmPathResourceContributor -Scope "/subscriptions/<subscriptionId>"
+```
+
+### Register resource providers in your subscription.
+
+```powershell
+Register-AzResourceProvider -ProviderNamespace Microsoft.EventHub
+Register-AzResourceProvider -ProviderNamespace Microsoft.Storage
+Register-AzResourceProvider -ProviderNamespace Microsoft.Insights
+```
+
+## Reference
+
+### How to find your tenant admin?
+
+Install AzureAD PowerShell module:
+
+```powershell
+Install-Module AzureAD
+Connect-AzureAD
+```
+
+Find object Id of Company Administrator role:
+
+```powershell
+Get-AzureADDirectoryRole | Select-String -Pattern "Company Administrator" |FL
+```
+Find tenant admin mail Ids:
+
+```powershell
+Get-AzureADDirectoryRoleMember -ObjectId <objectId from above cmd> | Select-Object Mail
+```

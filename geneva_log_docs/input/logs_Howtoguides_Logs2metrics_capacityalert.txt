@@ -1,0 +1,43 @@
+# How to monitor capacity utilization.
+
+This tutorial shows how to set up alerts to monitor LogsToMetrics capacity utilization for your namespace.  
+
+By judiciously monitoring capacity utilization and requesting for capacity increases when needed, you could prevent LogsToMetrics from throttling your data.
+
+### Prerequisites
+* [Alerting from Metrics](~/alerts/AlertingFrom/Metrics.md)
+* [Author a monitor using multiple metrics](~/alerts/AuthorAMonitor/UsingMultipleMetrics.md)
+
+### Steps
+
+1. Geneva LogsToMetrics service exposes the following metrics to help with capacity monitoring, under `LogsToMetricsQos` MDM Namespace in your MDM Account.  
+
+    `CapacityUtilization`: Capacity used by your namespace.  
+    `Quota`: Pre allocated quota for your namespace.  
+    `CapacityUtilizationPerRule`: Capacity used by a single rule in your namespace.  
+    `QuotaPerRule`: Pre allocated quota for a single rule in your namespace.  
+
+1. In Jarvis UI, go to page Manage->Metrics->Monitor. Fill in your MDM Account, Namespace: LogsToMetricsQoS, Metric: CapacityUtilization. Click Add to create a monitor.
+
+1. Edit and customize the monitor, 
+    1. Data Source section:  
+        Pre-aggreggate: MdsEndpoint/EventNamespace  
+        Dimension filters: Enter values for MdsEndpoint and EventNamespace  
+
+    1. Alerting Logic section:  
+        Use percentage template.  
+        In the numerator, pick sampling type `Sum` from the chosen `CapacityUtilization` metric.  
+        In the denominator, **click change metric and select `Quota` metric**, use sampling type `Sum`.  
+        Then, fill out the alert condition as you desire.
+
+    1. Health model section:  
+        Pick an existing resource type or follow the below instructions to create a new resource type. This section instructs how geneva health system renders the resource being monitored and where IcM should route the incident for your team.
+        1. Click Add resource Type and give it a name.
+        1. Identifying dimensions should have MdsEndpoint and EventNamespace to match the metric being alerted on.
+        1. Select an appropriate incident routing id for your team
+        1. On the Health tree visualization page, give the resource a name. Then, add child levels for MdsEndpoint and EventNamespace. Here is an example:
+        ![Health Tree](../images/ltm_capacityalert_healthtree.png)
+
+1. Hit Save to save the monitor.
+
+1. Now, we have created an alert for monitoring LTM capacity utilization at a namespace level.

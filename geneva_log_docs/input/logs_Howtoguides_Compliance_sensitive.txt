@@ -1,0 +1,49 @@
+# Protecting sensitive Logs
+
+At times it is desirable to lock down read access to a particular event, set of events, or entire namespace so that only an exclusive set of users and/or certificates can read the event data. This is particularly useful for data that may contain PII or Credentials that you do not want everyone in the team to have access to. You can achieve this by levying an __ExclusiveRead__ permission to the event(s) on an user role that you'd like to have exclusive read access to the data. When setup, only the principals (security groups, users and/or certificates) that are associated with the user role will have read access to the event(s).
+
+To set up ExclusiveRead privilege through the manageability UX, navigate to the **User Role** tab, click on **"View / Add"** link under the Claims column for the desired user role, select Table for Kind and enter the appropriate values for Event Name, Right and Inherited From attributes as shown below:
+
+To identify the event or namespace to which you are applying ExclusiveRead you need to follow one of the formats below:
+
+1. If you want to apply claims on a single event then you need follow this format: ^ + 
+ -- openCurlyBracket -- 
+*Namespace*
+ -- closeCurlyBracket -- 
+ + 
+ -- openCurlyBracket -- 
+*EventName*
+ -- closeCurlyBracket -- 
+ + $ where *Namespace* and *EventName* will be replaced with MDS Account Namespace and Eventname from the account configuration to form the new claim.  
+2. If you want to apply claims on all the events starting with the common prefix then you need to follow this format:  ^ + 
+ -- openCurlyBracket -- 
+*Namespace*
+ -- closeCurlyBracket -- 
+ + 
+ -- openCurlyBracket -- 
+*EventNamePrefix*
+ -- closeCurlyBracket -- 
+ + .*
+3. If you want to apply claims on an entire namespace, you will need to follow this format: ^ + 
+ -- openCurlyBracket -- 
+*Namespace*
+ -- closeCurlyBracket -- 
+ + .*
+
+![Exclusive Read access][ExclusiveReadImage]
+
+In this example, only the members of RaviKiranUI_SRK_ReadAccess user role will have read access to the events that start with "RaviKiranCounterEvent" under the namespace RaviKiran.
+
+Once Exclusive Read permissions have been set on Users/SGs/Certificates, it generally takes 15 - 30 minutes to reflect for the new members/cert. accessing the logs.
+
+> [!TIP]  
+> If the member who have access and was queried in the 12 hrs. before Exclusive Read permissions set, then they need to wait for another 12 - 24 hrs. to reflect the access as DGrep caches the data for 12 hrs. and removal of permissions will also take the same time.
+
+> [!Note] 
+> - If two (or more) User Roles levy an ExclusiveRead claim on the same event name, then users (or certificates) need to be a member of __both__ User Roles in order to read the event. 
+> - Geneva also supports the ability to [scrub columns](../../../connectors/cosmos/piiscrubbing.md) in events containing PII before uploading to Cosmos. Check your team's security/compliance contact to determine the level of protection required for your customer's PII before choosing the right data protection design for your system. 
+> - Restricting access with Exclusive read claims permission in PPE environment (Test/Stage endpoints) is **not supported**.
+
+
+<!-- Image links -->
+[ExclusiveReadImage]: ../../images/ExclusiveRead.png "Exclusive Read access"

@@ -1,0 +1,692 @@
+# MQL
+
+
+MQL is a language created by the Geneva team and is used in DGrep as well as other Geneva services, such as Logs To Metrics and Node Diagnostics.
+
+> [!NOTE]
+> Going forward, we will adopt [KQL](kql.md) as the main query language for all Geneva services. MQL will still be supported for the foreseeable future, but we will focus on KQL when implementing new features and performance optimizations.
+
+## Language reference
+There is no reference, the implementation can be found [here](https://msazure.visualstudio.com/One/One%20(Empty%20Default)/_git/EngSys-MDA-Pipeline-CosmosUpload?path=%2Fsrc%2FCommon%2FDynamicLinq&version=GBmaster).
+
+## Example
+
+Here is an example of a MQL query:
+
+```javascript
+where ActivityId == "383112e4-a7a8-4b94-a701-4266dfc18e41" and Level <= 2
+select PreciseTimeStamp, Message
+```
+
+The first line filter the rows by applying a string equality predicate on field **ActivityId** and an integer comparison predicate on field **Level**. The second line projects the fields **PreciseTimeStamp** and **Message**.
+
+## Where
+The 'where' clause returns the objects in the input sequence that satisfy a boolean condition.
+
+### Usage
+```javascript
+where [boolean expression]
+```
+
+### Example
+```javascript
+where Tenant.Contains("test") && Level <= 2
+where InstanceName == "BLUProd" and Status == "Unhealthy"
+```
+
+## Select
+The 'select' clause converts each object in the input sequence into a new object that goes to the output sequence.
+
+### Usage
+```javascript
+[expresion1] as [identifier], [expression2] as [identifier], ...
+as [identifier] is optional
+```
+### Examples
+The following example selects two properties of each input object, TIMESTAMP and Message:
+
+```javascript
+select timestamp, message
+```
+The following example selects three properties, one of which, SuccessPercent, is calculated from other properties:
+
+```javascript
+select timestamp, tenant, successcount * 100 / totalcount as SuccessPercent
+```
+
+## Let
+The 'let' clause defines new properties or redefines existing properties for each object in the input sequence.
+
+### Usage
+```javascript
+let [assignment expressions]
+```
+
+### Examples
+The following example defines a new column that shows duration in seconds:
+
+```javascript
+let TotalDurationSec = TotalDuration / 1000
+```
+The following example redefines the existing column TotalDuration and converts all values to seconds:
+
+```javascript
+let TotalDuration=TotalDuration/1000
+```
+The following example calculates the extension of a file. The first let clause gets the index of the extension separator and the second let clause gets the actual file extension string including the separator:
+
+```javascript
+let extensionSeparatorIndex=file.LastIndexOf(".")
+let extension=extensionSeparatorIndex> = 0 ? file.Substring(extensionSeparatorIndex) : String.Empty
+```
+
+## OrderBy
+The 'orderby' clause returns the objects in the input sequence in the order specified.
+
+### Usage
+```javascript
+orderby [ordering expression] [ascending|asc|descending|desc], [more orderings]
+```
+
+### Examples
+The following example orders the input objects by the TIMESTAMP property in descending order:
+
+```javascript
+orderby TIMESTAMP desc
+```
+
+> [!WARNING]
+> If you want to use this clause in server side queries, please read [Server Side Query -> Distributed Nature](../../concepts/serverquery.md#distributed-nature) first.
+
+## Take
+The 'take' clause returns the first n number of objects from the input sequence.
+
+### Usage
+```javascript
+take [expression returning an int]
+```
+
+### Examples
+The following example returns the first 10 rows of the input sequence:
+
+```javascript
+take 10
+```
+
+> [!WARNING]
+> If you want to use this clause in server side queries, please read [Server Side Query -> Distributed Nature](../../concepts/serverquery.md#distributed-nature) first.
+
+## Skip clause
+The 'skip' clause returns the objects from the input sequence except the first n.
+
+### Usage
+```javascript
+skip [expression returning an int]
+```
+
+### Examples
+The following example returns all the rows of the input sequence except the first 10:
+
+```javascript
+skip 10
+```
+
+> [!WARNING]
+> If you want to use this clause in server side queries, please read [Server Side Query -> Distributed Nature](../../concepts/serverquery.md#distributed-nature) first.
+
+## Distinct
+The 'distinct' clause returns the objects from the input sequence after removing all duplicates.
+
+### Usage
+```javascript
+distinct
+```
+
+### Examples
+The following example returns all unique rows:
+
+```javascript
+distinct
+```
+
+The following example returns all unique role instances:
+
+```javascript
+select RoleInstance
+distinct
+```
+
+> [!WARNING]
+> If you want to use this clause in server side queries, please read [Server Side Query -> Distributed Nature](../../concepts/serverquery.md#distributed-nature) first.
+
+## GroupBy
+The 'group' clause partitions the input sequence into groups according to a key. All input objects with the same key end up in the same group. Each returned object is a group and consists of all the properties in the key plus a special property, called 'grouping', containing the list of all the group members.
+
+### Usage
+```javascript
+groupby [expresion1] as [identifier], [expression2] as [identifier], ...
+
+group [expression 1] as [identifier], [expression 2] as [identifier], ... by [expression 3] as [identifier], [expression 3] as [identifier], ...
+```
+
+__as [identifier]__ is optional
+
+The difference between 'groupby ...' and 'group ... by ...' is what properties are available
+for subsequent aggregation functions:
+After the former, aggregation functions can refer to any property in the input sequence objects,
+whereas after the latter, aggregation functions can only refer to the properties explicitly listed between 'group' and 'by'.
+
+### Examples
+The following example shows the count of rows grouped by role instances:
+
+```javascript
+groupby RoleInstance let count = count()
+```
+
+The following example shows the average latency grouped by role instance:
+```javascript
+groupby RoleInstance let averageLatency = average(Latency)
+```
+See "Expression Syntax" page for more information on the supported aggegates.
+
+The following example groups the counter values by Tenant, Role, RoleInstance and CounterName (these four properties are the key and uniquely identify a group). 
+At the same time, this example specifies that each group member object should have just two properties, TIMESTAMP and CounterValue:
+
+```javascript
+group timestamp, countervalue by tenant, role, roleinstance, countername
+```
+
+The following example is very similar to the one above except that the properties of a group member are not specified. By default, the properties of a group member will be the same as the properties of an object in the input sequence:
+
+```javascript
+groupby tenant, role, roleinstance, countername
+```
+
+> [!WARNING]
+> If you want to use this clause in server side queries, please read [Server Side Query -> Distributed Nature](../../concepts/serverquery.md#distributed-nature) first.
+
+## Aggregation
+An aggregate function is a function that can be called on a collection or sequence of elements. The most common way to retrieve a sequence is by using the “group” clause, in which case each element of the sequence is a group member.
+
+### int Count()
+Returns the number of elements in a sequence.
+
+Example: count the members of a group
+
+```javascript
+groupby Tenant let count = Count()
+```
+
+### int Sum(expression)
+Computes the sum of a sequence of numeric values. Argument expression is a numeric expression that is evaluated on each element of the sequence.
+
+Example: Sum the count of all operations for each tenant and operation type (TotalCount is a property of each group member):
+
+```javascript
+groupby Tenant, Operation let TenantOperationCount = sum(TotalCount)
+```
+
+### double Average(expression)
+
+Computes the average of a sequence of numeric values. Argument expression is a numeric expression that is evaluated on each element of the sequence.
+
+Example: Calculate average operation duration for each tenant name and operation type (TotalDuration is a property of each group member):
+
+```javascript
+groupby tenant, operation let avgDuration = Average(TotalDuration)
+```
+
+### TResult Percentile(expression, percent)
+
+Computes the percentile value of a supplied sequence of numeric values for a given percentage. Parameter percent is a value between 0 and 100. This method uses the same method as Excel's PERCENTILE.INC function.
+
+Example: Calculate the 99th percentile of latency grouped by operation:
+
+```javascript
+groupby operation let latency99 = Percentile(Latency, 99)
+```
+
+### TResult Min(expression)
+Returns the minimum value in a sequence of values. Argument expression is an expression that returns a value of a comparable type. This expression is evaluated on each element of the sequence.
+
+Example: Calculate minimum operation time stamp for each tenant name and operation type (TIMESTAMP is a property of each group member):
+
+```javascript
+groupby tenant, operation let minTime = Min(TIMESTAMP)
+```
+
+### TResult Max(expression)
+Returns the maximum value in a sequence of values. Argument expression is an expression that returns a value of a comparable type. This expression is evaluated on each element of the sequence.
+
+Example: Calculate maximum operation time stamp for each tenant name and operation type (TIMESTAMP is a property of each group member):
+
+```javascript
+groupby tenant, operation let minTime = Max(TIMESTAMP)
+```
+
+### TSequenceElement First()
+Returns the first element of a sequence. 
+
+Example: Return the first operation result for each tenant and operation type (Result is a property of each group member):
+
+```javascript
+groupby tenant, operation let firstResult=First().Result
+```
+
+### TSequenceElement Last()
+Returns the last element of a sequence.
+
+Example: Return the last operation result for each tenant and operation type (Result is a property of each group member):
+
+```javascript
+groupby tenant, operation let lastResult=Last().Result
+```
+
+###double StDev(expression, isPopulationStDev)
+Computes the standard deviation of a sequence of numeric values. Argument expression is a numeric expression that is evaluated on each element of the sequence. Parameter isPopulationStDev is a boolean argument: if set to false, sample standard deviation is calculated. If set to true, population standard deviation is calculated.
+
+Example: Calculate the sample standard deviation of latency grouped by operation.
+
+```javascript
+groupby operation let dev = StDev(latency, false)
+```
+
+### double Variance(expression, isPopulationVariance)
+Computes the variance of a sequence of numeric values. Argument expression is a numeric expression that is evaluated on each element of the sequence. Parameter isPopulationVariance is a boolean argument: if set to false, sample variance is calculated. If set to true, population variance is calculated.
+
+Example: Calculate the sample variance of latency grouped by operation.
+
+```javascript
+groupby operation let dev = Variance(latency, false)
+```
+
+## Joins
+You can use 'var' and 'join' clauses to perform nested queries and joins in DGrep. 
+
+### var
+The var clause is used to define a nested query which can then be used in a join statement to perform joins across two different queries. In other words, the var clause is used to capture a table which can then be used in a join statement to perform SQL or LINQ like join operations. `var` is used only in tandem with `join` operator and its result is a tabular type. Please refer to the examples in `var` and `join` sections below.
+
+#### Usage
+```javascript
+var identifier = <query>;
+```
+
+#### Examples
+The following example creates a table with two columns: QueryId and BlobCount:
+
+```javascript
+var blobCounts = groupby QueryId let BlobCount = Sum(Sum);
+```
+
+### join
+The join clause has the same semantics as the SQL or LINQ join clause, that is, it allows to match the elements of two input collections, called “outer” and “inner”, based on a key. The outer collection is taken implicitly from the results of your DGrep query (same as any other clause). The inner collection is specified as an input to the 'join' clause and it comes from a previously defined 'var' clause.
+
+The result of a join clause defines two extra columns called 'outer' and 'inner'. These are two extra properties that are added to each element produced by a join and contain all members of the outer and inner elements, respectively. All properties that are duplicated between the outer and the inner clause will be excluded from the elements produced by the join clause. The 'inner' and 'outer' properties can be used to access to these common properties between the two collections.
+
+Joins work only on [client side queries](../../concepts/clientquery.md) and they won't work on [server side queries](../../concepts/serverquery.md).
+
+#### Usage
+```javascript
+join <identifier for inner collection> on <Named Expression List for Outer Collection> equals <Named Expression List for Inner Collection>
+```
+
+For performance reasons, it is recommended that the inner collection be as small as possible.
+
+#### Examples
+The following example executes on an event with the following columns: queryId (a unique ID of a query), measurementName (name of a measurement) and measurementValue (value of the specified measurement in measurementName). Query below counts the total number of blobs by query and assigns the results into a variable called blobCounts. It then calculates the maximum elapsed time by queryId and then joins these two tables and creates a new table with queryId, BlobCount and ElapsedMilliseconds.
+
+```javascript
+var blobCounts = where measurementName == "BlobCount"
+groupby queryId
+let BlobCount = Sum(measurementValue);
+
+where measurementName == "SearchElapsedMilliseconds"
+groupby queryId
+let ElapsedMilliseconds = Max(measurementValue)
+join blobCounts on queryId equals queryId
+select queryId, BlobCount, ElapsedMilliseconds
+```
+
+The following example executes on an event with two columns: apiName and count. It calculates the percentage of the calls made to a specific API:
+
+```javascript
+var totalCounts = groupby 0 let totalcount = sum(count) let innerId = 1;
+groupby apiName let count = sum(count) let outerId = 1
+join totalCounts on outerId equals innerId
+let percentage = 100.0 * count / totalcount
+select bucket, percentage
+orderby bucket
+```
+
+### Joins on Different Events/Tables
+You can use \_\_SourceEvent\_\_ and \_\_SourceMoniker\_\_ virtual properties to differentiate between different tables/monikers and do joins across tables/monikers. Example:
+
+```javascript
+var r = where __SourceEvent__ == "RuleEvaluationQos";
+where __SourceEvent__ == "LogEvent" and (message.startswith("Evaluating rule"))
+join r on pid, tid, activityid equals pid, tid, activityid
+select outer.precisetimestamp, outer.message, inner.RuleEvaluationTime, inner.HopTime, inner.WindowTime, inner.QueryDelayTime, inner.RuleId
+```
+
+\_\_SourceEvent\_\_ and \_\_SourceMoniker\_\_ are populated only if you check the "Advanced query" checkbox within the "Server Query". We are working on removing this restriction in future releases.
+Please review the Filtering multiple tables on the server query section if it is necessary to apply different filtering conditions to each table in the server query.
+
+# Expression Language
+The expression language is designed to be familiar to C#, VB, and SQL users. For this reason, some operators are present in multiple forms, such as && and and. This means you can call C# method on a supported type. For example, you can use string.ToLower() in your query.
+
+## Operators
+The table below shows the operators supported by the expression language in order of precedence from highest to lowest. Operators in the same category have equal precedence. In the table, x, y, and z denote expressions, T denotes a type, and m denotes a member.
+
+|Operator|Description|
+|--------|-----------|
+|x.m|Instance field or instance property access. Any public field or property can be accessed.|
+|x.m(…)|Instance method invocation. The method must be public and must be declared in an accessible type.|
+|T.m|Static field or static property access. Any public field or property can be accessed.|
+|T.m(…)|Static method invocation. The method must be public and must be declared in an accessible type.|
+|T(…)|Explicit conversion or constructor invocation. Note thatnew is not required in front of a constructor invocation.|
+|iif(x, y, z)|Conditional expression. Alternate syntax for x ? y : z.|
+|-x|Negation. Supported types are Int32, Int64, Decimal,Single, and Double.|
+|!x, not x|Logical negation. Operand must be of type Boolean.|
+|x * y|Multiplication. Supported types are Int32, UInt32,Int64, UInt64, Decimal, Single, and Double.|
+|x / y|Division. Supported types are Int32, UInt32, Int64,UInt64, Decimal, Single, and Double.|
+|x % y, x mod y|Remainder. Supported types are Int32, UInt32, Int64,UInt64, Decimal, Single, and Double.|
+|x + y|Addition or string concatenation. Performs string concatenation if either operand is of type String. Otherwise, performs addition for the supported typesInt32, UInt32, Int64, UInt64, Decimal, Single,Double, DateTime, and TimeSpan.|
+|x – y|Subtraction. Supported types are Int32, UInt32, Int64,UInt64, Decimal, Single, Double, DateTime, andTimeSpan.|
+|x & y|String concatenation. Operands may be of any type.|
+|x = y, x == y|Equal. Supported for reference types and the primitive types. Assignment is not supported.|
+|x != y, x <> y|Not equal. Supported for reference types and the primitive types.|
+|x < y|Less than. Supported for all primitive types exceptBoolean, Object and Guid.|
+|x > y|Greater than. Supported for all primitive types exceptBoolean, Object and Guid.|
+|x <= y|Less than or equal. Supported for all primitive types exceptBoolean, Object and Guid.|
+|x >= y|Greater than or equal. Supported for all primitive typesexcept Boolean, Object and Guid.|
+|x && y, x and y|Logical AND. Operands must be of type Boolean.|
+|x \|\| y, x or y|Logical OR. Operands must be of type Boolean.|
+|x ? y : z|Evaluates y if x is true, evaluates z if x is false.|
+
+## Identifiers
+An Identifier consists of a letter or underscore followed by any number of letters, digits, or underscores. In order to reference an identifier with the same spelling as a keyword, the identifier must be prefixed with a single @ character. Some examples of identifiers:
+
+```javascript
+x   Hello   m_1   @true   @String
+```
+
+Casing is not significant in identifiers or keywords.
+
+An identifier can be one of these:
+
+* A column in the results grid. A grid column is treated as a member property whose name is the name of the column and whose type is inferred from the type associated with the underlying table. Unlike a member property, however, columns do not need to be preceded by expression plus dot (‘.’) because by default the scope of an identifier is the grid row object.
+* A keyword. These are the valid keywords: ‘true’, ‘false’, ‘iif’, any of the primitive types, and any of the accessible types (see Types).
+* A type constructor (see Method and Constructor Invocations).
+* A type conversion (see Conversions).
+* A member property, a member function, an aggregate function or a monitoring extension method (see Method and Constructor Invocations, Aggregate Functions and Extension Methods ).
+
+## Literals
+The expression language supports integer, real, string, and character literals.
+
+An integer literal consists of a sequence of digits. The type of an integer literal is the first of the types Int32, UInt32, Int64, or UInt64 that can represent the given value. An integer literal implicitly converts to any other numeric type provided the number is in the range of that type. Some examples of integer literals:
+
+```javascript
+0   123   10000
+```
+
+A real literal consists of an integral part followed by a fractional part and/or an exponent. The integral part is a sequence of one or more digits. The fractional part is a decimal point followed by one or more digits. The exponent is the letter e or E followed by an optional + or – sign followed by one or more digits. The type of a real literal is Double. A real literal implicitly converts to any other real type provided the number is in the range of that type. Some examples of real literals:
+
+```javascript
+1.0   2.25   10000.0   1e0   1e10   1.2345E-4
+```
+
+A string literal consists of zero or more characters enclosed in double quotes. Inside a string literal, a double quote is written as two consecutive double quotes. The type of a string literal is String. Some examples of string literals:
+
+```javascript
+"hello"   ""    """quoted"""   "'"
+```
+
+A character literal consists of a single character enclosed in single quotes. Inside a character literal, a single quote is written as two consecutive single quotes. The type of a character literal is Char. Some examples of character literals:
+
+```javascript
+'A'   '1'   ''''   '"'
+```
+
+## Constants
+The predefined constants **true** and **false** denote the two values of the type Boolean.
+
+## Types
+The expression language defines the following primitive types:
+
+
+```csharp
+Object     Boolean    Char      String        SByte         Byte
+Int16      UInt16     Int32     UInt32        Int64         UInt64
+Decimal    Single     Double    DateTime      TimeSpan      Guid
+```
+
+The primitive types correspond to the similarly named types in the System namespace of the .NET Framework Base Class Library. The expression language also defines a set of accessible types consisting of the primitive types and the following types:
+
+```csharp
+System.Math
+System.Convert
+System.Text.RegularExpressions.Regex
+```
+
+The accessible types are the only types that can be explicitly referenced in expressions, and method invocations in the expression language are restricted to 1) methods declared in the accessible types, 2) aggregate functions on sequence types (aka enumerable types) and 3) monitoring extension methods.
+
+(Note: When using the accessible types above, you do not need to specify the namespace.)
+
+The types SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, and UInt64 are collectively called the integral types.
+
+The types Single, Double, and Decimal are collectively called the __real types__.
+
+The integral types and real types are collectively called the __numeric types__.
+
+## Conditional Expressions
+The conditional operator (?:) returns one of two values depending on the value of a Boolean expression. Following is the syntax for the conditional operator:
+
+```javascript
+condition ? first_expression : second_expression
+```
+iif keyword is a shorthand for the conditional operator. Following is the syntax for iif:
+
+```javascript
+iif (condition, first_expresion, second_expression)
+```
+### Examples
+```javascript
+Message != null ? Message : ""
+iif (Message != null, Message, "")
+```
+
+## Conversions
+The following conversions are implicitly performed by the expression language:
+
+* From an integer literal to an integral type or real type provided the number is within the range of that type.
+* From a real literal to a real type provided the number is within the range of that type.
+* From a source type that is assignment compatible with the target type according to the Type.IsAssignableFrom method in .NET.
+* From a numeric type to another numeric type with greater range.
+
+The expression language permits explicit conversions using the syntax type(expr), where type is a type name and expr is an expression. This syntax may be used to perform the following conversions:
+* Between two types provided Type.IsAssignableFrom is true in one or both directions.
+* Between any two types belonging to the set consisting of SByte, Byte, Int16, UInt16, Int32, UInt32, Int64, UInt64, Decimal, Single, Double, Char.
+In addition, you can use the Convert class or the Parse method on the supported types to convert from one type to another. Examples:
+
+```javascript
+let intValue = Int32.Parse("11")
+let doubleValue = Convert.ToDouble("11.2")
+```
+
+## Searching the entire row
+The expression it.Any(arg) evaluates to a boolean value indicating whether any column in the current row contains the string produced by evaluating the argument arg. This method uses case insensitive comparison to find matching substrings. For example, the query below returns rows that contain the string "foo" in any column.
+
+```javascript
+where it.Any("foo")
+```
+
+## Method and Constructor Invocations
+The expression language limits invocation of methods and constructors to those declared public in the accessible types. This restriction exists to protect against unintended side effects from invocation of arbitrary methods.
+
+In addition, the expression language also allows invocation of aggregate functions or extension methods.
+
+The expression language permits getting (but not setting) the value of any reachable public field, or property.
+
+Overload resolution for methods, constructors, and indexers uses rules similar to C#. In informal terms, overload resolution will pick the best matching method, or constructor, or report an ambiguity error if no single best match can be identified.
+
+Note that constructor invocations are not prefixed by new. The following example creates a DateTime instance for a specfic year, month, and day using a constructor invocation:
+
+```javascript
+TIMESTAMP >= DateTime(2009, 1, 1)
+```
+
+## Working with Strings
+A string literal consists of zero or more characters enclosed in double quotes. Inside a string literal, a double quote is written (escaped) as two consecutive double quotes. All public methods and properties exposed by System.String except the overrides using enums such as StringComparison are supported. In addition, the following extension methods are usable as well:
+
+|Method|Description|
+|------|-----------|
+|ContainsI(string value)| Case insensitive version of string.Contains method.|
+|EqualsI(string value)| A shorthand for string.Equals method with StringComparison.OrdinalIgnoreCase.
+|StartsWithI(string value)| A shorthand for string.StartsWith method with StringComparison.OrdinalIgnoreCase.
+|EndsWithI(string value)| A shorthand for string.EndsWith method with StringComparison.OrdinalIgnoreCase.
+|IndexOfI(string value)| A shorthand for string.IndexOf method with StringComparison.OrdinalIgnoreCase.
+|LastIndexOfI(string value)| A shorthand for string.LastIndexOf method with StringComparison.OrdinalIgnoreCase.
+|Matches(string regex)| A shorthand for Regex.Matches method.
+|MatchesI(string regex)| A shorthand for Regex.Matches method called with RegexOptions.IgnoreCase.
+|IsMatch(string regex)| A shorthand for Regex.IsMatch method.
+|IsMatchI(string regex)| A shorthand for Regex.IsMatch method called with RegexOptions.IgnoreCase.
+|~= (tilda equals)| A shorthand for IsMatchI method above.
+
+### String Splitting
+In addition to Regex operations, you can use the `Split` method of the string to extract information from a column. This returns a `string[]`, so you can also calculate the number of parts by using the `Length` property.
+
+The following example parses a log line like the following (same examples as the one in the Regex section, with a different implementation):
+
+```
+Probe succeeded|[1]AlertingLatency::236|[2]ClientLatency::408|...[13]MachineInfo::USR3372285-037|...[21]RunnerInstance::Edog/US/EDOG_CONTENT/Primary|[22]RunnerInstanceNum::1|...
+```
+
+Expression below extracts whether the probe succeeded or not, the alerting latency, the machine information and the farm name. It then calculates the average availability and 99th percentile of the alerting latency.
+
+```javascript
+let f = UserField2.Split('|')
+let fieldCount = f.Length
+let success = Status == "Healthy" ? 1 : 0
+let MachineName = f[13].Substring(f[13].IndexOf("::") + 2 )
+let Farm = f[21].Substring(f[21].IndexOf("::") + 2 )
+let Latency = Int32.Parse(f[1].Substring(f[1].IndexOf("::") + 2 ))
+groupby MachineName, Farm 
+    let Availability = 100 * Average(success), 
+        Percentile = Percentile(Latency, 99)
+```
+
+## Working with Date/Time
+All public methods and properties of System.DateTime except the overrides using enums such as DateTimeKind are supported.
+
+Date/time literals may be specified either as string literals, which are parsed automatically, or using the DateTime() constructor. All date/time literals are interpreted as UTC. All of the following expressions are equivalent:
+
+```javascript
+timestamp == "2009-07-14T12:20:37"
+timestamp == "2009-07-14T12:20:37Z"
+timestamp == "2009/7/14 12:20:37"
+timestamp == "2009/7/14 12:20:37Z"
+timestamp == DateTime(2009, 7, 14, 12, 20, 37)
+timestamp == DateTime.Parse("2009/7/14 12:20:37")
+timestamp == DateTime.Parse("2009/7/14 12:20:37Z")
+```
+
+### DateTime RoundDown
+```javascript
+public static DateTime RoundDown(this DateTime input, string interval)
+public static DateTime RoundDown(this DateTime input, string interval, string offset)
+```
+
+​These two methods round down the input time according to the given interval expressed as a time period specification. The second overload, in addition, accepts an offset expressed as a time period specification that allows shifting the interval as needed.
+
+Valid time period specification syntax is "P[dD][T[hH][mM][sS]]" where d is number of days, h is number of hours, m is number of minutes, s is number of seconds and the other characters are literals. At least one time part must be present.
+
+#### Examples
+
+```javascript
+timestamp.RoundDown("PT1M") returns 2009/7/14 12:20:00
+timestamp.RoundDown("PT30M") returns 2009/7/14 12:00:00
+timestamp.RoundDown("PT30M", "PT5M") returns 2009/7/14 12:05:00
+```
+
+### DateTime RoundUp
+```javascript
+public static DateTime RoundUp(this DateTime input, string interval)
+​public static DateTime RoundUp(this DateTime input, string interval, string offset)
+```
+
+​These two methods round up the input time according to the given interval expressed as a time interval specification. The second overload, in addition, accepts an offset expressed as a time period specification that allows shifting the interval as needed.
+
+Valid time period specification syntax is "P[dD][T[hH][mM][sS]]" where d is number of days, h is number of hours, m is number of minutes, s is number of seconds and the other characters are literals. At least one time part must be present.
+
+#### Examples
+
+```javascript
+timestamp.RoundUp("PT1M") returns 2009/7/14 12:21:00
+timestamp.RoundUp("PT30M") returns 2009/7/14 12:30:00
+timestamp.RoundUp("PT30M", "PT5M") returns 2009/7/14 12:35:00
+```
+
+### Date/Time Fields with Missing Values
+Date/Time fields with missing values are represented as DateTime.FromFileTimeUtc(0). You can use this value to filter out fields with missing date/time values.
+
+#### Example
+
+```javascript
+myDateTime != DateTime.FromFileTimeUtc(0)
+```
+
+## Regular expressions
+All public methods and properties of System.Text.RegularExpressions.Regex except the overrides using enums such as RegexOptions are supported.
+
+Case sensitive matching (all expressions below are the same):
+
+```javascript
+where message.IsMatch("<some regex>")
+where Regex.IsMatch(message, "<some regex>")
+```
+
+Case insensitive matching (all expressions below are the same):
+
+```javascript
+where message.IsMatchI("<some regex>")
+where message ~= "<some regex>"
+```
+
+Note that these are Perl/unix-style regexes rather than PowerShell-style regexes--they match substrings, not the entire field.  For example, if you want to match on all network devices with the string -n7x- in their name, you would use
+
+```javascript
+where networkDeviceName ~= "-n7x-"
+```
+
+Negation works like this:
+
+```javascript
+where not(networkDeviceName ~= "ucgmc")
+```
+
+### Extracting text
+
+The following example processes a runner events table. It obtains the role instances affected by events from a specific runner instance, for which the role instance name is embedded in ‘UserField3’ property:
+
+* The where clause restricts the input sequence to only events of the desired runner instance.
+* The let clause uses a regular expression to extract the role instance name and assigned it to a new property.
+* The group clause partitions the input sequence by the role instance name assigned in the previous clause.
+where Name == "MaAlarmQosAvailability" && InstanceName == "XstoreMaAlarmAvailability-Prod"
+let RoleInstance = Regex.Match(userfield3, "\[(.*)___").Groups[1].Value
+groupby RoleInstance
+
+The following example parses a log line like the following:
+```
+Probe succeeded|[1]AlertingLatency::236|[2]ClientLatency::408|...[13]MachineInfo::USR3372285-037|...[21]RunnerInstance::Edog/US/EDOG_CONTENT/Primary|[22]RunnerInstanceNum::1|...
+```
+Expression below extracts whether the probe succeeded or not, the alerting latency, the machine information and the farm name. It then calculates the average availability and 99th percentile of the alerting latency.
+
+```javascript
+let MachineName = Regex.Match(UserField2, "MachineInfo::(.*?)\|").Groups[1].Value
+let Farm = Regex.Match(UserField2, "\[21\].*?::(.*?)\|").Groups[1].Value
+let Healthy = Regex.Match(UserField2, "Probe (.*?)\|\[1\]").Groups[1].Value == "succeeded" ? 1 : 0
+let Latency = Int32.Parse(Regex.Match(UserField2, "\[1\]AlertingLatency::(.*?)\|").Groups[1].Value)
+groupby MachineName, Farm 
+    let Availability = 100 * Average(Healthy), 
+        Percentile = Percentile(Latency, 99)
+```

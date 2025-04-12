@@ -1,0 +1,4 @@
+# DGrep endpoint
+
+Endpoint represents the specific instance of deployment of DGrep service that you need to search against. For example, end point could be production or test. Learn more about [Log environments](environment.md). 
+

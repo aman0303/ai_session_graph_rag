@@ -1,0 +1,346 @@
+---
+title: Extensibility SDK API reference
+description: API reference for Extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: bradbu
+manager: udayp
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 01/22/2025
+---
+
+# Extensibility SDK API reference
+
+> [!NOTE]
+> This information applies to the .NET Standard Extensibility SDK `Microsoft.Azure.GenevaLogs.ExtensibilitySdk`.
+> For more information, see [Extensibility SDK Overview](./intro.md).
+
+The Extensibility SDK library consists of two NuGet packages:
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk):
+  Use this package to receive Geneva Log event messages.
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO):
+  Use this package to receive Geneva Log event messages and deserialize the data into a list of records.
+
+# Microsoft.Azure.GenevaLogs.ExtensibilitySdk reference
+
+Start here: [Using the Extensibility SDK](./usage.md).
+This reference describes the rest of the API in more detail.
+
+## EventStreamProcessor
+
+`EventStreamProcessor` processes Log events from Event Hubs.
+
+### EventStreamProcessor.ClearEventHubsCheckpointsAsync
+
+This method clears Event Hubs checkpoints in case you need to reset processor offsets.
+
+- The SDK automatically manages checkpoint storage for you.
+  The checkpoint blobs are stored in Geneva Log moniker storage accounts.
+  All you have to do is specify the normal `EventStreamProcessor` parameters as usual: `genevaAccountDetails`, `eventFilters`, and `eventHubDetails`.
+- Checkpoints are partitioned and cleared based on the consumer group (`EventHubDetails.ConsumerGroup`), broker kind (`EventHubDetails.BrokerKind`), Logs account (`GenevaAccountDetails.MdsAccounts`), and event filter.
+  If you clear checkpoints for your consumer group, it will not affect checkpoints for other consumer groups.
+  Likewise, if you clear checkpoints for one Logs account, it will not affect checkpoints for other Logs accounts.
+  If you have multiple processors with different parameters like different Logs accounts or different event filters, be sure to clear checkpoints for all your processors and parameters.
+- Be sure to stop all processors while clearing checkpoints or unexpected errors may occur.
+  If processors are running, the Event Hubs client library should detect errors in the Event Hubs infrastructure and execute a load balancing cycle to recover.
+  The SDK logs may include the following error:
+  ```
+  Azure.RequestFailedException: Attempting to renew all of the processor's partition ownership in the storage service.. For troubleshooting information, see https://aka.ms/azsdk/net/eventhubs/exceptions/troubleshoot.
+  
+ -- openCurlyBracket -- 
+"FormattedMessage":"Error in the Event Hubs infrastructure. Operation: Executing a load balancing cycle.."
+  ```
+- When processors restart without checkpoints, they will begin processing from scratch.
+  For more information on how processors startup without checkpoints, see [EventHubDetails](./usage.md#eventhubdetails).
+- Sample: This example shows how to clear all of the Event Hubs checkpoints used by a processor.
+  ```cs
+  using var processor = new EventStreamProcessor(
+      genevaAccountDetails,
+      eventFilters,
+      eventHubDetails,
+      eventStreamBase,
+      telemetryDetails);
+  foreach (var mdsAccount in genevaAccountDetails.MdsAccounts)
+  
+ -- openCurlyBracket -- 
+
+      foreach  (var eventFilter in eventFilters)
+      
+ -- openCurlyBracket -- 
+
+          await processor.ClearEventHubsCheckpointsAsync(mdsAccount, eventFilter, cancellationToken: cancellationToken).ConfigureAwait(false);
+      
+ -- closeCurlyBracket -- 
+
+  
+ -- closeCurlyBracket -- 
+
+  ```
+- Sample: This example shows how to clear all of the Event Hub checkpoints in a consumer group, broker kind, and Logs account by specifying a wildcard event filter `".*"`.
+  This may take longer if a Logs account has many monikers.
+  ```cs
+  var wildcardEventFilter = EventFilterDetails.CreateFilter(namespaceRegex: ".*");
+  foreach (var mdsAccount in genevaAccountDetails.MdsAccounts)
+  
+ -- openCurlyBracket -- 
+
+      await processor.ClearEventHubsCheckpointsAsync(mdsAccount, wildcardEventFilter, cancellationToken: cancellationToken).ConfigureAwait(false);
+  
+ -- closeCurlyBracket -- 
+
+  ```
+- `preserveCheckpointMigrationCompletion` sample: This example shows how to clear Event Hub checkpoints without re-migrating checkpoints.
+  ```cs
+  await processor.ClearEventHubsCheckpointsAsync(mdsAccount, eventFilter, preserveCheckpointMigrationCompletion: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+  ```
+  By default, this method clears Event Hubs checkpoints including any migrated checkpoints and the checkpoint migration completion status.
+  If `preserveCheckpointMigrationCompletion` is set, the checkpoint migration completion status is not cleared, and checkpoints will not be re-migrated.
+  This is an unusual case intended to control how checkpoints are cleared while migration is in progress.
+  It is strongly recommended to remove the `MigrationDetails` instead when migration is complete.
+  Then there is no need to set `preserveCheckpointMigrationCompletion`.
+
+## BlobEventData
+
+This class provides information about every blob you may process.
+Most details are intended for use by the Kusto team.
+The properties exposed by the `BlobEventData` object are:
+
+```cs
+public class BlobEventData
+
+ -- openCurlyBracket -- 
+
+    /// <summary>
+    /// Gets the Event Hub message version.
+    /// </summary>
+    public int MessageVersion 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Geneva Logs environment.
+    /// </summary>
+    public string MdsEnvironment 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Geneva Logs account.
+    /// </summary>
+    public string MdsAccount 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the namespace.
+    /// </summary>
+    public string Namespace 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the account moniker.
+    /// </summary>
+    public string AccountMoniker 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the event name.
+    /// </summary>
+    public string Name 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the event version.
+    /// </summary>
+    public string Version 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Blob container URI, e.g. https://
+ -- openCurlyBracket -- 
+storageAccount
+ -- closeCurlyBracket -- 
+.blob.core.windows.net/
+ -- openCurlyBracket -- 
+container
+ -- closeCurlyBracket -- 
+.
+    /// </summary>
+    public Uri BlobContainerUri 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Blob path.
+    /// </summary>
+    public string BlobPath 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the offset into the Blob to download.
+    /// </summary>
+    public long BlobOffset 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the length of the compressed Blob in bytes.
+    /// </summary>
+    public long BlobLength 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Blob generation time (and data start time).
+    /// </summary>
+    public DateTime BlobGenerationTimeUtc 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the SAS.
+    /// </summary>
+    public string Sas 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Blob SAS URI.
+    /// </summary>
+    public Uri BlobSasUri 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the SAS expiry in UTC.
+    /// </summary>
+    public DateTime SasExpiryUtc 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Event Hub enqueue UTC.
+    /// </summary>
+    public DateTime EventHubEnqueueUtc 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the offset of the EventData message in Event Hub.
+    /// </summary>
+    public string EventHubOffset 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the sequence number of the EventData message in Event Hub.
+    /// </summary>
+    public long EventHubSequenceNumber 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the Event Hub shard ID (partition ID).
+    /// </summary>
+    public string EventHubShardId 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the size of the data in bytes.
+    /// </summary>
+    public long DataSize 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the data row count.
+    /// </summary>
+    public long DataRowCount 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the type of the compression used in the Blob.
+    /// </summary>
+    public BlobCompressionType CompressionType 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the settings that apply at the account moniker level. In most cases, these are empty.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> AccountMonikerSettings 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+    /// <summary>
+    /// Gets the data region.
+    /// </summary>
+    public string DataRegion 
+ -- openCurlyBracket -- 
+ get; 
+ -- closeCurlyBracket -- 
+
+
+ -- closeCurlyBracket -- 
+
+```
+
+# Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO reference
+
+Most processors use `BlobEventDataReader.GetDeserializedRecordsAsync` to get a list of records.
+For more information, start here: [Using the Extensibility SDK - EventStreamBase](./usage.md#eventstreambase).

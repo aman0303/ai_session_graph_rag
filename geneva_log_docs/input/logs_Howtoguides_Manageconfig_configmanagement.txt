@@ -1,0 +1,120 @@
+# What to collect?
+
+## Specifying what logs to collect
+
+The logs that need to be collected from your service are specified through configuration files to Geneva. The collection configurations can be managed through the Configurations section under the Account > Log Account settings in [Jarvis portal][JarvisPortal] as shown below. 
+
+![Manage configurations][ManageConfigurations]
+
+You can create/edit configurations in this UX by clicking on "New Configuration" button or click on the configuration version to edit an existing configuration. This launches the Configuration Builder UX. The Configuration Builder UX is an easy to use graphical configuration authoring tool that provides recommended default values for most fields. It is also sprinkled with field-level help tips that explain the purpose of each field. 
+
+The following sections describe the parts of the Configuration Builder UX.
+
+### Global settings
+
+This section of the Configuration Builder lets you tweak settings that apply to all events under the namespace. Settings include default retention policy, runtime quotas on the Monitoring Agent, node level access policy, crash dump collection setting, Metrics account to send Monitoring Agent QoS to and the identity schema used by Monitoring Agents in the namespace. 
+
+![Global settings][GlobalSettingsImage]
+
+### "What to collect" section
+
+This section enables you to specify the events that you want collected from your service. In Windows platform (see below for Linux platform) you can collect events such as Performance Counters, IIS logs, ETW events etc.. Event collection can be specified by button clicks as shown below. 
+
+![What to collect][WhatToCollectImage]
+
+### Streaming events to Kusto/Cosmos/DGrep/...
+
+There is a special section in the "What to collect" tab, through which you can specify the events that you want to stream to other downstream services such as Kusto and Cosmos. 
+
+![Event streaming settings][EventStreamingImage]
+
+### Configuration XML
+
+The Advanced section of the Configuration Builder will show the underlying configuration XML file that gets generated as you build the configuration through the UX. Ultimately this XML file is what the Monitoring Agents consume to determine which events to collect on your service node. 
+
+![Configuration XML][ConfigurationXMLImage]
+
+### Agent launch settings
+
+Ultimately the configuration you build will need to be specified to the Monitoring Agent in order for it to contact Geneva service and download the configuration. Information such as the Logs environment, account, namespace, configuration version, etc. needs to be input to the Monitoring Agent at runtime. The Agent Launcher tool under the Advanced section makes it easy for you to generate these values that can be readily integrated into your service startup. 
+
+![Agent launch settings][AgentLauncherImage]
+
+For the example shown above, the following launch settings snippet will get generated:
+
+````
+<ConfigurationSettings>
+      <!-- Other setting before this point -->
+      <Setting name="GcsEnvironment" value="DiagnosticsPROD"/>
+      <Setting name="GcsGenevaAccount" value="YourService"/>
+      <Setting name="GcsNamespace" value="YourService"/>
+      <Setting name="GcsRegion" value="Brazil South"/>
+      <Setting name="GcsThumbprint" value="9846644e32c83e45634c33762c7982f986cec05c"/>
+
+      <!-- This matches where your deployment installs your GCS authorization cert. It could be CURRENTUSER\MY too. -->
+      <Setting name="GcsCertStore" value="LOCAL_MACHINE\MY"/>    
+
+      <!-- Note that the config version is optional but recommended. You continue to use the MonitoringInitConfig setting; instead, which points to the configuration you deployed with your MA. Using GenevaConfigVersion ensures that the config you deployed via Jarvis to the service, matches the config you are deploying to your MA instances, here. -->
+
+      <Setting name="GenevaConfigVersion" value="1.0"/>
+
+      <!-- If you provide settings for both GCS and legacy non-GCS MA environment settings, this tells MA to use the
+           GCS settings -->
+      <Setting name="UseGenevaConfigService" value="true"/>
+</ConfigurationSettings>
+````
+
+The example above is for a PaaS v1 cloud service. Alternatively you can use the Agent Launcher tool to generate a command file with appropriate set of environment variables that can be used in other service environments. 
+
+## Pushing configuration changes to your service
+
+Once configuration is built and saved, the next step is for you to push out the new configuration to the Monitoring Agents running in your service. Geneva provides a tool called Configuration Update that allows you to safely push out a configuration to your service without requiring a service deployment. 
+
+You can launch Configuration Update tool through the "What next?" page that appears when a configuration is saved successfully. 
+
+![Configuration Update][ConfigurationUpdateImage]
+
+The following section provides a brief overview of Configuration Update tool. 
+
+### Configuration Update tool
+
+> [!NOTE]
+> Configuration Update is unsupported for namespaces containing more than 10K agents. The GCS-based configuration update is the recommended way to update configurations if you fall in this category. 
+
+Configuration Update tool allows you to systematically update your configuration to one of the selected configuration versions. Configuration Update provides for a safe way to update configuration as the Monitoring Agents are updated in phases, and their health is checked  and validated to be healthy between the phases.
+
+When you launch the Configuration Update tool from Configuration Builder, a set of prerequisite checks will be run to determine if the feature is ready for use. Follow the instructions in this page in order to start using Configuration Update tool in case you do not meet any prerequisites.
+
+#### Manage Plans for Configuration Update
+Once you pass all prerequisite checks you will be able to create and execute update plans in the tool. The plans you create can be used to both update configurations or Monitoring Agents.
+
+An update plan comprises of phases that are executed sequentially with wait times between phases where the health of the updated agents are validated. You should create plans such that the initial phases of the plan start with a small number of agents that are lower in terms of importance (e.g. in canary regions), and add phases that progressively grow to include larger number of agents.
+
+The "Show Topology" button can be used to pick a set of agents that you want to be included as part of the phase.
+
+#### Executing a plan
+Once you have created a plan, you can execute it by switching to the Config Update Pane as shown below. 
+
+![Execute plan][ExecutePlanImage]
+
+## Linux support for configuration management
+
+Configuration Builder is supported for Linux for the following features:
+- Global settings
+- Event streaming settings
+- Local development box testing
+
+Configuration Update tool is currently not available for Linux environment. 
+
+<!-- Reference links -->
+[JarvisPortal]: https://aka.ms/Jarvis "Jarvis portal"
+
+<!-- Image links -->
+[ManageConfigurations]: ../images/Configurations.png "Manage configurations"
+[GlobalSettingsImage]: ../images/GlobalSettings.png "Global settings"
+[WhatToCollectImage]: ../images/WhatToCollect.png "What to collect?"
+[EventStreamingImage]: ../images/EventStreaming.png "Event streaming settings"
+[ConfigurationXMLImage]: ../images/ConfigurationXML.png "Configuration XML"
+[AgentLauncherImage]: ../images/AgentLauncher.png "Agent launch settings"
+[ConfigurationUpdateImage]: ../images/ConfigurationUpdate.png "Configuration Update tool"
+[ExecutePlanImage]: ../images/ExecutePlan.png "Execute plan"

@@ -1,0 +1,41 @@
+# How to choose a moniker failover option
+To meet data residency requirements, in addition to providing ways for collecting Dial Tone logs in emergency situations, Geneva Logs supports tne following moniker failover scenarios:
+
+1. Classic moniker failover -  If your Geneva Logs account is [Geneva Storage Management (GSM)-enabled](./gsm_gcsenabled.md) Geneva Logs will provision a single moniker in the requested region. If your account is not GSM enabled, you are responsible for provisioning a moniker in the requested region. 
+    * If your Geneva Logs account is GSM-enabled, and no resources are yet available in the requested region, GSM will attempt to provision a moniker in the nearest region instead. If no nearest region is available, or GSM is unable to provision a moniker there, the request will fail. 
+    * If your Geneva Logs account is not GSM-enabled, and no resources are yet available in the requested region, Geneva Logs will return at least one moniker from the nearst region, or from the nearest storage group.    
+2. Restricted moniker failover - enforce data residency in the requested region. Geneva Logs will only provision a moniker in the requested region. 
+     * If your Geneva Logs account is GSM-enabled, and no moniker is available in the requested region, GSM will attempt to provision a new moniker.
+     * If your Geneva Logs account it not GSM-enabled, and no moniker is available in the requested region, no moniker will be returned. 
+3. Geo Isolated moniker failover - enforce data residency in regions with traditional regional pair defined. Geneva Logs will return a moniker in the requested region as the primary moniker, and a moniker in the paired region as the secondary moniker.
+    * The paired regions (and thus the provisioned monikers) reside in the same geography. 
+4. Dial Tone - prioritize having critical data available for recovery over data isolation.
+    * If a region has a traditional regional pair defined, Geneva Logs will return a moniker in the requested region as the primary moniker, and a moniker in the paired region as the secondary moniker.
+    * If a region has no traditional regional pair defined, Geneva Logs will return a moniker in the requested region as the primary moniker, and a moniker in the "recovery region" (as defined by Azure Global/DCMT) as the secondary moniker.
+
+## Onboarding to your chosen moniker failover option
+
+1. Upgrade your Monitoring Agent (MA) to version 45.0.1 or higher.
+2. Update the variable ```monikerRegionFailoverOption``` in the Management section in your configuration file with the failover option you require. Values for this variable can be either Classic, Restricted, GeoIsolated or Dialtone. 
+
+![Failover Option](../images/FailoverOptionConfig.png)
+
+>[!Note]
+>If you choose Dialtone as a failover option, you must also have onboarded to [Geneva Ingestion Gateway (GIG)](../../../collect/references/genevaingestiongateway.md). Dial Tone support is only available for data written to GIG and not directly to storage. GIG supports connection to storage through IPv6, and will ensure telemetry collection in a different region during an outage.
+
+>[!Note]
+>Onboarding to [Geneva Ingestion Gateway (GIG)](../../../collect/references/genevaingestiongateway.md) is not required to meet data residency compliance when selecting Classic, Restriced, or Geo Isolated moniker failover options.
+
+>[!Note]
+>If no value is set for monikerRegionFailoverOption, the default is Classic, which is the previous behavior before the addition of this new functionality.
+
+>[!Note]
+>It is recommended to update the configuration on the Monitoring Agent after making the configuration changes to choose a moniker faliover scenario, and follow [Safe Deployment Practices](./MigrateToGCS.md#safe-deployment-practices-sdp).
+    
+## How will the moniker failover selection affect your logs data consumption? 
+Moniker failover is an automatic process. That means that your logs may land in the paired region transiently, if the logs data plane is unable to write to a moniker in the primary region. Depending on your data consumption choice, consider the failover option and make updates accordingly:
+
+*	DGrep - if you are using “Region” scoping condition, which filters on the region of the moniker, make sure to include the primary and paried regions. Otherwise there should not be any change. 
+*	Kusto - if you using regional Kusto clusters, which are selected based on the region of the moniker, consider the primary and paired regions. Otherwise there should not be any change.
+* 	Extensibility SDK - if your SDK is configured to filter by moniker OR region, consider the parimary and paired regions. Otherwise there should not be any change.
+*	GDS - data will land in an Event Hub based on the region of the moniker. Make sure you consider this when consuming data.  

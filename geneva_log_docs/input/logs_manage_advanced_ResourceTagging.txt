@@ -1,0 +1,41 @@
+#Resource Tagging
+If you are onboarding to Geneva for the first time, please do not go through this. This feature is only for few customers who want to control the storage shard distribution to Agents.  GCS already effectively distributes the storage shards using hashcode of the Agent identity. Some customers don't want this random distribution and this feature is for them.
+
+With GCS, you can tag your storage shards (aka monikers) with a particular value. The same tag value can be specified to Agent so that GCS gives those storage shards to Agent instead of giving a random storage shard from that region. This allows customers to control which agent gets which storage shard.  Please follow these steps to enable resource tagging for your namespace. 
+
+NOTE:  Minimum Agent deployed version required to use this feature is 41.1.3. The MA launcher version must be at least 41.1.3, so you cannot deploy an older version of MA and upgrade to this version to use this feature.
+
+## Step 1: Tag the storage shards 
+
+Get the latest Warm Path Powershell Cmdlets. 
+Tag the storage shard (moniker) as following 
+```
+$moniker = Get-WarmPathMoniker -WarmPathEnvironment DiagnosticsProd -WarmPathAccountName MyAccount -Moniker MyMoniker
+$resourcetag = New-Object Microsoft.Azure.Monitoring.WarmPath.Contracts.WarmPathResources.ResourceTagSetting("User",@("Thumbprint1","Thumbprint2"))
+```
+Resource tag setting is a key value pair of resource tag type and its value.
+Resource tag types can be one of the following, with at most one setting per type 
+* User
+* EventHubStamp
+* StorageStamp
+Resource tag values are a list of resource names
+```
+$moniker.ResourceTagSettings.Add($resourcetag)
+Set-WarmPathMoniker -WarmPathEnvironment DiagnosticsProd -WarmPathAccountName MyAccount -Moniker MyMoniker -Configuration $moniker
+```
+
+## Step 2: Configure Agent with correct resource tag settings
+
+1. Set the following environment variables before launching agent  
+```
+    set MONITORING_GCS_STORAGE_RESOURCE_TAG_TYPE=User
+
+    set MONITORING_GCS_STORAGE_RESOURCE_TAG_VALUE=EDEE367C075CB2BF89ACCF4E74C0840FD789C7B4
+```
+2. If you want to pass the values froms service configuration (CSCFG) then following are the CSCFG settings 
+```
+    <Setting name="GcsStorageResourceTagType" value="User" />
+
+    <Setting name="GcsStorageResourceTagValue" value="<value>"/>
+```
+3. If you are adding these to a multi-tenant JSON config, see this page for informatoin.

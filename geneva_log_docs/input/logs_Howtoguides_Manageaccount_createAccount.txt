@@ -1,0 +1,90 @@
+# Create a new Geneva Logs account
+
+Before you create a new Geneva Logs account, please make sure you have the required [prerequisites](../../../getting_started/v2/prereqsV2.md).
+
+>[!Note]
+>All *new* Geneva Logs accounts are [GSM](../../concepts/WhatIsGsm.md) enabled by default. 
+
+>[!Note] 
+>You are required to create a new Geneva Metrics account when creatind a new Geneva Logs account. 
+
+## Create a new account through the Geneva Portal (Jarvis)
+You can use the [Geneva Portal](https://portal.microsoftgeneva.com/) to create and maange all aspects of your Logs account. To start the **Create a new account** wizard, follow one of these paths: 
+1. Go to [**Get Started** on Geneva Portal](https://portal.microsoftgeneva.com/account/onboard), and then go to **Create**.
+
+
+![Jarvis landing page](../images/JarvisLanding.png)
+
+
+![Getting started](../images/GettingStarted.png)
+
+## Create a new account using PowerShell 
+
+1. [Setup PowerShell](../PS.md) to manage Geneva Logs, if don't have it setup already. 
+
+2.  Initialize variables. Note that `$environment` value comes from the list [here](../../Resources/endpoints.md#endpoints-for-programmatic-management).
+```powershell
+    $environment = "<WarmPathEnvironment>"
+    $account = "<Account name>"
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.UserCredential
+    $adminSecurityGroup = "<Security group name>"
+    $accountAdminAlias= "<alias@microsoft.com>"
+    $serviceTreeGuid = "<Service tree guid>"
+    $namespace = "<Account namespace>"
+    $subscriptionId="<Azure subscription Id>"
+    $location = "<ARM Region Name>"
+    $storageGroupNameAudit = $namespace + "audit"
+    $storageGroupNameDiag = $namespace + "diag"
+    $storageGroupNameSecurity = $namespace + "security"
+    $certThumbprint = "<Thumbprint of cert>"
+    $certIssuer = "<Cert issuer>"
+    $majorVersion = "<major version>"
+    $mainConfigFilePath = "<main config path>"
+    $importsDirPath = "<path to directory containing import files>"
+    $storageReplicationType = "<preferred storage replication type>"
+``` 
+`$storageReplicationType` is an optional parameter. When not specified, the default value is Standard_GRS. Other values that can be set are Standard_ZRS, Standard_LRS, Standard_RAGRS, Standard_GZRS, Standard_RAGZRS.
+
+2.  Create an account object
+```powershell
+    CreateWarmPathAccount -environment $environment -accountName $account -email $accountAdminAlias -isGcsEnabled:$true -isGsmEnabled:$true -adminSecurityGroup:$adminSecurityGroup
+```
+3.  Setup context to an account
+```powershell
+    Set-WarmPathContext -Credential $credential -WarmPathEnvironment $environment -WarmPathAccountName $account
+```
+4.  Create a namespace
+```powershell
+    CreateWarmPathNamespace -environment $environment -accountName $account -namespace $namespace -serviceTreeGuid:$serviceTreeGuid
+```
+5.  Add azure subscription 
+```powershell
+    $subscriptionConfiguration = New-Object Microsoft.Azure.Monitoring.WarmPath.Contracts.WarmPathResources.AzureSubscription
+
+    $subscriptionConfiguration.SubscriptionId = $subscriptionId
+
+    New-WarmPathAzureSubscription -Configuration $subscriptionConfiguration -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+6.  Create default storage groups 
+```powershell
+    New-WarmPathStorageGroup -StorageGroupName $storageGroupNameAudit -Namespace $namespace  -Location $location -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    New-WarmPathStorageGroup -StorageGroupName $storageGroupNameDiag -Namespace $namespace  -Location $location -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    New-WarmPathStorageGroup -StorageGroupName $storageGroupNameSecurity -Namespace $namespace  -Location $location -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+7.  Create MA communication role
+```powershell
+    CreateWarmPathUserRole -environment $environment -namespace $namespace -accountName $account -userRoleId "MaCommunication" -certThumbprint $certThumbprint -certIssuer $certIssuer -isMaCommunication $true
+```
+8.  Upload MA config
+```powershell
+    $configuration = Read-WarmPathMonitoringConfigurationFromDisk -ConfigNamespace $namespace -MajorVersion $MajorVersion -MainConfigFilePath $mainConfigFilePath -ImportConfigFilesDirectory $importsDirPath
+
+    $configuration.IsDeployed = $true
+    New-WarmPathMonitoringConfiguration -WarmPathEnvironment $environment  -WarmPathAccountName $account -Configuration $configuration
+```
+
+9. Deploy MA config
+```powershell
+    Set-WarmPathMonitoringConfiguration -Configuration $configuration -ConfigNamespace $namespace -MajorVersion $majorVersion

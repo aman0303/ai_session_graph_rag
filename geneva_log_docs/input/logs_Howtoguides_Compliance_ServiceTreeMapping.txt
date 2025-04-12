@@ -1,0 +1,75 @@
+# Map Geneva Logs namespaces to service tree IDs
+[Service Tree](http://aka.ms/servicetree) is the catalog of all services at Microsoft, and it is the source of truth for all service-related metadata. To support security, quality, privacy, and compliance scenarios, all Geneva Logs namespaces are required to be mapped to a valid Service Tree ID. 
+
+## How to map my namespace to a Service Tree ID using the Geneva Portal 
+When you create a *new* namespace in your Geneva Logs account, you are required to associate it with your service as it is cataloged in Service Tree. You can do so at the [Logs Account Setting](https://portal.microsoftgeneva.com/account/logs/namespaces) page.  
+
+>[!Note]
+>Associating your namespace with the wrong service could cause security and compliance violations. 
+
+![New namespace](../images/NewNSST.png)
+
+To map an *existing* namespace, go to the **Namespaces** tab in your Geneva Logs acount in the Geneva Portal, click the **Pencil** icon next to the namespace you want to map, and enter your service's name as it is cataloged in Service Tree. 
+
+![Existing namespace](../images/ExistingNSST.png)
+
+## How to map my namespace to a Service Tree ID using 
+Download the latest version of [MDS tools](../../Resources/Downloads.md).  
+
+Please find the list of MDS(Logs) endpoints [here](../../resources/endpoints.md#environments-to-onboard-to) and run the following command on each namespace you want to map to service tree:
+
+```
+mds.exe <Endpoint> account -command:addnamespace -mdsaccount:<AccountName> -namespace:<Namespace> -serviceTreeGuid:<ServiceTreeID>
+```
+
+# Troubleshooting
+
+## You see different values for your mapped namespace in Jarvis
+
+Geneva Logs config. store values might be different from what is actually mapped in [Service tree](https://microsoftservicetree.com/home).
+
+You have to remap all the legacy namespaces to the correct Service tree. Once it's remapped this should work like before. To map your namespace to correct service tree, you can either use tools (mds.exe) or Jarvis (pencil icon) to edit again.
+
+Please verify you see the correct values in the Metadata -> Public (or cloud specific) section in [Service tree Portal](https://microsoftservicetree.com/home) for your Service after your remapping.
+
+![ServiceTreeImage][ServiceTreeImage]
+
+
+### Cannot See Mapped Service Tree Data/Duplicate Mapping
+
+![ST][ST]
+
+**Possible Errors:**
+
+> <p style="color:red;">Failed to set Service Tree mappings with exception: 
+ -- openCurlyBracket -- 
+"Message":"You have already provided this value for your service. Duplicate values are not allowed**.","Details":"Microsoft.Tree.CommonUtilities.TreeUserErrorException: You have already provided this value for your service. Duplicate values are not allowed.</p>\r\n at Microsoft.Tree.CommonServiceFunctionalities.ViewModels.ServiceMetadata.d__47.MoveNext() in C:\\source\\src\\tree0\\CommonServiceFunctionalities\\ViewModels\\ServiceMetadata.cs:line 1588\r\n--- End of stack trace from previous location where exception was thrown ---\r\n   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.    
+
+> System.AggregateException: One or more errors occurred. ---> ServiceTreeUtility.MdsServiceTreeException: <p style="color:red;">Failed to set service tree mapping with exception:
+ -- openCurlyBracket -- 
+"Message":"The metadata value is already associated with '&lt;ServiceTreeName&gt;' (&lt;ServiceTreeGuid&gt;).","Details":"Microsoft.Tree.CommonUtilities.TreeUserErrorException: The metadata value is already associated with '&lt;ServiceTreeName&gt;' (&lt;ServiceTreeGuid&gt;).</p>\r\n at Microsoft.Tree.CommonServiceFunctionalities.ViewModels.ServiceMetadata.  
+
+If it still doesn't update and see the any of the above errors or Service Tree mapping shows successful but doesn't reflect in Jarvis Portal, please create an incident with Service tree team ([Azure Analytics\Service Tree](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=J2O3C3)) to perform re-indexing for your account.
+
+> [!TIP]  
+> Please see [this](../../troubleshooting/tshoot.md#how-to-find-logs-account-owners-administrators) documentation to determine the admins of the account who owns the namespace
+
+## You mapped your Logs namespace to Service Tree but you are still flagged in S360
+This can happen due to one of the following reasons:
+
+1. The mapping of your Logs Namepsace to Service Tree ID was not updated properly in Service Tree. 
+2. The casing of your Geneva Logs account name and/or the Logs namepsace may not match between Service Tree and Jarvis. 
+
+To resolve either issue, re-map your Logs namespace in Jarvis by clicking the pencil icon as mentioned [here](servicetreemapping.md#how-to-map-my-namespace-to-a-service-tree-id-using-the-geneva-portal) and re-saving the mapping. Then navigate to [Service Tree](https://aka.ms/servicetree) to verify whether a new entry was added and if it has the correct casing. Please wait for 1 day  after re-mapping until the changes reflect in S360 and the KPI turns green. 
+
+
+<!-- Image References -->
+[ST]: ../images/ST.png 
+[ServiceTreeImage]: ../images/ServiceTreeImage.png 
+
+## Logic for S360 KPI for mapping namespaces
+If a namespace doesn’t have an owning Service Tree ID associated with it, then it is unclear who owns it.
+
+We use an algorithm to determine ownership in order to ask teams to review the namespace and determine if it’s still necessary.  If no longer needed, the namespace can be deleted.  If the namespace is still in use, it needs to be mapped to a valid Service Tree entry.
+
+In most cases, the namespace is writing to storage accounts residing in an Azure subscription registered with a particular Service Tree ID, so we use that as the basis for associated the namespace with a team in S360.

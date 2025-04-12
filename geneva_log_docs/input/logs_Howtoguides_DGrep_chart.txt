@@ -1,0 +1,65 @@
+# Charting
+
+
+
+1. Select 'Chart' Tab of the DGrep UI
+
+![Chart Tab](../images/dgrep_Charting-1.png)
+
+2. Add a chart layer using the "Add a layer" button
+
+![Add Layer](../images/dgrep_Charting-2.png)
+
+3. Write a chart query in the layer or generate a query using "Generate Query" button
+
+![Add Layer](../images/dgrep_Charting-3.png)
+
+4. Select X-axis, Aggregation, and Y-axes according to your data
+
+![Add Layer](../images/dgrep_Charting-4.png)
+
+5. After clicking on "Generate" button you will see generated chart query comes to chart query editor. After running this query you can see the chart
+
+6. You can also pin this chart to dashboard using "Pin to Dashboard" button 
+   
+> [!NOTE]  
+> This functionality is not recommended - for creating dashboards with charts based on logs, please convert your logs to metrics using either directly via 
+> [IFx APIs](../../../collect/instrument/ifx/ifx.md) or less efficiently with [local derived events](../../../collect/advanced/derivedintro.md), or if 
+> needed the [Logs-to-Metrics connector](../Logs2Metrics/overview.md).
+
+![Add Layer](../images/dgrep_Charting-6.png)
+
+## Few things to note about DGrep chart query:
+
+### Time Charts
+
+1. Query should return at least one Timestamp column. This column will be used for time axis of chart.
+    * If there are multiple Timestamp columns, then first Timestamp column will be used.
+2. There can be multiple number of numeric column in the result of the query and all column will be treated as different series(legend).
+3. If query will return one string column, then UI will find all different values from this column and create multiple legends by combining with numeric columns
+
+For example, if Data is:
+
+|Timestamp|NumericColumn1|NumericColumn2|StringColumn
+|--|--|---|--|
+|T1|1|5|Foo|
+|T2|2|6|Bar|
+|T3|3|7|Foo|
+|T4|4|8|Bar|
+
+Legends will be: (Foo, NumericColumn1), (Foo, NumericColumn2), (Bar, NumericColumn1), (Bar, NumericColumn2)
+
+Series will be:
+
+* (Foo, NumericColumn1), = (T1,1), (T3,3)
+* (Foo, NumericColumn2), = (T1,5), (T3,7)
+* (Bar, NumericColumn1), = (T2,2), (T4,4)
+* (Bar, NumericColumn2) = (T2,6), (T4,8)
+
+If there are multiple string columns, then only first string column will be used as above and others will be ignored.
+
+### Category Charts
+
+1. Query should return at least one string column. This column will be used for X-axis of chart.
+    * If there are multiple string columns, then first string column will be used.
+2. There can be multiple number of numeric column in the result of the query and all column will be treated as different series(legend).

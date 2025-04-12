@@ -1,0 +1,68 @@
+---
+title: Extensibility SDK
+description: This page provides an overview of the Extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring
+ms.topic: Exensibility SDK
+ms.date: 09/26/2018
+---
+
+# Overview
+
+The Geneva Logs pipeline offers a set of standard applications that teams can use to analyze their trace data.
+These applications include log search (DGrep), PII scrubbing, Cosmos upload, and ADLS upload.
+The Geneva Extensibility SDK allows teams to implement processors on their streams and extend Geneva services to suit business needs.
+
+An overview of the Geneva data flow can be found here: [Welcome to Geneva Monitoring](~/getting_started/intro.md).
+Briefly, service logs are collected by the Geneva monitoring agent (MA).
+The MA is responsible for periodically uploading 1) the logs to Azure Storage and 2) a notification to an Event Hub indicating that a blob has been uploaded and is ready for downstream processing.
+Geneva services such as PII scrubbing, Cosmos upload, and ADLS upload monitor Event Hubs for notifications and act on the same.
+
+The Extensibility SDK wraps interactions with Event Hubs, Geneva backend, and Azure Storage to reduce the effort involved in accessing your data.
+The SDK is intended for use in near-real time and streaming scenarios.
+Other options for access to Geneva Logs data is discussed under [Logs](~/logs/intro.md) and [Integrations](~/connectors/intro.md).
+
+# Security Wave Response
+
+We are aware of the SFI requirement to migrate from SAS/connection strings and move to a more secure, credential-free access method.
+The Extensibility SDK team is actively working to meet this requirement.
+
+Teams who have received S360 Action Items should apply for an exception via the S360 exception process.
+You can reference the following ADO item as a known blocker: [Feature 27763709: [ExtSDK] - Security Wave 1 - ID 1.1 Extensibility SDK to support credential-free authentication for offset storage](https://msazure.visualstudio.com/LensSuite/_workitems/edit/27763709).
+
+We will update customers once the new .NET Standard Extensibility SDK is available.
+A pilot release is targeting late Feb 2025 with a broader release at a future date.
+Please contact [April Badger (aprilbadger@microsoft.com)](mailto:aprilbadger@microsoft.com) and [Uday Putrevu (udayp@microsoft.com)](mailto:udayp@microsoft.com) for details.
+
+Documentation on the .NET Standard Extensibility SDK `Microsoft.Azure.GenevaLogs.ExtensibilitySdk` is available here:
+
+- [Getting started](gettingstarted.md)
+- [Using the Extensibility SDK](usage.md)
+- [API reference](reference.md)
+- [Migrating from the original Extensibility SDK](migratingfromv1.md)
+- [Release notes](releasenotes.md)
+
+See also:
+
+- [Extensibility SDK FAQ](~/logs/faq/extensibilityfaq.md)
+- [Extensibility SDK Troubleshooting](~/logs/troubleshooting/extensibilitytshoot.md)
+
+The Extensibility SDK uses the [Azure.Messaging.EventHubs.Processor client library](https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.eventhubs.processor-readme) to interact with Event Hubs.
+A familiarity with it is useful to understand the inner workings of the Extensibility SDK.
+More information is available here:
+
+- [Azure Event Hubs - Event consumers](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-features#event-consumers)
+- [Azure.Messaging.EventHubs.Processor Samples - Processing Events](https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/eventhub/Azure.Messaging.EventHubs.Processor/samples/Sample04_ProcessingEvents.md)
+
+# Original Extensibility SDK documentation
+
+> [!WARNING]
+> The original Extensibility SDK will be out of support when the .NET Standard version is generally available.
+
+Documentation on the original Extensibility SDK `Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension` is available here:
+
+- [Getting started](gettingstarted.md)
+- [Using the Extensibility SDK](sample.md)
+- [API reference](api.md)

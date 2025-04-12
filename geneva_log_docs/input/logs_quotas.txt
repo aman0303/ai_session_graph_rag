@@ -1,0 +1,41 @@
+## Limits and Quotas
+
+### I. Account Management Limits
+
+Geneva Logs impose certain restrictions on the number of resources a given account can contain in order to ensure that all accounts in an environment can be serviced fairly without the chance of one, or a few, large accounts impacting others. 
+
+Resource|Quota
+--------|------
+Storage shards|500
+User roles|50
+Configurations (major versions)|300
+Configurations (minor versions)|3000
+
+These limits are high enough to meet the needs of most services. However, if an account exceeds these restrictions it should be split up into two or more accounts to stay under the limits. Alternatively unused entities may be deleted. 
+
+### II. Logs processing limits
+Geneva does not currently impose input/output operations per second (IOPS) limits at a [Geneva namespace](concepts/namespace.md)) level level.
+
+However, [Geneva configuration](Howtoguides/Manageconfig/configmanagement.md) can certainly affect performance and your ability to meet SLAs. 
+For example, as logs IOPS load is sharded across monikers of a namespace, suboptimally-managed storage accounts may reduce your overall IOPS.
+
+So, to prioritize performance of your namespace, please consider the following recommendations for configuring your Geneva namespace resource topology:
+1. Use [GSM](../logs/concepts/WhatIsGsm.md) for your namespace.
+    * Why? GSM will automatically handle the provisioning and management of your namespace’s resources, like storage and event hubs.
+    
+        >i. Such management will reduce your need to understand and optimize configurations for monikers in the namespace.
+
+2. If you’re not able to use [GSM](../logs/concepts/WhatIsGSM.md):
+    * a. Ensure that each Logs Account complies with above limits
+    * b. Review for throttling and/or connectivity issues at ingestion, both primary signs that a configuration is suboptimal
+
+        >i. To check for throttling, review ‘Failures and Throttling’ metrics in the [Agent QoS dashboard](../collect/advanced/agentqos.md)
+
+        >ii. To improve for throttling, make sure that the [auto-inflate TU](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-auto-inflate) TU setting is enabled on your Event Hubs 
+
+    * c.	Limit Event Hub ingress rate to 100k events per minute
+
+        >i. Technically EventHub could sustain higher IOPS, but consumption rate is limited by other factors as well 
+
+### III. Schema limit per event
+Currently, Geneva pipeline has the limit of 100 schemas per event for Cosmos Uploader. 

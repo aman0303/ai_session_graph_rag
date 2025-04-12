@@ -1,0 +1,28 @@
+# How to migrate Geneva Storage Management (GSM)-enabled accounts to a new subscription.
+Use the following steps to migrate all GSM managed resources from one subscription to another and unregister the old subscription from Geneva:
+1. Verify your new subscription is dedicated to Geneva by checking in Azure portal that it does not have any non-Geneva resources provisioned.
+2. Give Geneva [access](../Manageaccount/subscriptionpermissions.md) to your new subscription.
+3.	Get the [latest version of MDS tools](../../Resources/Downloads.md), and run the following command to remove the denyMove assignment from the resource group: 
+    ```
+    mds resourcemanagement <endpointurl> -command:addOrDeleteDenyAssignment -mdsAccount:<MdsAccountName> -subscriptionId:<oldSubscriptionId> -resourceName:<resourceGroupName>  -denyAssignmentType:DenyMove -resourceType:ResourceGroup  -denyOperation:delete -resourceGroup:<resourceGroupName>
+    
+    ```
+
+    * The value for *endpointurl* can be found [here](../../Resources/endpoints.md#environments-to-onboard-to). 
+
+4. From [Jarvis](https://portal.microsoftgeneva.com/), add the new subscription to your Geneva Logs account.
+5. Go to Azure portal, find the old subscription, and remove Geneva's premissions. This will ensure GSM will not try to provision new resources in that subscription. 
+6. In the Azure portal, move all storage accounts and EventHub namespaces associated with this Logs account from the old subscription to the new subscription. *Make a note* of the resource group and subscription ID that the accounts reside in for the new subscription.
+    *  Use these [Powershell commands](https://docs.microsoft.com/en-us/powershell/module/az.resources/move-azresource?view=azps-5.4.0) to move Azure resources. Geneva backend process will reapply the denyMove assignment every 2-10 days. If the denyMove assignment blocks moving of Azure resources, run the command to remove the denyAssignment again (you may need to reapply GenevaPermission to the old subscriptionId and remove the permission once the denyMove command completed). 
+7.	Run these MDS commands for metadata backfill:
+    * Run this command for each moniker:
+        ```
+        mds resourcemanagement <endpointurl> -command:monikerBackfill -mdsAccount:<MdsAccountName> -subscriptionId:<NewSubscriptionId> -resourceGroup:<NewResourceGroupName> -monikerName:<MonikerName>
+        ```
+    * Then run this command:
+
+        ```
+        mds resourcemanagement <endpointurl> -command:addOrDeleteDenyAssignment -mdsAccount:<MdsAccountName> -subscriptionId:<newSubscriptionId> -resourceName:<newResourceGroupName>  -denyAssignmentType:DenyMove -resourceType:ResourceGroup  -denyOperation:add -resourceGroup:<resourceGroupName>
+        ```
+
+8. After the storage metadata backfill is performed, you can go to [Jarvis](https://portal.microsoftgeneva.com/) and delete the old subscription from your Logs account.

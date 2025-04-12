@@ -1,0 +1,97 @@
+---
+title: Extensibility SDK Release Notes
+description: Release notes for the Extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: bradbu
+manager: udayp
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 02/21/2025
+---
+
+# Extensibility SDK release notes
+
+The Extensibility SDK library consists of two NuGet packages:
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk):
+  Use this package to receive Geneva Log event messages.
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO):
+  Use this package to receive Geneva Log event messages and deserialize the data into a list of records.
+
+
+# Latest release
+
+For the latest release notes, see the core package:
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk)
+
+  > [!IMPORTANT]
+  > Please ignore version `1.2023.1214.2`.
+  > Under **Versions**, select the version with the latest **Publish date** to find the latest release notes.
+
+The following sections describe specific notes and errors in more detail.
+
+
+# 0.0.17-alpha
+
+This release has the following limitations:
+
+**Authentication:** 
+
+- This release only supports the following authentication modes:
+
+  | Logs Environment | AKV Cert Auth | Corp MSI Auth | AME MSI Auth |
+  | - | - | - | - |
+  | Smoke, Test, Stage | Yes | Yes | No |
+  | ***Prod | Yes | No | Yes |
+
+  > [!IMPORTANT]
+  > More tenants are supported in version 0.0.19-alpha: [GenevaAuthentication](./usage.md#genevaauthentication).
+
+**Microsoft.Azure.GenevaLogs.ExtensibilitySdk:**
+
+- The assembly may fail to load if a strongly-named assembly is required.
+
+  ```
+  System.IO.FileLoadException: Could not load file or assembly 'Microsoft.Azure.GenevaLogs.ExtensibilitySdk, Version=0.0.17.1, Culture=neutral, PublicKeyToken=null' or one of its dependencies. A strongly-named assembly is required.
+  ```
+
+  > [!IMPORTANT]
+  > This issue is resolved in version 0.0.18-alpha.
+
+  This issue occurs because the assembly is Authenticode signed with a digital signature but is not strongly named.
+  It can be loaded in assemblies that are not strongly-named.
+
+**Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO:**
+
+- `BlobEventDataReader` may throw an exception on missing lz4 assemblies:
+
+  ```
+  System.DllNotFoundException: Unable to load DLL 'liblz4x64' or one of its dependencies: The specified module could not be found.
+  ```
+
+  > [!IMPORTANT]
+  > This issue is resolved in version 0.0.18-alpha.
+
+  This issue occurs because the lz4 assemblies are not binplaced correctly.
+  It can be resolved by installing package `Microsoft.Azure.Monitoring.DataPipe.Blob.IO`.
+  For example, in an SDK-style project:
+
+  ```xml
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO" Version="0.0.17-alpha" />
+    <PackageReference Include="Microsoft.Azure.Monitoring.DataPipe.Blob.IO" Version="5.16.0" />
+  </ItemGroup>
+  ```
+
+  It can also be resolved in your project by binplacing the following files into your build output:
+
+  ```
+  \packages\microsoft.azure.monitoring.datapipe.blob.io\5.16.0\build\netstandard2.0\native\lib
+      \liblz4ARM64.dll
+      \liblz4arm64.so
+      \liblz4x64.dll
+      \liblz4x64.so
+      \liblz4x86.dll
+  ```

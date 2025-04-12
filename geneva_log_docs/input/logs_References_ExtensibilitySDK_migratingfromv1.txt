@@ -1,0 +1,152 @@
+---
+title: Migrating from the original Extensibility SDK
+description: Information on how to migrate from the original Extensibility SDK. 
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: bradbu
+manager: udayp
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 12/06/2024
+---
+
+# Migrating from the original Extensibility SDK
+
+> [!NOTE]
+> This information applies to the .NET Standard Extensibility SDK `Microsoft.Azure.GenevaLogs.ExtensibilitySdk`.
+> For more information, see [Extensibility SDK Overview](./intro.md).
+
+If you are migrating from the previous version of the SDK, [Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension), 
+to the new version of the SDK, [Microsoft.Azure.GenevaLogs.ExtensibilitySdk](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk),
+there are some additional considerations.
+
+The previous SDK uses [Microsoft.Azure.EventHubs.Processor.EventProcessorHost](https://learn.microsoft.com/en-us/dotnet/api/microsoft.azure.eventhubs.processor.eventprocessorhost) to process Event Hubs messages.
+The new SDK uses the [Azure Event Hubs Event Processor client library for .NET - Azure.Messaging.EventHubs.Processor](https://learn.microsoft.com/en-us/dotnet/api/overview/azure/messaging.eventhubs.processor-readme).
+The Azure Event Hubs client library introduces breaking changes regarding how checkpoint blobs are stored in storage account containers.
+For details, see [Guide for migrating to Azure.Messaging.EventHubs from Microsoft.Azure.EventHubs](https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/eventhub/Azure.Messaging.EventHubs/MigrationGuide.md#migrating-eventprocessorhost-checkpoints) 
+and [Migrating EventProcessorHost checkpoints](https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/eventhub/Azure.Messaging.EventHubs/MigrationGuide.md#migrating-eventprocessorhost-checkpoints).
+
+In short, the new SDK will not use the Event Hubs checkpoints from the previous SDK.
+The new SDK will start processing Event Hubs messages from scratch.
+
+The following sections describe a few options when migrating.
+
+# Option 1: do nothing
+
+If you switch from the previous SDK to the new SDK without migrating, the new SDK starts processing Event Hubs messages at the `timeToLookBackIfNoCheckpoint`, which is 1 hour by default.
+For example, if the new SDK starts up well within 1 hour of when the previous SDK stopped, some events may be re-processed, and no events should be dropped.
+However, if the new SDK starts up after 1 hour of when the previous SDK stopped, events will be skipped.
+
+> [!NOTE]
+> Like usual, your `ProcessBatchAsync` method must be tolerant of receiving the same event to be processed more than once.
+> For details, see [Using the Extensibility SDK - EventStreamBase](./usage.md#eventstreambase).
+
+# Option 2: set the timeToLookBackIfNoCheckpoint
+
+You can set the `timeToLookBackIfNoCheckpoint` to ensure the new SDK starts processing Event Hubs messages before the previous SDK stopped.
+The minimum value is zero, and the maximum value is 1 day.
+
+## timeToLookBackIfNoCheckpoint sample
+
+This example shows how to set the `timeToLookBackIfNoCheckpoint`.
+For more samples, see [Using the Extensibility SDK](usage.md).
+
+```cs
+var eventHubDetails = new EventHubDetails(
+    "myConsumerGroup",
+    BrokerKind.Scrubbed,
+    timeToLookBackIfNoCheckpoint: TimeSpan.FromDays(1));
+...
+using var processor = new EventStreamProcessor(
+    genevaAccountDetails,
+    eventFilters,
+    eventHubDetails,
+    eventStreamBase,
+    telemetryDetails);
+```
+
+# Option 3: migrate checkpoints
+
+You can configure migration to migrate Event Hub checkpoints.
+The SDK will automatically migrate `EventProcessorHost` checkpoints from the previous SDK to `EventProcessorClient` checkpoints for the new SDK.
+Then the new SDK will start where the previous SDK stopped.
+
+Some details:
+
+- Migration is optional and will only be performed if the `MigrationDetails` are specified.
+
+- Migration occurs once per moniker Event Hub and consumer group during `EventStreamProcessor` startup.
+
+- If migration fails, errors will be logged, and SDK processing will be blocked.
+  Migration is idempotent and will be retried but must succeed to continue.
+
+- If migration has already completed successfully, startup incurs a small performance overhead to check whether migration has already occurred.
+
+  > [!IMPORTANT]
+  > Some time after migration is complete, you should remove the `MigrationDetails` so that the migration check will not occur.
+
+- Migration is only supported moving forward.
+  Event Hubs checkpoints cannot be migrated from the new SDK back to the previous SDK.
+
+- If needed, checkpoints can be re-migrated.
+  To do so, stop all processors, call `EventStreamProcessor.ClearEventHubsCheckpointsAsync`, and restart processors.
+
+## MigrationDetails
+
+This class contains the details of how to migrate checkpoints.
+
+The parameters are:
+
+- `checkpointStorageAccountUri`: The URI of the checkpoint storage account for the previous SDK.
+
+  > [!NOTE]
+  > You no longer specify the checkpoint storage account for the new SDK.
+  > The SDK will automatically use a checkpoint storage account associated with your Geneva Logs moniker.
+
+- `checkpointAuthentication`: The authentication method to connect to the previous checkpoint storage account.
+
+## AzureStorageAuthentication
+
+The `checkpointAuthentication` parameter specifies how to authenticate to Azure storage when connecting to the previous checkpoint storage account.
+The credentials must have permissions to read and list blobs on the checkpoint container, like the Storage Blob Data Reader role.
+The SDK supports the following Azure storage authentication methods:
+
+- `AzureStorageKeyAuthentication`: authenticates using a storage key.
+- `AzureStorageSasAuthentication`: authenticates using a SAS key.
+- `AzureStorageTokenAuthentication`: authenticates using an access token.
+  MSI token authentication is recommended for SFI.
+
+For more information on authentication methods, see:
+- [Authorize access to data in Azure Storage](https://learn.microsoft.com/en-us/azure/storage/common/authorize-data-access)
+- [How to authenticate .NET apps to Azure services using the Azure Identity library](https://learn.microsoft.com/en-us/dotnet/azure/sdk/authentication)
+
+## Migration sample
+
+This example shows how to configure migration.
+
+```cs
+// Define the previous SDK checkpoint storage account URI.
+var checkpointStorageAccountUri = new Uri("https://genevalogsextsdkdev.blob.core.windows.net");
+
+// Define one of the authentication methods for connecting to Azure storage. Samples:
+var checkpointAuthentication = new AzureStorageKeyAuthentication(new StorageSharedKeyCredential(accountName, accountKey));
+// var checkpointAuthentication = new AzureStorageSasAuthentication(new AzureSasCredential(signature));
+// var checkpointAuthentication = new AzureStorageTokenAuthentication(new DefaultAzureCredential());
+// var managedIdentityCredential = new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(clientId));
+// var checkpointAuthentication = new AzureStorageTokenAuthentication(managedIdentityCredential);
+
+// Define the MigrationDetails. This object should be removed some time after migration is complete.
+var migrationDetails = new MigrationDetails(
+    checkpointStorageAccountUri,
+    checkpointAuthentication);
+
+using var processor = new EventStreamProcessor(
+    genevaAccountDetails,
+    eventFilters,
+    eventHubDetails,
+    eventStreamBase,
+    telemetryDetails,
+    migrationDetails);
+
+// Migration automatically occurs once during startup.
+await processor.StartAsync(cancellationToken).ConfigureAwait(false);
+```

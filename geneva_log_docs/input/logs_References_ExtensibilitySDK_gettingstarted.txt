@@ -1,0 +1,114 @@
+---
+title: Getting Started with the Extensibility SDK
+description: Information on how to get started with the Extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 09/26/2018
+---
+
+# Getting Started 
+
+To use the Geneva Extensibility SDK, you need to:
+1. Ensure the events of interest are configured for streaming (i.e. appear in DGrep).
+2. Create a new Event Hub consumer group for the SDK to use.
+3. Authorize the SDK to read your data.
+
+# Step 1: Configure the events of interest for streaming
+
+If the events are already in DGrep, you are done. Otherwise, see [here](../../concepts/DGrepoverview.md).
+
+# Step 2: Create an event hub consumer group
+
+Use the Geneva UI to create a consumer group to consume the data. There are a few restrictions here: 
+
+> [!WARNING]
+> **Do not create consumer groups in the Azure Portal.**
+> Consumer groups must be created in the Geneva UI.
+
+> [!WARNING]
+> **Do not use the consumer groups called `$Default`, `LogAnalyticsConsumer`, `GenevaAnalyticsConsumer`, or `GenevaReservedConsumer`.**
+> By default, every Event Hub has a consumer group called `$Default`.
+> In addition, all Event Hubs associated with Geneva streams have consumer groups called `LogAnalyticsConsumer`, `GenevaAnalyticsConsumer`, and `GenevaReservedConsumer`.
+> These groups are reserved for Geneva use.
+> These consumer groups should not be used for any reason.
+> No support will be provided if this is violated, and you will likely encounter data loss.
+
+To create consumer groups in [Jarvis](https://portal.microsoftgeneva.com/): 
+
+- Navigate to [Account > Logs Account Settings > Resources](https://portal.microsoftgeneva.com/account/logs/resources).
+
+- The step to add the consumer group depends on whether or not you are using a [GSM enabled account](~/logs/concepts/WhatIsGSM.md).
+
+    > [!IMPORTANT]
+    > GSM enabled accounts are strongly encouraged over non-GSM accounts.
+
+  - For a GSM enabled account, click on the appropriate storage group.
+    This will take you to a page where you can update the group settings.
+    Under the "Streaming settings...", add the new consumer group and click on Save.
+
+    ![GSM Consumer group](../images/gsmConsumerGroup.png)
+   
+  - For non-GSM accounts, the Resources page contains the list of monikers in your account.
+    Pick the moniker(s) of interest.
+    Under the section "Event Hub", add the new consumer group and click on Update Azure Resources.
+
+    > [!WARNING]
+    > GSM enabled accounts are strongly encouraged so that storage accounts are automatically configured for you.
+    > If you are using a non-GSM account, you need to ensure that your storage account is configured correctly.
+    > Azure Event Hubs requires that the following storage account blob service settings are disabled:
+    >
+    > - Hierarchical namespace
+    > - Blob soft delete
+    > - Versioning
+    >
+    > For more information, see [Azure Event Hubs - Checkpointing](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-features#checkpointing).
+   
+    ![non-GSM Consumer group](../images/nonGsmConsumerGroup.png)
+
+# Step 3: Authorize the SDK to read your data
+
+You can authenticate to Geneva using either a certificate or managed identity (MSI).
+
+> [!NOTE]
+> The original Extensibility SDK `Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension` only supports certificate authentication.
+>
+> The .NET Standard Extensibility SDK `Microsoft.Azure.GenevaLogs.ExtensibilitySdk` supports both certificate and MSI authentication.
+
+Follow these steps to authorize your credentials to have read permissions for the namespaces and events that you are interested in.
+
+- Create your certificate or MSI for Geneva Logs.
+
+  - For an Azure Key Vault (AKV) certificate, follow the steps here: [Create a new Azure KeyVault (AKV) certificate](~/collect/authentication/keyvaultcreatecert.md).
+
+    > [!NOTE]
+    > The .NET Standard Extensibility SDK supports [Azure KeyVault (AKV) Certificates](~/collect/authentication/keyvault.md).
+    > It does not support [Unmanaged Certificates](~/collect/authentication/unmanaged.md).
+
+    The certificate needs to be installed into the local machine or current user certificate store for the SDK.
+
+  - For an MSI, follow the steps here: [How to use Managed Identities in Geneva Logs](~/collect/authentication/managedidentitylogs.md#how-to-use-managed-identities-in-geneva-logs).
+
+    The MSI needs to be configured on the Azure resource as usual.
+    For example, see:
+
+    - [Configure managed identities on Azure virtual machines (VMs)](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/how-to-configure-managed-identities)
+    - [Configure managed identities for Azure resources on a virtual machine scale set](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/how-to-configure-managed-identities-scale-sets)
+
+- Create a user role or use an existing one.
+  To add a user role, navigate to [Account > Logs Account Settings > User Roles](https://portal.microsoftgeneva.com/account/logs/userRoles).
+  Click on Add User Role and follow the steps there.
+  We suggest that you create and use a ReadOnly user role.
+
+- Add your credentials to the user role.
+
+  - For an AKV certificate, follow the steps here: [Authorize Azure KeyVault (AKV) certificates in your Geneva Logs account](~/collect/authentication/keyvaultlogsauthorize.md).
+
+  - For an MSI, follow the steps here: [Register the MI in Jarvis](~/collect/authentication/managedidentitylogs.md#register-the-mi-in-jarvis-1).
+
+- Next add a Streaming claim to the user role.
+  To add this claim, click on View / Add claims, select Streaming, fill in the Account (Regex), select the Right from the drop down list, and click on Add.
+
+  ![Streaming](../images/streaming.png)

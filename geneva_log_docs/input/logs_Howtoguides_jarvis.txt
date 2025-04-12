@@ -1,0 +1,43 @@
+# Using Jarvis portal to manage logs
+
+[Jarvis portal][JarvisPortal] can be used to manage all aspects of your Logs account. To manage your Logs account, navigate to the Account section of Jarvis portal and select Logs Account Settings. You can then go to the appropriate sections from the left navigation list as shown below. 
+
+![Manage your Logs account][ManageImage]
+
+
+The following broad set of management operations can be performed through each of the sections in the left navigation list shown above:
+
+- Configurations
+    - Add/edit configurations
+    - Download configurations as XML
+    - Search service audit logs for management operations performed on the configuration
+- Resources
+    - Add Azure subscriptions to your account
+    - Specify streaming settings such as Kusto configurations
+    - Specify access key rotation policy
+    - Add new Storage Groups
+- Account
+    - Modify account owners
+    - Modify account contact email
+    - Associate Metrics account for data pipeline QoS
+    - Delete Account
+- Namespace
+    - Add/delete namespaces
+    - Associate a namespace to a Service Tree service identity
+- Runners
+    - Runner management operations
+- User Roles
+    - Add/edit user role permissions
+    - Add/edit user role members
+- Tools & References
+    - Search for your Logs account 
+    - Check your access permissions to specific events
+
+<!-- Reference links -->
+[JarvisPortal]: https://aka.ms/Jarvis "Jarvis portal"
+
+<!-- Image links -->
+[ManageImage]: ./images/Manage.png "Logs management"
+
+
+

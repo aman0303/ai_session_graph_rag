@@ -1,0 +1,5 @@
+# Storage Groups and Storage Shards
+
+A Storage Group is collection of Azure resources that are used by Geneva to store and stream logs collected from your service. When a new namespace is created, Geneva automatically creates three Storage Groups, one each for storing Diagnostic, Audit and Security logs respectively. Geneva automatically creates additional Azure resources (storage accounts and event hub namespaces) as your monitoring data ingress increases. 
+
+The resource pair of storage account and event hub namespace is collectively known as a Storage Shard. 

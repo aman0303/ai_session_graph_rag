@@ -1,0 +1,25 @@
+# Errors
+
+### Why did I get an unexcepted error returned from MDS?
+
+This indicates an error with the configuration. Open a low priority [incident](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=K2O3nB) for futher investigation . 
+
+### What does “Table with CentralBond store type cannot have name longer than 60 characters” mean?
+
+This means the configuration is invalid because the specified namespace exceeds the length limits.
+
+### I'm getting “Namespace ‘foo’ in MDS Account <xyz> already covers ‘foobar’”. What does this mean?
+
+You're attempting to add a namespace with a prefix that is already registered. You can add a configuration with this namespace if you own the prefix or choose a different namespace.
+
+### Is there a workaround for “Namespace cannot be added due to a conflict”?
+
+The namespace is already registered by a different account, which causes a configuration error. Please choose a different namespace.
+
+### My account is not accessible with a given client certificate. Why is this happening? 
+
+> "Message": "Status(StatusCode=Unauthenticated, Detail="Account is not accessible with given client certificate.")",
+
+If you want to use the Ev2 extension to manage an account that already exists, you have to use the same certificate used as an administrator on the account. You could also use the certificate issued by the same Issuer and having same subject name, if the certificate was added to the managed certificates section. 
+[Learn more](~/collect/authentication/keyvault.md)
+

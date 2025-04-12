@@ -1,0 +1,49 @@
+
+## Scenario
+
+
+OperationEvent has a field called operationName with value
+
+
+<RestrictionList xmlns="urn: schemas - microsoft - AUTHORITY\SYSTEM com:xml - analysis"> <RoleID>Administrators</RoleID> <ObjectExpansion>ExpandObject</ObjectExpansion> </RestrictionList>
+
+
+Goal: You want to write a derived event that first escapes all " with \" and all \ with \\. Then you want to include this resulting value into another value using a concat.
+
+
+
+That is, you want something like this as the final value:
+
+
+
+ -- openCurlyBracket -- 
+"EventClass":"cloudAgentTenantIdentity","EscapedOperationName":"<RestrictionList xmlns=\"urn: schemas - microsoft - AUTHORITY\\SYSTEM com:xml - analysis\"> <RoleID>Administrators</RoleID> <ObjectExpansion>ExpandObject</ObjectExpansion> </RestrictionList>","ConnectionID":"cloudAgentRoleIdentity"
+ -- closeCurlyBracket -- 
+
+
+## Solution
+
+
+This can be achieved with this derived event syntax:
+
+
+<DerivedEvent eventName="SuccessfulOperationEvent10" source="OperationEvent" storeType="CentralBond" duration="PT1M" retentionInDays="90">  
+        <Query><![CDATA[  
+   let operationNameString = (operationName ?? "")  
+            let operationNameModified2=RegexSubst(RegexSubst(operationNameString, "\\", "\\\\\\\\", "g"), "\"", "\\\\\\\"", "g")  
+            let properties = Concat("",  
+                                    '
+ -- openCurlyBracket -- 
+',  
+                                    '"', "EventClass", '"', ':', '"', ToString(env\_cloud\_name ?? ""), '"', ',',  
+                                    '"', "EscapedOperationName", '"', ':', '"', operationNameModified2, '"', ',',  
+                                    '"', "ConnectionID", '"', ':', '"', ToString(env\_cloud\_role ?? ""), '"',  
+                                    '
+ -- closeCurlyBracket -- 
+')  
+          ]]></Query>  
+      </DerivedEvent>
+
+
+The reason we need to double escape the original value is because the first escape is lost (i.e. consumed) during concatenation.
+

@@ -1,0 +1,39 @@
+
+# Special Characters in Derived Events
+
+
+To use special characters quote/double quote in Concat function
+
+
+
+It is possible to use quote or double quote in Concat function using escape character ( \ ).
+
+
+
+Sample Example:
+
+
+
+    
+    Concat(&quot;___&quot; ,  &quot;
+ -- openCurlyBracket -- 
+ \&quot; Properties: \&quot; &quot;, &quot; \&quot;Value \&quot;
+ -- closeCurlyBracket -- 
+ &quot;)
+
+
+
+This function will concat two strings 
+ -- openCurlyBracket -- 
+" Properties: " and "Value"
+ -- closeCurlyBracket -- 
+ with separator "\_\_\_"
+
+
+
+Resulting string will be *
+ -- openCurlyBracket -- 
+"Properties: "\_\_\_"Value"
+ -- closeCurlyBracket -- 
+*
+

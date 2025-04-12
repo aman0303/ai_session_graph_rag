@@ -1,0 +1,104 @@
+# Rule creation guide
+
+## Logs To Metrics execution model
+
+LogsToMetrics processes logs in a streaming fashion, i.e., shortly after they are ingested in Geneva.
+Logs are uploaded to Geneva in small batches, and LogsToMetrics executes conversion rules against each of those batches independently.
+Those batches can be arbitrarily small, so a conversion rule could be executed, in the extreme case, one record at a time.
+
+This execution model allows LogsToMetrics to process logs with low latency, but it imposes some contraints on what operations can be performed in a conversion rule.
+
+[Kusto to Metrics](../../../connectors/Kusto%20To%20Metrics/overview.md), uses a batch execution model where queries are periodically executed against a Kusto table. In that model, conversion rules can apply complex aggregation logic to large data sets, but that comes at the expense of higher latencies.
+
+## Conversion rule Limitations
+
+### Limitations on the conversion rule size, columns and values
+
+* The length of KQL query string within conversion rule is limited to 131072 characters.
+* Virtual columns `__SourceMoniker__` and `__SourceEvent__` available in DGrep are not supported in LogsToMetrics rules and should not be used.
+* Dimension values cannot be null or empty. In case a dimension is either null or empty, Logs to Metrics will fail with NullDimension error (error chart is available in [QoS dashboard](qos.md)).
+* Dimension names should adhere to [MDM metric data model rules for Dimensions](../../../metrics/concepts/datamodel.md#dimension).
+
+### Operators supported in conversion rules
+
+LogsToMetrics conversion rules are defined with operators in [MQL](../../References/DGrepQueryLanguage/mql.md) or [KQL](../../References/DGrepQueryLanguage/kql.md) that are applied to each data entry in serial manner.
+Since the transformation is applied either to each record individually, or to batches of data of unknown size, KQL operators that act on multiple records are prohibted. Only _streaming_ operators that take a single row as input and return no more than one row are supported. For example, [summarize](https://kusto.azurewebsites.net/docs/kusto/query/summarizeoperator.html) isn't supported since it summarizes multiple records.
+
+Examples of streaming operators in KQL are:
+[where](https://kusto.azurewebsites.net/docs/kusto/query/whereoperator.html),
+[extend](https://kusto.azurewebsites.net/docs/kusto/query/extendoperator.html),
+[project](https://kusto.azurewebsites.net/docs/kusto/query/projectoperator.html),
+[mvexpand](https://kusto.azurewebsites.net/docs/kusto/query/mvexpandoperator.html) and
+[parse]( https://kusto.azurewebsites.net/docs/kusto/query/parseoperator.html).
+
+The following operators are not streaming and can not be used in conversion rules:
+[take](https://kusto.azurewebsites.net/docs/kusto/query/limitoperator.html),
+[sort](https://kusto.azurewebsites.net/docs/kusto/query/orderoperator.html),
+[join](https://kusto.azurewebsites.net/docs/kusto/query/joinoperator.html),
+
+### Usage of scoping conditions
+
+Only generic indexed columns are supported within scoping conditions in LTM rules. Indexes obtained using [selective indexing](../dgrep/selectiveindexing/selectiveindexing.md) are not supported.
+
+## Aggregation
+
+Conversion rules should not use [summarize](https://kusto.azurewebsites.net/docs/kusto/query/summarizeoperator.html) operator to aggregate metrics and, preferrably, should emit raw, unaggregated metrics. The exception to this rule is to use summarize with `count()` and `sum()` aggregation functions **only** to aggregate metrics by bin(timestamp, 1m) if you are sending large volumes of data. Usage of other aggregation functions, such as `min()`, `max()` or `average()` will result in data inaccuracies.
+
+Metric aggregation will happen in MDM, according to user specified [preaggregates](../../../metrics/concepts/preaggregates.md) and [sampling types](../../../metrics/concepts/measurements.md).
+
+## Correlation
+
+There are scenarios where it is desirable to monitor how two streams compare to each other.
+For example, let's say that we have two log events being emitted by our service, OperationEvent and ErrorEvent.
+We would like to raise an alert when the number of records in ErrorEvent is more than 5% the number of records in OperationEvent, in a given time window.
+
+Metric correllation with LogsToMetrics could be accomplished in the following way:
+
+* Create two separate conversion rules, emitting separate metrics for OperationEvent and ErrorEvent.
+* Create a [composite metric](../../../metrics/concepts/dataaggregation/compositemetrics.md) in MDM which computes the ratio between those two metrics.
+* Alternatively, we could use [correlated monitors](../../../alerts/AdvancedTopics/MonitoringOptions/CorrelatedMonitors.md) to raise alerts based on more complex comparisons between multiple metrics.
+
+## Percentiles
+
+[Percentiles](../../../metrics/percentiletutorial/percentiletutorial.md) can be enabled on any metric emitted as int or long (float and double values are not supported).
+Values produced by LogsToMetrics rules are float/double only if they come from log fields which are float/double,
+or if they are produced by functions that return float/double (for example: [log](https://kusto.azurewebsites.net/docs/kusto/query/log-function.html), [exp](https://kusto.azurewebsites.net/docs/kusto/query/exp-function.html), [pow](https://kusto.azurewebsites.net/docs/kusto/query/powfunction.html)).
+
+To find a value's type, one can use the [gettype](https://kusto.azurewebsites.net/docs/kusto/query/gettypefunction.html) operator in a DGrep query.
+To make sure a value is produced as int or long, one can convert it explicitly using the [toint](https://kusto.azurewebsites.net/docs/kusto/query/tointfunction.html) or [tolong](https://kusto.azurewebsites.net/docs/kusto/query/tolongfunction.html) functions.
+
+### Bucketization
+
+When percentiles are enabled, it is important to ensure that the number of distinct values emitted for the metric is not excessively large.
+Percentiles with too many distinct values can cause slow queries, high costs and data loss in MDM.
+
+This problem should be handled by bucketizing metric values before emitting them to MDM.
+The bucketization strategy is scenario-specific and it can be implemented in the conversion rule.
+Here are a few examples of how one could bucketize a latency metric:
+
+* Linear (buckets of 10 ms):
+
+  ```kql
+  m_latency = bin(latency, 10)
+  ```
+
+* Linear with a cap:
+
+  ```kql
+  m_latency = min_of(bin(latency, 10), 10000)
+  ```
+
+* Exponential (round down to power of 2):
+
+  ```kql
+  m_latency = tolong(exp2(bin(log2(latency), 1)))
+  ```
+
+* Adaptive (bucket size varies with value):
+
+  ```kql
+  m_ latency = case(value < 10, bin(latency,1),
+                    value < 100, bin(latency,10),
+                    value < 1000, bin(latency,100),
+                    bin(value, 1000))
+  ```

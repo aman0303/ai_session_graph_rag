@@ -1,0 +1,23 @@
+# Enabling your Logs QoS dashboard
+Enabling the Logs QoS dashboard consists of connecting your [Logs Namespace configuration](./../../concepts/namespace.md) to your metrics account. By doing this, Geneva Pipeline will be able to post QoS metrics for this Logs Namespace, directly under your metrics account. 
+
+
+>[!Note]
+>* This feature is only enabled for **Prod** endpoints and not available for below Geneva Logs endpoints:
+>* Test, Smoke, Stage, and National clouds
+>* This limitation does not apply to Geneva Metrics for national clouds in general, including agent metrics.
+
+## How to enable Geneva Logs QoS metrics?
+Your logs account that holds your [Logs Namespace configuration](./../../concepts/namespace.md) needs to be updated with your metrics account information. This metrics account will have QoS metrics posted directly to it.
+
+__Steps:__
+1) Go to [Jarvis > Account > Logs Account Settings](https://portal.microsoftgeneva.com/account/logs/account) and select the Geneva Logs account that you want to enable metrics.
+2) Select **Account**.
+3) Choose the Geneva Metrics account (MDM) that you want to map. The MDM accounts listed are the ones that you have admin privileges.
+
+    ![MetricsAccount](../images/metricsaccount.jpg)
+
+    >[!Note]
+    >* This will not have any impact on Geneva Logs monitoring configurations associated with the account in scope.
+    >* Once mapped it (or any changes thereafter) may take up to 30 minutes before the data appears in the Logs EndPoint QoS dashboard.
+    >* The list of Geneva metrics accounts displayed are the ones that the user has Administrator permissions. 

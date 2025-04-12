@@ -1,0 +1,3 @@
+# Using CDE with GSM
+
+CDE is a legacy technology and was not designed with GSM storage groups in mind.  A single GSM storage group may contain many monikers, which can lead to unexpected CDE outputs. 

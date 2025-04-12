@@ -1,0 +1,36 @@
+
+# Derived Events Troubleshooting
+
+
+**Q. When updating my Geneva Logs config, I see the following error:**
+
+
+
+*StoreType cannot be CentralCompress for centrally processed DerivedEvents with multiple sources.*
+
+
+
+*This StoreType will only write results from one source table resulting in data loss*
+
+
+
+​Please change storeType for centrally derived events with multiple sources to CentralBond.
+
+
+
+**Q. How can I determine that my centrally derived events are being processed successfully?**
+
+
+
+You can query the table under namespace *"Mds"* and event name *"BackEndScheduledTasksQosEventEtwBlob"* in DGrep to see if your derived events are run successfully. To filter by your namespace, event name, and version, use the clause *'DestTable == [Namespace][EventName][MonikerSuffix]Ver[Version]v0'*. If your derived event is not processed successfully, exceptions will be seen in column *'Reserved1'*.   
+>[!NOTE]  
+>*StartTime* and *EndTime* columns specify when the derived event is scheduled, not the time range being queried. The time range queried is determined by subtracting the QueryDelay from the StartTime and EndTime.
+
+
+
+You can pick the ActivityID from the above row with failure, and use Log Search to drill into the failure. Chances are you will find the root cause of the failure in BackEndUnstructuredLogEventEtwBlob table and/or BackEndWinHttpErrorEventEtwTable.
+
+
+
+**[This](https://portal.microsoftgeneva.com/?page=logs&be=DGrep&offset=-3&offsetUnit=Hours&UTC=true&ep=Diagnostics%20PROD&ns=Mds&en=BackEndScheduledTasksQosEventEtwBlob&serverQuery=where%20DestTable%20%3D%20"MyDestTableName"%20where%20HasBeenProcessed%20||%20Level%20%3D%3D%202&clientQuery=select%20Level,%20HasBeenProcessed,%20SourceEntriesCount,%20ResultGeneratedCount,%20Reserved1%20orderby%20Level&chartEditorVisible=true&chartType=Line&chartLayers=[["New%20Layer",""]]%20) is the Query template for "BackEndScheduledTasksQosEventEtwBlob". Must replace 'MyDestTableName' with the correct DestTable name. This example queries "Diagnostics PROD". To query other Geneva Logs environments, this must be updated.**
+

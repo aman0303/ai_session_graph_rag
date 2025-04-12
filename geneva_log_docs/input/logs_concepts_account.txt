@@ -1,0 +1,11 @@
+## Logs Account
+
+A Geneva Log account is an administrative unit created and managed by a service owner. We recommend that you create one Log account per service in your team.
+
+Further, a Log account is contained within an [Log environment][LogEnvironment]. This implies that a distinct Geneva Log account is created to manage every distinct service deployment (i.e. Test, Pre-Prod and Prod) you have, in the appropriate Log endpoint. 
+
+> [!NOTE]  
+> **Logs Account name** must start with a letter and can contain numbers/letters. Should be at least 6 characters long but not exceed 32 characters.
+
+<!-- Reference links -->
+[LogEnvironment]: environment.md "Log environment"

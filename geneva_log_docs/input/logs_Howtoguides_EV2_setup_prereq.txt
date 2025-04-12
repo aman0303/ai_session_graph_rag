@@ -1,0 +1,21 @@
+# Setup Prerequisites
+
+## Azure Subscription
+You’ll need to create one or more subscriptions depending upon your needs. Geneva Logs will create resources in these subscriptions to store monitoring data collected by the Monitoring Agent (MA). Follow these steps to create subscriptions using Ev2 and to grant the Geneva Service principal access to your subscriptions.
+
+- [Creating Azure subscriptions for your service using EV2](https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/40559/Express-V2_ARM-Deployments)
+- [Specific requirements for air gap environments](https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/40950/Subscription-Creation-Updates-and-dSMS-whitelisting)
+- [Granting the Geneva service principal access to your subscription](../../Manageaccount/subscriptionpermissions.md)
+- [Registering resource providers with your subscription](../../Manageaccount/subscriptionpermissions.md)
+
+## Security Groups
+Geneva Logs will use security groups to control access, such as who can manage the Logs account.  Create or leverage an existing security group appropriate for the environment.  
+
+- [Creating and managing security groups](../../Manageconfig/securitygroups.md) for your service in Geneva.  
+- [Environment specific requirements and resources for Security Groups](https://msazure.visualstudio.com/One/_wiki/wikis/One%20Fleet%20Efficiency/46649/Groups).  
+
+## Certificates
+Geneva Logs requires at least one certificate to use for authentication of the Monitoring Agent. This must be signed by a well-known Microsoft Certificate Authority, such as OneCert or DigiCert. For certain environments (e.g. air gap), these will need to be environment-specific.  
+
+- Learn more about [creating Geneva Logs certificates](~/collect/authentication/overview.md#logs) for your service. 
+- Read more about [authentication to the Ev2 extension](auth.md).

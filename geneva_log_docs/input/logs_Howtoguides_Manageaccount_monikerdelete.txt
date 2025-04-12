@@ -1,0 +1,114 @@
+# How to delete a moniker
+Deleting a [moniker](../../Concepts/moniker.md) from your Geneva Logs account will disassociate the storage account and Event Hub resources from the logs account. You will still have to delete these resources manually from the Azure subscription they belong to. You may have to wait until the [immutability policy](../Compliance/ImmutableLogs.md) expires before you can delete the storage account. Before deleting, make sure no data is still needed in these resources. 
+
+>[!Note]
+>If you delete a moniker, the logs stored in the assocciated resources will no longer be available to query via DGrep.
+
+## How to delete a Geneva Storage Management (GSM) moniker
+[GSM](../../Concepts/WhatIsGsm.md) manages monikers and resources on your behalf. All GSM-managed resources (storage accounts and Event Hubs) are created with the same [naming convention](../../concepts/WhatIsGsm.md#gsm-managed-monikers), and their names start with the prefix "gsm". If your Geneva Logs account is [GSM-enabled or in Hybrid mode](./gsm_gcsenabled.md), you can see your GSM-managed monikers and resources by navigating to the **Resources** tab in your Logs account view in the Geneva Portal, and then click on **Legacy Resource View**.
+
+![GSM Resources](../images/GSMResources.png)
+
+
+![GSM Monikers](../images/GSMMonikers.png)
+
+### Follow these steps to delete GSM-managed monikers:
+>[!Note]
+>These steps apply only to GSM managed monikers. You can identify these monikers by the storage accounts and Event Hubs nameing convention, which starts with the prefix "gsm". 
+
+If the moniker you wish to delete is referenced in any deployed configuration, and you no longer require the config or the data in the moniker, you can safely delete the config and then delete the moniker or the storage group (either through [Geneva portal](#to-delete-a-moniker-in-geneva-portal), or via [powershell tools](#to-delete-a-moniker-via-cli)). 
+
+If the moniker you wish to delete is *not* referenced in any deployed configuration, you can safely delete the moniker or the storage group (either through [Geneva portal](#to-delete-a-moniker-in-geneva-portal), or via [powershell tools](#to-delete-a-moniker-via-cli)). 
+
+Otherwise, follow these steps to deactivate and delete the moniker: 
+
+1. Download the latest version of [MDS tools](../../Resources/Downloads.md). 
+2. Deactivate the moniker you wish to delete. Deactivating a moniker will keep the logs stored in this moniker available for query in case there is an issue, but it will ensure that no new telemetry is emitted to it.
+```  
+mds.exe resourcemanagement <endpoint> -command:deactivateMoniker -mdsAccount:<mdsAcccount> -monikerName:<monikerName> -deactivateMoniker:True [-clientcert:X] 
+```
+* *clientcert* is an optional parameter. 
+
+If after the moniker is deactivated the Monitoring Agent requires a new moniker in that region, GSM will [automatically provision](../../concepts/whatisgsm.md#how-does-gsm-detect-that-i-need-more-resources-within-a-region) a new one. 
+
+>[!Note]
+>If you still need the data that was stored in this moniker available to query, you can leave it in the deactivated state until you no longer need the data. Otherwise, please wait 48 hours before deleting the moniker and the associated Storage Account and Event Hub, to avoid any data loss that is hard to recover.
+
+3. When you no longer need the data, delete the moniker from your Geneva Logs account, either through [Geneva
+](#to-delete-a-moniker-in-geneva-portal), or via [powershell tools](#to-delete-a-moniker-via-cli).  
+
+## How to delete non-GSM monikers
+If your account is [non-GSM enabled](./gsm_gcsenabled.md), you can see the list of your monikers and resources by navigating to the **Resources** tab in your Logs account view in the Geneva Portal.  
+
+![Legacy Moniker View](../images/LegacyMonikers_new.png)
+
+You can delete the moniker from your Logs account, either through [Geneva Portal](#to-delete-a-moniker-in-geneva-portal), or via [powershell tools](#to-delete-a-moniker-via-cli). Since the moniker you are deleting is not managed by GSM, you will have to provision a new moniker to replace it, if you require one in the region. 
+
+If the moniker you are trying to delete is referenced in any deployed configuration, you have to update the configuration file to remove all references to the moniker before you can complete the operation.  
+
+## To delete a moniker in Geneva Portal
+* Navigate to your Geneva Logs account page in Geneva Portal by clicking **Account** and then **Logs Account Settings** in the left side navigation bar. 
+* Select your **Logs Endpoint** and **Logs Account**.
+* Select the **Resources** tab. If your account is GSM-enabled or in Hybrid mode, click on **Legacy Resource View** to see the list of monikers. 
+* Click the **checkbox** for any moniker you wish to delete, and then click on the **Delete** button. 
+
+![Delete Moniker](../images/GSMMonikers_delete.png)
+
+## To delete a moniker via CLI 
+
+
+You can find more comprehensive information about usage of Geneva PowerShell Cmdlets at this [documentation][DocsPage] page. 
+
+* Install NuGet from [nuget.org](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#nugetexe-cli). 
+* Register required NuGet sources (see [references][references] section). 
+* Download GenevaWarmPathPowerShellCmdlets NuGet by running this command:
+ ```
+nuget.exe install GenevaWarmPathPowerShellCmdlets 
+ ```
+* From a PowerShell prompt, run the following commands: 
+
+``` powershell
+Import-Module .\GenevaWarmPathClient.psm1
+
+$environment = "<WarmPathEnvironment>"
+$account = "<Account name>"  
+
+$monikers = Get-WarmPathMoniker -WarmPathEnvironment $environment -WarmPathAccountName $account [-Moniker "<moniker>"]      
+foreach($moniker in $monikers) 
+ -- openCurlyBracket -- 
+ Remove-WarmPathMoniker -Moniker $moniker.Moniker -WarmPathEnvironment $environment -WarmPathAccountName $account 
+ -- closeCurlyBracket -- 
+ 
+```
+
+* WarmPathEnvironments can be found [here](../../Resources/endpoints.md).
+
+## To bulk delete unused monikers
+
+Unused monikers are defined as those which are both empty and deactivated. Users are encouraged to proactively delete these monikers to reduce expenses. 
+
+You will need the following prerequisites to delete unused monikers:
+
+* GenevaWarmPath PowerShell Cmdlets v 1.0.88.26 or greater. Download the nuget package from [GenevaWarmPathCmdlets](https://msblox.visualstudio.com/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_artifacts/feed/AzureGenevaMonitoring/NuGet/GenevaWarmPathPowerShellCmdlets/overview).
+* Azure PowerShell Module.
+* Access to delete resources inside the subscription containing the unused monikers.
+
+To bulk delete monikers:
+* Navigate to the '\lib\net462' path inside the GenevaWarmPath PowerShell Cmdlets package.
+* Run the following script to connect to Geneva and retrieve all unused monikers. You will need to provide the output directory path where the script should export the list of monikers, as well as your account name and environment.
+```
+.\Export-DeactivatedEmptyMonikers.ps1 -WarmPathEnvironment <Environment> -WarmPathAccountName <Account name> -OutputPath <Output path>
+```
+
+* Run the following script to delete the monikers and underlying resources. You may add the 'Force' flag to avoid confirmation prompts.
+```
+.\Remove-DeactivatedEmptyMonikers.ps1 -DeactivatedEmptyMonikersCsvFilePath <csv file path>
+```
+
+If you face permission errors during the deletion of Azure resources, you may rerun the 'Remove' script after resolving to complete the cleanup. Please retain a copy of the csv file until the cleanup process is complete, as this is useful in the event of errors in resource deletion. 
+  
+<!-- Reference links -->
+
+[DocsPage]: ~/logs/Howtoguides/powershell.md "Managing Logs account through PowerShell"
+[references]: ~/logs/Howtoguides/powershell.md#references "References"
+[subscription]: ~/logs/manage/references/subscriptionpermissions.md "Access to subscription"

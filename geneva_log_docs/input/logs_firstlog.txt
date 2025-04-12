@@ -1,0 +1,49 @@
+# See your first log
+
+## Goal 
+
+In this tutorial, you'll learn to: 
+
+- Simulate log collection using your development machine
+- Query and review your logs in the DGrep app
+- Review your Monitoring Agent health in the Agent Explorer app
+- Leverage a dashboard to review your Monitoring Agent QoS
+
+## Prerequisites
+
+If you haven't already set up your Logs account, review the tutorial ["Getting Started"][CreateAccounts]. Getting started walks you through the steps to set up your Logs account.
+
+This tutorial assumes that you have an existing Logs account, but have not yet tested log collection on your development machine.
+
+## 1. Go to your Logs account in Jarvis portal
+
+Open [Jarvis portal][JarvisPortal] and go to **Account**. Select **Logs Account Settings** and then **Configurations**. Select your Logs endpoint and account name from the dropdown list at the top of the page. If you get an authentication popup window, supply your credentials. You should now see an empty table of configurations as shown below. 
+
+![Configurations][ConfigurationsImage]
+
+> [!CAUTION]
+> If you don't see an empty configurations table, then you already have some potentially working configurations created. If you're sure that the configurations are unused then you may delete them to start over. If not, you should consult with your account administrators to ensure that your configurations are unused before deleting them. 
+
+## 2. Create a new configuration
+
+Select **+ New Configuration**. This will start the configuration builder UX in a new browser. 
+
+## 3. Use steps in "See Logs in action using your dev-box" tutorial
+
+You can now start creating log collection from [Create a log collection configuration][CreateLogCollectionConfiguration]. This guides you through the steps needed to collect logs from your development machine. 
+
+## Further reading
+
+Now that you have seen your first log flowing to Geneva, you can now proceed to set up log collection in your environment. Learn more about your environment specific setup steps [here][EnvSpecificSetup].
+
+> [!NOTE]
+> You can safely delete the sample configuration created in this tutorial. 
+
+<!-- Reference Links -->
+[CreateAccounts]: ../getting_started/v2/createaccounts_basic.md "Create accounts"
+[JarvisPortal]: https://aka.ms/Jarvis "Jarvis portal"
+[EnvSpecificSetup]: ../collect/overview.md "Set up log collection in your service environment"
+[CreateLogCollectionConfiguration]: ../getting_started/v2/testlogscollection.md "Create a log collection configuration"
+
+<!-- Image links -->
+[ConfigurationsImage]: ./images/BlankConfiguration.png "Blank configuration page"

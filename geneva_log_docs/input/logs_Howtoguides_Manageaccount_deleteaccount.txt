@@ -1,0 +1,35 @@
+# How do I delete a Logs account?
+
+### Using Jarvis UI
+To delete Logs account from Jarvis UI, Navigate to the [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select the respective endpoint and account you are trying to delete -> **Account** tab.
+
+> [!IMPORTANT]  
+> You need to be an account admin to perform this operation. If you don't have access to the account, please see [this][AccessTroubleshoot] documentation to find the owners of the account to gain access.
+
+![Delete Account][DeleteAccount]
+
+To delete the account, you need to delete all the account assets first in the same (below) order: 
+1. Account Configurations
+2. Storage Groups
+3. Monikers
+4. Azure Subscription associations needs to be removed
+5. Delete Storage account & Event Hubs from Azure Subscription. **Note:** Retention Period should be **complete** to ensure no data is loss (as well as being potentially blocked if there are immutable logs still present).
+6. Finally, after completing steps 1-5, delete the account by clicking on **Delete Account** button.
+
+**Note**: Please wait for **<u>10-15 minutes</u>** after deletion of the assets listed in steps 1-5 and then delete the MDS account from Jarvis UI Portal.
+
+### Using Powershell Cmdlets
+This functionality can also be achieved in CLI through Geneva Logs [Powershell Cmdlets][GenevaLogsCmdlets]. Please follow these steps mentioned in [documentation](../powershell.md#delete-an-account) in that specific order for deletion of account through Powershell.
+
+### I don't have access to Geneva Logs MDS account that needs to be deleted
+
+Please create an IcM ticket for Geneva Logs Infra Support team to gain access to the MDS account. It is important to note that while the Geneva Logs Support team will enable access for the user, the deletion of the Mds account must be carried out by the user themselves. [Submit an IcM Case][SubmitAccessIcMCase].
+
+<!-- Reference links -->
+[GenevaLogsCmdlets]: ../powershell.md "Geneva Logs Cmdlets"
+[LogsAccount]: https://portal.microsoftgeneva.com/account/logs "Logs Account"
+[AccessTroubleshoot]: ../../troubleshooting/tshoot.md#how-to-find-logs-account-owners-administrators "Troubleshooting Access"
+[SubmitAccessIcMCase]: https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354
+
+<!-- Image links -->
+[DeleteAccount]: ../images/DeleteAccount.png "Delete Account"

@@ -1,0 +1,42 @@
+
+
+When the data is stored in Azure Tables (storeType="Central") MDS uses the following **partition key**format:
+
+
+
+1) 0634925952000000000: 19 digit integer representing the timestamp (*.NET DateTime ticks*) of the event. This value can be encoded/decoded using the Dumptime.exe tool available in the [MDS tools distribution](https://microsoft.sharepoint.com/teams/SPS-AzMon/Shared%20Documents/Forms/AllItems.aspx?RootFolder=/sites/AzMon/Shared%20Documents/BinaryDrops/MDS%20Tools). It is a time rounded based on the event upload [duration](https://eng.ms/docs/products/geneva/collect/references/windows/events). If the transfer rate to storage is every 1 minute, then it is rounded down to the nearest minute based on the timestamps of when the data was logged from the clients.
+
+
+
+    
+    >DumpTime.exe 0634925952000000000
+    2013-01-01T00:00:00.0000000Z
+
+
+
+    
+    >DumpTime.exe 2013-01-01T00:00:00.0000000Z
+    0634925952000000000
+
+
+
+
+WAD uses this format as the partition key by default
+
+
+
+
+
+2) 0000000000000000012\_\_\_0634925952000000000: 19 digit zero-padded integer ranging from 0 to 99, followed by three underscores, followed by the timestamp (filetime ticks) of the event.
+
+
+
+The range of the integer in the first component is determined by the [eventVolume attribute](https://eng.ms/docs/products/geneva/collect/references/windows/events). For Large, the range is from 0 to 99; for Medium, the range is from 0 to 9, and for Small, the first partition key scheme is used. Having an integer prefix allows Geneva Logs to equally spread high volume insert load among multiple partitions. When tables with prefixed partition keys are queried, Geneva Logs starts 100 or 10 parallel requests (for Large and Medium eventVolume tables respectively) each queriying a partition range with a fixed prefix.
+
+
+The **row key**format can be whatever Geneva Logs wants. The only requirement is that in Azure table storage each partition key/row key combination is unique. One typical pattern you may see is that the MA identity is encoded in the row key. Because each row key in a batch of rows sent to Azure storage must be unique, a index value is also typically appended to the row key so that it will be unique.
+
+
+
+For**central derived events**, the **row key** is the taken directly from the source row when there is no *'groupby'*. When there is a *'groupby'*, the row key is the concatentation of the *'groupby'*values separated by three underscores. If this concatentation may be longer than 256 characters, you should override the row key in your query. Please note that partition key and row key pairs must be unique and should be created in a deterministic way so that your derived event is idempotent.
+

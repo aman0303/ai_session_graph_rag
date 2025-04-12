@@ -1,0 +1,8 @@
+# Download packages for Geneva Logs
+
+Visit [this page](https://dev.azure.com/msblox/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_artifacts/feed/AzureGenevaMonitoring) to download the latest versions of the following (and other) packages:
+* MDS tools
+* Geneva Warm Path Client
+* Geneva Warm Path Powershell Cmdlets
+* MDS Data Access Client (MDAC)
+* Monitoring Agent

@@ -1,0 +1,169 @@
+# Configure Selective Indexing manually
+
+
+
+In this tutorial, you will learn how to: 
+
+1. enable selective indexing by modifying your namespace configuration manually. 
+1. enable selective indexing for a derived event.
+
+## Prerequisites
+
+We require customers to provide their own Kusto clusters to host the index event. Therefore, before enabling selective indexing, you should go through the following steps:
+
+1. Create a Kusto cluster and enable [ingestion from Geneva](../../../../connectors/Geneva%20to%20Kusto/overview.md). DGrep is not connected to GDS, new customers should still follow the GDS path for Kusto ingestion and on top of that complete the prerequisites step of the legacy path.
+1. If the kusto cluster's URL is https://clusterName.**region**.kusto.windows.net, go to [Jarvis > Actions > AzureLogAnalyticsControlPlane > DGrep > AddKustoClusterUrlOverride](https://portal.microsoftgeneva.com/748E392A?genevatraceguid=80ced77c-3b3f-4d4b-8db2-bbd32bc6cfb5), enter your kusto Cluster's URL in *Kusto URL Override* field. The update might take a few minutes. For any issue, please open ticket to [DGrep](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=qD3J3Q).
+1. Authorize DGrep to read from your Kusto database. This can be done by running the following command in your cluster:
+   ```javascript
+   .add database <database name> viewers ('dstsapp=dgrep.prod.pipeline.msftcloudes.com')
+   ```
+
+## Selective Indexing on Events
+
+Let's suppose that you want to enable selective indexing on columns UserId and ActivityId of an event called Operation.
+
+### 1. Create a derived event
+
+Create a derived event with `source="Operation", storeType="CentralBond" and whereToRun="Local"`. This event will contain the index for event Operation. You can give this event any name -- in the example below, we are calling it OperationIndex.
+
+```xml
+<DerivedEvent source="Operation" eventName="OperationIndex" storeType="CentralBond" whereToRun="Local" duration="PT5M">
+</DerivedEvent>
+```
+
+### 2. Add query to the event
+
+Add the following query to the derived event definition.
+
+```xml
+<DerivedEvent source="Operation" eventName="OperationIndex" storeType="CentralBond" whereToRun="Local" duration="PT5M">
+  <Query><![CDATA[
+    groupby Identity(), UserId, ActivityId
+    let __EndTime__ = EndOfQueryInterval()
+  ]]></Query>
+</DerivedEvent>
+```
+
+### 3. Add Identity definitions
+
+If Operation is an IFX event, add identity column definitions to the derived event query:
+
+```xml
+<DerivedEvent source="Operation" eventName="OperationIndex" storeType="CentralBond" whereToRun="Local" duration="PT5M">
+  <Query><![CDATA[
+    let Tenant = GetEnvironmentVariable("MONITORING_TENANT")
+    let Role = GetEnvironmentVariable("MONITORING_ROLE")
+    let RoleInstance = GetEnvironmentVariable("MONITORING_ROLE_INSTANCE")
+    groupby Identity(), UserId, ActivityId
+    let __EndTime__ = EndOfQueryInterval()
+  ]]></Query>
+</DerivedEvent>
+```
+
+### 4. Add EventStreamingAnnotation
+
+* Add an EventStreamingAnnotation called SelectiveIndexing to the Operation event. Please make sure that the regular expression on the EventStreamingAnnotation element matches only the Operation event.
+  Also Add the derived event name in the SelectiveIndex annotation content.
+
+    ```xml
+    <EventStreamingAnnotation name="^Operation$">
+    <SelectiveIndexing>
+        <Content>OperationIndex</Content>
+    </SelectiveIndexing>
+    </EventStreamingAnnotation>
+    ```
+
+* Add an EventStreamingAnnotation to the DerivedEvent that will send it to your Kusto table.
+
+    ```xml
+    <EventStreamingAnnotation name="^OperationIndex$">
+      <LogAnalytics>
+        <Content>LogAnalyticsContent</Content>
+      </LogAnalytics>
+    </EventStreamingAnnotation>
+    ```
+
+### 5. Update version
+
+Increment the namespace configuration version. This step is necessary to ensure that the index will be only be used to search new data.
+
+### 6. Upload the configuration
+
+Upload the new configuration to Geneva and deploy it to your service.
+
+## Selective Indexing on derived events
+
+Enabling selective indexing on derived events requires a special treatment and can only be done by manually editing the namespace configuration. 
+
+Suppose that Operation is a derived event with source event Foo:
+
+```xml
+<DerivedEvent source="Foo" eventName="Operation" storeType="CentralBond" duration="PT5M">
+  <Query><![CDATA[
+    where OperationName != ""
+  ]]></Query>
+</DerivedEvent>
+```
+
+In order to enable selective indexing on event Operation, please perform the following steps.
+
+### 1. Create a new derived event
+
+Create a new derived event with `source = Foo` and `storeType = Local`. Let's call it OperationLocal.
+
+### 2. Copy over the query
+
+Copy the derived event query from Operation to OperationLocal.
+
+```xml
+<DerivedEvent source="Foo" eventName="OperationLocal" storeType="Local" duration="PT5M">
+  <Query><![CDATA[
+    where OperationName != ""
+  ]]></Query>
+</DerivedEvent>
+```
+### 3. Edit the original derived event
+
+Change Operation's definition so that it has `source="OperationLocal"` and an empty query:
+
+```xml
+<DerivedEvent source="OperationLocal" eventName="Operation" storeType="CentralBond" whereToRun="Local" duration="PT5M">
+  <Query><![CDATA[]]></Query>
+</DerivedEvent>
+```
+### 4. Add Selective Indexing configurations
+
+* Create the selective indexing derived event as we described in the previous section, with source="OperationLocal":
+
+    ```xml
+    <DerivedEvent source="OperationLocal" eventName="OperationIndex" storeType="CentralBond" whereToRun="Local" duration="PT5M">
+    <Query><![CDATA[
+        groupby Identity(), UserId, ActivityId
+        let __EndTime__ = EndOfQueryInterval()
+    ]]></Query>
+    </DerivedEvent>
+    ```
+
+* Add the selective indexing annotation to event Operation:
+
+    ```xml
+    <EventStreamingAnnotation name="^Operation$">
+    <SelectiveIndexing>
+        <Content>OperationIndex</Content>
+    </SelectiveIndexing>
+    </EventStreamingAnnotation>
+    ```
+
+* Add an EventStreamingAnnotation to the DerivedEvent that will send it to your Kusto table.
+
+    ```xml
+    <EventStreamingAnnotation name="^OperationIndex$">
+      <LogAnalytics>
+        <Content>LogAnalyticsContent</Content>
+      </LogAnalytics>
+    </EventStreamingAnnotation>
+    ```
+
+### 5. Upload the configuration
+
+Upload the new configuration to Geneva and deploy it to your service.

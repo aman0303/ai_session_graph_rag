@@ -1,0 +1,30 @@
+# Selective Indexing Cost
+
+
+
+Cost factors to consider when enabling selective indexing: 
+* Additional CPU utilization in the Monitoring Agent 
+* Cost of hosting the index in Kusto. 
+
+## CPU utilization in the Monitoring Agent
+
+When selective indexing is enabled, the Monitoring Agent will process the raw data to extract unique values for each indexed column, which will necessarily increase CPU consumption on the node. While this additional CPU consumption is typically low, it can be noticeable if the volume of raw data to process in each node is high. The overhead from selective indexing is very sensitive to the specificities of each workload and, hence, hard to estimate. Therefore, we recommend that you look at the [Agent metrics](~/collect/manage/agentmetrics.md) after enabling this feature to evaluate this cost.
+
+
+## Cost of hosting the index in Kusto
+
+The cost of keeping the index in Kusto is proportional to the amount of data in the index event. In many cases, the index event can be several orders of magnitude smaller than the raw event. This happens for two reasons:
+
+* The index event has only a subset of the columns of the raw event
+* An index event blob contains no duplicate records
+
+The chart below shows a comparison between the raw event size and the index event size for one of our pilot customers. In this case, **the ratio between raw and index events is about 35,000:1**.
+
+![selective indexing cost estimate.](../../images/dgrep_SelectiveIndexingCost.png "selective indexing cost estimate.")
+
+> [!Tip]
+> Once there is an estimate of the index event size, one can use the [**Kusto COGs calculator**](http://aka.ms/cogs) to estimate the cost in dollars. 
+
+**In the example above, keeping the index event in Kusto for 30 days costs $28,000/year, whereas the raw event would cost $640,000/year.**
+
+If you are interested in a detailed cost estimate for your event, please click [contact us](https://aka.ms/genevasupport) from Jarvis UI.

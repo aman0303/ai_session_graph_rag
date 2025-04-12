@@ -1,0 +1,16 @@
+# Log environments
+
+Geneva Logs operates in distinct environments. The three main environments provided by Geneva are TEST, PROD, and nCLOUD ("national cloud").
+
+It is typical for services to run in multiple deployments, each running a different version/build. For example, you might run your latest build in a  test deployment, a more stable daily build in your internal dogfood deployment, yet more stable weekly build in your pre-production deployment, etc. In these situations, you should make sure that the Log accounts used for monitoring your service deployments are in the correct Log environment. For instance, you should monitor your test or pre-production deployments through a Log account in our TEST environment, and your production deployment in our PROD environment, and your national cloud deployments in our nCLOUD environment.
+
+Note that only PROD and nCLOUD environments offer the Geneva Monitoring team SLAs.
+
+## Endpoint
+
+Each Log environment has one or more endpoints. Endpoints are URLs that are used to access an environment, and they provide isolation among your service deployments. 
+
+For a complete list of Log environments refer to the [Logs environments][LogEnvironments] section.
+
+<!-- Reference links -->
+[LogEnvironments]: ../resources/endpoints.md

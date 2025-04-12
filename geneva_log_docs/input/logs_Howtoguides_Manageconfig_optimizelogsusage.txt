@@ -1,0 +1,124 @@
+# Optimize your Logs usage: Guidance for understanding and reducing data volume 
+
+To reduce the data volume and costs of logs uploaded to Geneva pipeline, please start with the following dashboards / queries:  
+
+1. **Geneva Logs Insights Dashboard** - [View the dashboard][insights] / [Learn more][insightslearn]
+2. **Geneva Ingestion and Processing Dashboard** - [View the dashboard][uberdash] / [How to use?][uberdashlearn]
+3. **Geneva AgentQoS Dashboard for your namespace** - Look for the AgentQoS dashboard under your *
+ -- openCurlyBracket -- 
+Metrics account
+ -- closeCurlyBracket -- 
+ -> GenevaQoS -> AgentQoS* in Jarvis (see example below) / [How to use?]  
+	- *URL template: https://portal.microsoftgeneva.com/dashboard/
+ -- openCurlyBracket -- 
+Your-Metrics-Account
+ -- closeCurlyBracket -- 
+/GenevaQos/%25E2%2586%2590%2520AgentQos*
+4. **DGrep Usage Query** - [View my usage][dgrep] / [Learn more][dgreplearn]
+5. **Reduce the volume** - Take the appropriate action to optimize. [Learn more][reducelearn]
+ 
+![Optimize Logs Usage](../images/optimizelogsusage.png)
+
+> [!NOTE]
+> Terminology: The terms namespace and event used below is per the Geneva Logs terminology (e.g. same terms used in Log Search):  
+
+![DGrep snapshot](../images/dgrepsnap.png)
+
+### 1. Review the Geneva Logs Insights dashboard to undersatnd the biggest namespaces
+
+When the [Geneva Logs Insights dashboard](https://aka.ms/glinsights) loads, it defaults to showing data volume for all of the Geneva Logs events for the entire company. Use the parameters at the top of the dashboard to filter down to specific orgs, service groups, services, etc. If you don't have access to this dashboard, request access to 'genevalogsinsights' entitlement in https://aka.ms/coreidentity.
+
+### 2. Review Geneva Ingestion/Processing dashboard to understand most expensive events 
+
+This [dashboard][uberdash] provides visibility on the Logs ingestion and processing volume. Visit this dashboard and specify your Geneva logs namespace and a time window (e.g. 7 days). Use this dashboard to understand the distribution/volume of events in your namespace for logs ingestion and processing.  
+
+This dashboard shows the following metrics: 
+
+#### Ingestion 
+
+**Blobs Count:** This shows the top costliest events in terms of number of blobs. This value is directly associated with the Azure Storage operation cost billed against your subscription.  
+**Blobs Count (3P):** This is the same view as before but specifically for 3P/Shoebox events in your namespace. 
+**Data volume:** This shows the data volume for events ingested in your namespace.  
+
+ 
+
+#### Processing 
+
+The data volume of the events being processed increases the cost of each of the below operations.  
+
+**Scrubbing**: This shows the data volume of the events being scrubbed. 
+**Logs to Metrics:** This shows the data volume of the logs being converted to metrics.  
+**Cosmos Upload:** This shows the data volume of the logs being uploaded to Cosmos.  
+
+### 3. Review the Agent QoS dashboard to understand most expensive events on agent 
+In addition to impacting your Azure storage operation costs, higher data volume also means you’re paying more on the client at the time of data collection by the agent. Review the "Top 10 costly event names" in your Agent QoS dashboard (https://portal.microsoftgeneva.com/dashboard/**YOUR-Metrics-Account**/GenevaQos/%25E2%2586%2590%2520AgentQos) in Jarvis to understand your most costly event sources from the perspective of agent.  
+
+Here is an example namespace:  
+
+![AgentQoS](../images/agentqos.png)
+
+### 4. Review your DGrep usage patterns to identify unused events/tables  
+Use the [DGrep Query Count distribution query][dgrep] to understand the DGrep query patterns for your namespace.  This query returns the set of events that have been queried using DGrep in the specified time window.  
+
+You can use this to determine which tables/events are no longer being used in queries in a specified time period and evaluate if you still to emit that data. Of course, it’s very much possible that such events are still critical to collect and that there were no incidents in the last X weeks that required querying those events. 
+ 
+###
+### 5. Reduce the data volume 
+A subset of the ingested logs data is just used in DGrep (Logs Search). Depending on your Logs configuration, the rest of the data is processed further to perform operations such as scrubbing PII data, converting logs to metrics, 3P log scenarios, uploading it to Cosmos or Kusto. The higher the data volume of such events being processed, the higher the cost of the corresponding processing operations. 
+
+**For each event with the highest data volume** from the three dashboards/queries above, consider the following approaches to reduce the volume:  
+1. **Is the event still relevant / being used / needed for DGrep or for rest of the processing?** If not, consider removing it. If yes, proceed to the next step.  
+
+2. **Are *all* the processing on the event still needed?**  
+ 
+	a. If you are using **Scrubber** for this event, please verify if you still need scrubbing for this event. If not, consider removing this operation.  
+	
+	b. If you are using **Logs to Metrics** for this event, please verify if you still need this metrics conversion for this event. If not, consider removing this operation.  
+	
+	c. If you are uploading this event to **Cosmos**, please verify if you still need this event in Cosmos. If not, consider removing this operation. If you are currently sending specific data to both Cosmos and Kusto, evaluate if it is really needed in both or if it is needed in only of them.  
+	
+	d. If you are uploading this event to **Kusto**, please verify if you still need this event in Kusto. If not, consider removing this operation.  
+		i. A self-serve way of estimating the daily volume and row count per event is to run a command like:  
+
+		.show table Table extents hot  
+		| summarize sum(RowCount), sum(OriginalSize) by bin(MinCreatedOn, 1d)
+		 
+
+      ii. Follow the guidelines issued by Kusto team to make the necessary optimizations to your Kusto clusters. For example, enable and use [Data Doctor][datadoctor] to understand aspects such as resource usage, table sizes, and which of your tables contribute to the highest data volume etc.  
+		
+	**Proceed to the next step.**   
+
+3. **Understand the most frequently emitted log data within an event**: Choose a representative tenant and time window (e.g. a 1m window or a 5m window, depending on the volume of data during that window). Do a DGrep query for this event. Once you have the DGrep results, create one or two aggregates such as Count by specific fields in this event: for example, this could be Count by Filename and Count by OperationName (or similar fields in your event). This will help you identify the Top N messages that are contributing the most to your event volume. Evaluate if you can reduce the verbosity/granularity of this data or if you can update the schema to make it less verbose.  
+
+
+4. **Remove redundant / unused log data within an event**: Evaluate if it is possible to reduce the data that gets emitted as part of this event. Review the telemetry you are emitting to evaluate if there is any redundant or unused data. For example, if verbose logs were added to troubleshoot a scenario or if there are perf counters that are no longer being used, evaluate if they could be removed. Another example would be traces in commonly used code paths where the same information is being repeated outside a function and inside a function. **Proceed to the next step.**  
+
+5. **Check your columns/schema to remove any redundant columns**: Evaluate if it’s possible to simplify the schema: in the emitted telemetry data, are there any columns/fields that are redundant/unused? If so, evaluate if you can remove such fields. **Proceed to the next step.**  
+
+6. **Consider sampling the data**: If the reductions in the previous steps cannot be done, evaluate if it’s possible to sample certain data in order to reduce the data volume. Currently, there is no support for sampling in Geneva agent, so this will have to be done by the service/application emitting this telemetry.  
+
+7. Few additional approaches to further reduce data volume/CPU cost:  
+
+	a. **Reduce/eliminate test/non-critical workloads** - If you are using Geneva logs workloads in test/non-critical environments, reduce/eliminate the workloads in such environments.  
+	
+	b. **Evaluate your Runner usage to reduce log usage** - As the [Efficiency Playbook][effplaybook] calls out, consider dynamically scaling runners so that they aren’t running when system has high organic load. Use actual telemetry from service to detect issues where possible, and trigger runners to start when telemetry for a stamp/region quietens. This can help reduce the log volume.  
+	
+	c. **Reduce Retention time** - Review the retention time used for various events in your MA config and evaluate if you really need that retention time. If not, reduce it to a lower value.  
+	
+	d. **Increase upload interval**- If the Agent QoS dashboard shows that the cost of an event is high, review your Logs configuration to see if you can [increase the upload interval][uploadint] if it’s not latency sensitive. For example, if you are computing certain derived events every 1 minute, review if you need them every 1 minute or if you can increase this to a higher value. This can help reduce agent CPU usage at the time of collection. 
+	
+
+ 
+<!-- Reference Links -->
+[insights]:https://aka.ms/glinsights
+[insightslearn]:#1-review-the-geneva-logs-insights-dashboard-to-undersatnd-the-biggest-namespaces
+[uberdash]:https://portal.microsoftgeneva.com/dashboard/CloudDiagnostics/CustomerDashboard/Cost
+[uberdashlearn]:#2-review-geneva-ingestionprocessing-dashboard-to-understand-most-expensive-events
+[agentqos]:https://jarvis-west-int.cloudapp.net/dashboard/MDS/GenevaQos/%25E2%2586%2590%2520AgentQos
+[agentqoslearn]:#3-review-the-agent-qos-dashboard-to-understand-most-expensive-events-on-agent
+[dgrep]:https://portal.microsoftgeneva.com/4EF80A1D
+[dgreplearn]:#4-review-your-dgrep-usage-patterns-to-identify-unused-eventstables
+[reducelearn]:#5-reduce-the-data-volume
+[datadoctor]:https://aka.ms/datadoctor
+[effplaybook]:https://msazure.visualstudio.com/AzureWiki/_wiki/wikis/AzureWiki.wiki/40436/CloudOptimal-Efficiency-Playbook
+[uploadint]:~/collect/advanced/uploadinterval.md#upload interval

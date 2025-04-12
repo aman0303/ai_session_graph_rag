@@ -1,0 +1,20 @@
+# Selective Indexing FAQ
+
+
+## I just enabled selective indexing. Why hasn't my query performance improved?
+The index is only used for logs uploaded after selective indexing was enabled. If you enabled selective indexing one hour ago and are searching for data for the last 24 hours, we still do a brute force search for 23 of those hours. The query performance should improve as time passes, until all your data is indexed.
+
+##  How does the Kusto ingestion latency impact data availability in DGrep?
+If you issue a query that uses the index, DGrep will only search data that has already been indexed in Kusto. The Kusto ingestion latency SLA can be found [here](https://kusto.azurewebsites.net/docs/ops/SLA.html).
+
+##  How does the Kusto retention policy impact data availability in DGrep?
+DGrep retrieves the index retention policy from Kusto at query time to determine whether the query can use the index. For example, if the query looks at the past 5 days and the index retention policy is 3 days, DGrep does a brute force search on the first 2 days of the query's time window.
+
+##  Does selective indexing work on fields of any type?
+Yes, Selective indexing can enabled on fields of any type.
+
+##  Is selective indexing available in the sovereign clouds?
+Selective indexing will be available in the sovereign clouds soon.
+
+##  Can I enable selective indexing on a derived event?
+Enabling selective indexing on derived events is not currently supported through Jarvis UI. However, you can still enable it by modifying your namespace configuration [manually](../Howtoguides/DGrep/Selectiveindexing/configuremanually.md).

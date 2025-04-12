@@ -1,0 +1,191 @@
+# Perform your first programmatic DGrep search
+
+
+
+This tutorial, will walk you through the process of how to programmatically search your logs using the DGrep SDK.
+
+## Prerequisites
+
+1. A Geneva Logs Account ([instructions](./../../../getting_started/v2/createaccounts_basic.md)).
+1. If using certificate based authentication, a client certificate that is [authorized to connect to DGrep](sdk.md).
+
+## Step-by-Step
+
+### 1. Gather DGrep connection parameters.
+
+```csharp
+// Replace with the thumbprint of your certificate obtained from step 2 of prerequisites
+// (only needed if using certificate based authentication).
+private const string ClientCertificateThumbprint = "C1976ADC6D3ADACBCBD802FCF6D8834CB12B8155";
+
+// Certificate store
+private const StoreLocation ClientCertificateStoreLocation = StoreLocation.LocalMachine;
+
+// DGrep endpoint (Need Link)
+private static readonly Uri DGrepEndpoint = new Uri("https://dgrepv2-frontend-prod.trafficmanager.net");
+```
+
+### 2. Construct the query input.
+
+`QueryInput` defines your search terms. Specify the Events to search, along with Scoping conditions, time range and the server query.
+
+```csharp
+private static readonly QueryInput SampleQueryInput = new QueryInput
+
+ -- openCurlyBracket -- 
+
+    MdsEndpoint = new Uri("https://production.diagnostics.monitoring.core.windows.net/"),
+    EventFilters = new List<EventFilter>
+    
+ -- openCurlyBracket -- 
+
+        new EventFilter 
+ -- openCurlyBracket -- 
+ NamespaceRegex = "^DGrep$", NameRegex = "^LogTrace$" 
+ -- closeCurlyBracket -- 
+,
+        new EventFilter 
+ -- openCurlyBracket -- 
+ NamespaceRegex = "^DGrep$", NameRegex = "^AggregateMetricTrace$" 
+ -- closeCurlyBracket -- 
+,
+    
+ -- closeCurlyBracket -- 
+,
+    IdentityColumns = new Dictionary<string, List<string>> 
+ -- openCurlyBracket -- 
+ 
+ -- openCurlyBracket -- 
+ "Role", new List<string> 
+ -- openCurlyBracket -- 
+ "Scheduler", "EnumerationWorker" 
+ -- closeCurlyBracket -- 
+ 
+ -- closeCurlyBracket -- 
+ 
+ -- closeCurlyBracket -- 
+,
+    StartTime = DateTimeOffset.Parse("2018/03/20T16:00:00Z"),
+    EndTime = DateTimeOffset.Parse("2018/03/20T16:01:00Z"),
+    ServerQuery = "where Level == 4",
+
+ -- closeCurlyBracket -- 
+;
+```
+
+To use a KQL server query, you must also set `ServerQueryType = QueryType.KQL`. 
+For instance,
+a KQL server query functionally equivalent to the earlier MQL server query can be specified like this:
+``` C#
+...
+ServerQuery = "source | where Level == 4",
+ServerQueryType = QueryType.KQL
+...
+```
+
+### 3. Load the certificate.
+
+We'll use this certificate to authenticate with DGrep. This is only needed if using certificate based authentication.
+
+```csharp
+private static X509Certificate2 LoadCertificate()
+
+ -- openCurlyBracket -- 
+
+    var certStore = new X509Store(ClientCertificateStoreLocation);
+    certStore.Open(OpenFlags.ReadOnly);
+    var certCollection = certStore.Certificates.Find(X509FindType.FindByThumbprint, ClientCertificateThumbprint, false);
+    certStore.Close();
+
+    if (certCollection.Count == 0)
+    
+ -- openCurlyBracket -- 
+
+        throw new Exception($@"The certificate 
+ -- openCurlyBracket -- 
+ClientCertificateThumbprint
+ -- closeCurlyBracket -- 
+ was not found in 
+ -- openCurlyBracket -- 
+ClientCertificateStoreLocation
+ -- closeCurlyBracket -- 
+ store");
+    
+ -- closeCurlyBracket -- 
+
+
+    return certCollection[0];
+
+ -- closeCurlyBracket -- 
+
+```
+
+### 4. Query DGrep
+
+Using certificate based authentication: Instantiate `DGrepClient` and invoke `GetRowSetResultAsync` API by passing in the query.
+
+```csharp
+public static void Main(string[] args)
+
+ -- openCurlyBracket -- 
+
+    using (var client = new DGrepClient(DGrepEndpoint, LoadCertificate()))
+    
+ -- openCurlyBracket -- 
+
+        // use await in production code.
+        var result = client.GetRowSetResultAsync(SampleQueryInput, CancellationToken.None).GetAwaiter().GetResult();
+        PrintRowSet(result.RowSet);
+    
+ -- closeCurlyBracket -- 
+
+
+ -- closeCurlyBracket -- 
+
+```
+
+Using user based authentication: Instantiate `DGrepUserAuthClient` and invoke `GetRowSetResultAsync` API by passing in the query.
+
+```csharp
+public static void Main(string[] args)
+
+ -- openCurlyBracket -- 
+
+    using (var client = new DGrepUserAuthClient(DGrepEndpoint))
+    
+ -- openCurlyBracket -- 
+
+        // use await in production code.
+        var result = client.GetRowSetResultAsync(SampleQueryInput, CancellationToken.None).GetAwaiter().GetResult();
+        PrintRowSet(result.RowSet);
+    
+ -- closeCurlyBracket -- 
+
+
+ -- closeCurlyBracket -- 
+
+```
+
+### 5. Print search results
+
+Examine the output produced by the search.
+
+```csharp
+private static void PrintRowSet(RowSet rowSet)
+
+ -- openCurlyBracket -- 
+
+    var columnNames = rowSet.ColumnDefinitions.Keys;
+    Console.WriteLine(string.Join(" | ", columnNames));
+    foreach (var row in rowSet.Rows)
+    
+ -- openCurlyBracket -- 
+
+        Console.WriteLine(string.Join(" | ", columnNames.Select(name => row[name])));
+    
+ -- closeCurlyBracket -- 
+
+
+ -- closeCurlyBracket -- 
+
+```

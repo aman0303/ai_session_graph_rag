@@ -1,0 +1,166 @@
+## Troubleshooting Configuration
+
+## I am getting errors during creating/uploading/updating of the Logs Configuration
+
+### 1. Exception: account mapping moniker (&lt;&lt;Moniker Name&gt;&gt;) must start with &lt;&lt;StorageGroup Name&gt;&gt; and the data center portion cannot be empty
+
+![ConfigError1][ConfigError1]
+
+The Storage group names in **Account Moniker** section in Logs Configuration must be exactly same as **Storage Group** names (including casing) in **Resources** tab of the logs account.
+
+### 2. Exception: Service Bus account (&lt;&lt;Moniker Name&gt;&gt;) in streaming event &lt;&lt;Event Name&gt;&gt; is not defined
+
+![ConfigError1_1][ConfigError1_1]
+
+There is no Event Hub/Service Bus for Moniker. Please create a Event Hub manually and map it to the moniker (mostly occurs in GCS accounts).
+
+### 3. Could not find import file "&lt;filename.xml&gt;"
+
+![ConfigError2][ConfigError2]
+
+![ConfigError3][ConfigError3]
+
+The file which is present in the error message has been used in imports section of the configuration but the file doesn't exist in the uploaded files.
+
+> [!NOTE]
+> If you are deploying configuration with Logs Ev2, then please follow the instructions mentioned [here](../howtoguides/ev2/setup/createconfigs.md) for uploading/updating configuration files.
+
+### 4. "Message":"Exception:MDS account is in a bad state,MdsMessage:Microsoft.Cis.Monitoring.Mds.ConfigServer.ConfigServiceException: XStore account &lt;&lt;Storage Group Name&gt;&gt; in table &lt;&lt;Table Name&gt;&gt; is not defined
+
+Probably changes has been made to the event/table or moniker/storage group of the current configuration version. Please [bump up the major version](../FAQ/ConfigFAQ.md#2-how-do-i-increaseupdate-my-logs-configuration-major-version) of the configuration to fix the issue.
+
+### 5. No annotable event corresponds to the event streaming annotation =&lt;&lt;EventName&gt;&gt;
+
+![ConfigError4][ConfigError4]
+
+The event which is in the error message is configured for **StreamingAnnotations** but the same _Event_ doesn't actually exist in the configuration. Either remove the StreamingAnnotation from the configuration or add the event in configuration to fix the issue.
+
+### 6. Exception:MDS account is in a bad state,MdsMessage:Microsoft.Cis.Monitoring.Mds.ConfigServer.ConfigServiceException: Storage group '&lt;&lt;Storage Group&gt;&gt;' is not configured for Kusto on every storage shard. Please add Kusto settings to this storage group for storage shard '&lt;&lt;Moniker Name&gt;&gt;' in region '&lt;&lt;Region Name&gt;&gt;' before uploading this config. Event name: '&lt;&lt;Event Name&gt;&gt; has Kusto streaming enabled
+
+Kusto streaming annotations were configured in the configuration but there are no streaming settings configured for the region(s). Either add default/region based KustoID and KustoDB settings in the respective storage group before uploading/creating configuration or remove Kusto streaming annotations from the logs configuration.
+
+### 7. "User has access to none of the specified tables" error while querying DGrep
+
+Check if the event you are querying in DGrep is actually present/configured in the Logs configuration file on which Monitoring Agent is running.
+
+## Extended CDATA validation TSG
+
+### 8. Exception: "The cData Content is empty. Please upload a valid config to fix this issue."
+
+![CDATAError8][CDATAError8]
+
+The &lt;**EventStreamingAnnotation**&gt; elements should not have empty &lt;Content&gt; sub-element. 
+
+### 9. Exception: "The ADLS account is empty. Please upload a valid config to fix this issue."
+
+![CDATAError9][CDATAError9]
+
+The &lt;**Adlsaccount**&gt; element should not be empty.
+
+### 10. Exception: "The ADLS account is not secure. Please upload a valid config to fix this issue."
+ 
+ ![CDATAError10][CDATAError10]
+
+The &lt;**Adlsaccount**&gt; element value should start with “https://”.
+
+### 11. Exception: "The ADLS account has an incorrect suffix. Please ensure that the account is a valid Blueshift account."
+
+![CDATAError11][CDATAError11]
+
+The &lt;**Adlsaccount**&gt; element value should end with “.core.windows.net”.
+
+### 12. Exception: "Multiple global accounts have been specified. This is not allowed."
+There should not be more than one attributes of the &lt;**Adlsaccount**&gt; element that have **"*"** specified as their values, as **"*"** indicates being global and more than one global accounts are not allowed. 
+
+### 13. Exception: "Both a global and regional accounts have been specified. This is not allowed."
+
+![CDATAError13][CDATAError13]
+ 
+For the attribute IncludeSourceRegions of the &lt;**Adlsaccount**&gt; element, it is not allowed to have both specific region names and the global mark **"*"** specified at the same time. It should be either something like “northeurope,westeurope,francecentral,francesouth” or **"*"** itself.
+
+
+### 14. Exception: “Both include and exclude regions have been specified. This is not allowed. A configuration can either specify a list of included regions or a list of excluded regions."
+
+![CDATAError14][CDATAError14]
+ 
+The element &lt;**Adlsaccount**&gt; can only have either IncludeSourceRegions or ExcludeSourceRegions specified, not both.
+
+### 15. Exception: "There are multiple exclude sections. Only one list of exclude regions are allowed." 
+If the &lt;**Adlsaccount**&gt; element has ExcludeSourceRegions attribute specified, then only one instance of the ExcludeSourceRegions attribute is allowed.
+
+### 16. Exception: "One or more regions are duplicated. Please remove the duplicate regions."
+
+![CDATAError16][CDATAError16]
+
+The IncludeSourceRegions attribute or the ExcludeSourceRegions attribute of element &lt;**Adlsaccount**&gt; can’t have repeated region names in the value string. 
+For example, "northeurope,uaecentral,uaenorth,southafricanorth,southafricawest" is acceptable but "northeurope,northeurope,uaecentral,uaenorth,southafricanorth,southafricawest" is invalid.
+
+### 17. Exception: A maximum of one attribute (either an include or an exclude) is allowed. Please upload a valid config to fix this issue." 
+Only one attribute, either IncludeSourceRegions or ExcludeSourceRegions, is allowed. This exception could be caused by more than one instance of IncludeSourceRegions or more than one instance of ExcludeSourceRegions are specified.
+
+### 18. Exception: "Specified * in ExcludeSourceRegions. This is not allowed."
+
+![CDATAError18][CDATAError18]
+
+It is not allowed to specify “*” for ExcludeSourceRegions attribute of element &lt;**Adlsaccount**&gt; as it is not allowed to exclude all regions.
+
+### 19. Exception:"Contains at least one invalid region name. Please make sure that the region names are valid."
+
+![CDATAError19][CDATAError19]
+
+This exception could be caused by at least one unrecognizable region name in the value string of IncludeSourceRegions or ExcludeSourceRegions attribute of &lt;**Adlsaccount**&gt; elements.
+For example, IncludeSourceRegions="northeurope,westeurope,francecentral,francesouth,francesouth" is acceptable but IncludeSourceRegions="XXXnortheurope,westeurope,francecentral,francesouth,francesouth" is invalid.
+
+### 20. Exception: "The onBehalfFields attribute is required but it is not specified."
+For &lt;**OnBehalf**&gt; element, in the &lt;Config/&gt; sub-element of CDATA block, there must be an attribute onBehalfFields specified. This exception could be caused by attribute onBehalfFields is missing.
+
+### 21. Exception: "The primaryPartitionField attribute is required but it is not specified. " 
+For &lt;**OnBehalf**&gt; element, in the &lt;Config/&gt; sub-element of CDATA block, there must be an attribute primaryPartitionField specified. This exception could be caused by attribute primaryPartitionField is missing.
+
+### 22. Exception: "The containerSuffix attribute is required but it is not specified." 
+For &lt;**OnBehalf**&gt; element, in the &lt;Config/&gt; sub-element of CDATA block, there must be an attribute containerSuffix specified. This exception could be caused by attribute containerSuffix is missing.
+
+### 23. Exception: “Value specified for the onBehalfFields attribute: 
+ -- openCurlyBracket -- 
+0
+ -- closeCurlyBracket -- 
+ is invalid. Valid values are resourceid,category,category2,timegrain,tenantid,location,systemid,workflowid,macaddress,flowlogguid,providername,region,customername,field2info,taskname,value,tenant,resourceguid,resourcekind,name,tag2,userid,ansistring,subscriptionid." 
+This exception could be caused by one or more invalid value specified for the onBehalfFields attribute. Any combination of the valid values: resourceId, category, category2, timeGrain, tenantId, location, systemId, workflowId, macAddress, flowLogGUID, ProviderName, region, customerName, field2Info, TaskName, value, tenant, ResourceGUID, ResourceKind, name, tag2, userId, AnsiString, and subscriptionId are acceptable but any other string outside this list is invalid.
+
+### 24. Exception: "Value specified for the primaryPartitionField attribute: 
+ -- openCurlyBracket -- 
+0
+ -- closeCurlyBracket -- 
+ is invalid. Valid values are resourceid,tenantid,workflowid,flowlogresourceid,patchid."
+This exception could be caused by one or more invalid value specified for the primaryPartitionField  attribute. Any combination of the valid values: resourceId, tenantId, workflowId, flowLogResourceID, and patchId are acceptable but any other string outside this list is invalid.
+
+### 25. Exception: "Value specified for the containerSuffix attribute: 
+ -- openCurlyBracket -- 
+0
+ -- closeCurlyBracket -- 
+ is invalid. Valid values are either \$category,\$timegrain,suffix,e2etest1fake."
+ This exception could be caused by one or more invalid value specified for the containerSuffix attribute. Any combination of the valid values: $category, $timeGrain, suffix, and E2Etest1Fake are acceptable but any other string outside this list is invalid.
+
+### 26. Exception: "One or more attribute names: 
+ -- openCurlyBracket -- 
+0
+ -- closeCurlyBracket -- 
+ are invalid. Valid attribute names are onBehalfFields,isPrefixMatch,onBehalfReplaceFields,partitionFields,primaryPartitionField,excludeFields,validJsonColumns,timePeriods,containerSuffix,priority,duration,Prefix,eventTypes,dataTypeOverride,altOnbehalfIdentity."
+This exception could be caused by one or more invalid attribute names in the &lt;**Config**/&gt; sub-element of CDATA block of an &lt;**Onbehalf**&gt; element. Any string outside the list: onBehalfFields, isPrefixMatch, onBehalfReplaceFields, partitionFields, primaryPartitionField, excludeFields, validJsonColumns, timePeriods, containerSuffix, priority, duration, Prefix, eventTypes, dataTypeOverride, altOnbehalfIdentity, are invalid attribute names.
+
+
+<!-- Images -->
+[ConfigError1]: ../images/ConfigError1.png
+[ConfigError1_1]: ../images/ConfigError1_1.png
+[ConfigError2]: ../images/ConfigError2.png
+[ConfigError3]: ../images/ConfigError3.png
+[ConfigError4]: ../images/ConfigError4.png
+[CDATAError8]: ../images/CDATA-Error-8.jpg
+[CDATAError9]: ../images/CDATA-Error-9.jpg
+[CDATAError10]: ../images/CDATA-Error-10.jpg
+[CDATAError11]: ../images/CDATA-Error-11.jpg
+[CDATAError13]: ../images/CDATA-Error-13.jpg
+[CDATAError14]: ../images/CDATA-Error-14.jpg
+[CDATAError16]: ../images/CDATA-Error-16.jpg
+[CDATAError18]: ../images/CDATA-Error-18.jpg
+[CDATAError19]: ../images/CDATA-Error-19.jpg

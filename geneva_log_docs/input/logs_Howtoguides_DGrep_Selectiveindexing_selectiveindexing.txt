@@ -1,0 +1,44 @@
+# What is Selective Indexing? 
+
+
+The Geneva pipeline natively indexes logs by [identity fields](../../../References/CentralAggregation/Querylanguage.md). This index is used when you provide one or more scoping conditions in the query. With Selective indexing, you can configure any field to be used in [scoping conditions](../../../concepts/DGrepScopingCond.md), making searches by that field much faster.
+
+## How does it work?
+
+When Selective Indexing is enabled on an Event:
+
+* The Monitoring Agent (MA) extracts all the unique values that occur for each indexed field and stores them in a separate table, along with the time frame and the MA Identity in which they occur. This table, which we call the Index Event, is typically many orders of magnitude smaller than the original dataset.
+
+* The Index Event is sent to Kusto. Ingesting the Index Event in Kusto costs a small fraction of ingesting the original dataset.
+
+* DGrep uses the Index Event stored in Kusto to reduce the amount of data that needs to be searched.
+
+## When to use Selective Indexing?
+
+Enabling selective indexing on a field can dramatically improve the performance of queries at a relatively low cost, as long as the following conditions are met:
+
+* You typically search for specific values in that field 
+  
+  > [!Note]
+  > The index cannot be used for substring searches.
+
+* You typically search for values that occur sparsely in the dataset.
+
+* Values on that field are relatively short.
+
+  > [!Note]
+  > Longer values are more expensive to index.
+
+> [!Tip]
+> * Good candidates for indexing are fields such as unique transaction IDs or user IDs, since they usually have values that occur sparsely in the dataset.
+
+> [!Warning]
+> * Fields with low cardinality, such as status codes and error levels, may not be good candidates for indexing since each value is spread across the entire dataset. 
+> * Free text message fields are usually not good candidates for indexing either since substring searches are not supported.
+
+## Next steps
+
+* How to configure?
+* [From Jarvis UI](configurefromjarvis.md)
+* [Manually](configuremanually.md)
+* [How to estimate costs?](cost.md)

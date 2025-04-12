@@ -1,0 +1,3 @@
+# Add new managed certificates to the MA communication
+
+Learn how to add new certificates. [Learn more]( https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample%2FRolloutParameters%2F2020-06-01%2FGeneva.Extension.RolloutParameters.UpdateExistingAccount.json)

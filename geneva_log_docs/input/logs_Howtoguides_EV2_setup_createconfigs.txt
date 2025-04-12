@@ -1,0 +1,65 @@
+# Manage the Geneva Logs Agent Configuration
+If you are new to Geneva Logs and do not have an existing Logs account and configuration, please first [onboard](../../../../getting_started/v2/createaccounts_basic.md) to Geneva.
+
+## Update your configuration for use in the Logs Ev2 extension
+Follow these steps to update an existing agent configuration:
+
+   1. Navigate to [Jarvis > Account > Logs Account Settings](https://portal.microsoftgeneva.com/account/logs) and log into your Geneva Logs account.
+   2. Go to the configuration tab and select the configuration that you'd like to use from the list.
+   3. Click the three dot icon next to the configuration and select **Download** from the list.
+   4. Save the zip file locally
+   5. Reformat the files in the zip file for use in the EV2 extension:
+      - Find the configuration xml file in the zip folder (typically named ```<ConfigId>Ver<VersionNumber>```) and rename it to "main.xml". 
+      - Create a new folder named "imports" and move the remaining xml files to this folder.
+   6. You can choose one of the following options to upload the reformatted config files:   
+      - Save both "main.xml" and "imports" folder into a new zip file and upload to a file share. Visit [this page](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/ConfigUpload/Geneva.Extension.RolloutParameters.ConfigImportZip.json) to see an example.
+      - Leave all the files as separate files and upload them to a file share. Visit [this page](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/ConfigUpload/Geneva.Extension.RolloutParameters.Configfiles.json) to see an example.
+      - Save the "imports" folder into a zip file, but leave "main.xml" out of the zip. Upload both the zip file and "main.xml". to a file share. Visit [this page](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/ConfigUpload/Geneva.Extension.RolloutParameters.CreateNamespaceAndPublishConfig.json) to see an example. 
+
+      See more details in the [payload page](../payload.md#config-upload-options) and in the [sample files](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/ConfigUpload/Geneva.Extension.RolloutParameters.CreateNamespaceAndPublishConfig.json&version=GBmaster&line=46&lineEnd=72&lineStartColumn=9&lineEndColumn=114&lineStyle=plain&_a=contents).
+
+      >[!Note]
+      >If both a zip file and a "main.xml" file are provided, the extension will reference the "main.xml" file that is not part of the zip file.
+
+![Download Config](../../../images/DownloadConfig.png)
+
+## Configure the Ev2 files
+
+1. Install the [Ev2 PowerShell cmdlets]( https://ev2docs.azure.net/references/cmdlets/Intro.html). 
+
+2. Download the [Geneva Logs EV2 example rollout](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample). 
+
+3. Update the path to your configuration file and other parameters in the Geneva.Extension.RolloutParamaters file. Choose one of the sample files in [this folder](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/ConfigUpload) based on the upload approach you chose.
+
+> [!NOTE]
+> The **namespace configuration version** is inferred from the main.xml file. The Ev2 extension will either publish a new minor version or new major version depending on what already exists. 
+
+> [!Note]
+> If you have an existing Geneva Logs account that you are now managing with Ev2, you need to use an AKV certificate on the account to invoke the extension.
+
+Use this information to identify the correct Geneva Logs extension name to reference in your EV2 deployment.
+
+  - **SMOKE**: Microsoft.Geneva.Logs/SmokeDeployment
+  - **PPE**: Microsoft.Geneva.Logs/ConfigureLogsTestAccount
+  - **All other environments**: Microsoft.Geneva.Logs/ConfigureLogsAccount
+
+## Deploy to environment and validate
+You can invoke the plugin multiple times in a single rollout, so you can produce rollouts that update multiple namespaces. New configs are only published if they are different from the previous config to prevent a proliferation of configs that will need to be managed.
+
+1. Open the [AzureServiceDeployClient](https://ev2docs.azure.net/references/cmdlets/Intro.html) shortcut in the Ev2 cmdlets zip file you downloaded in the previous step.
+2. Start new rollout with: 
+
+  ```New-AzureServiceRollout -ServiceGroupRoot <path to ServiceRootFolder in example/or your deployment> -RolloutSpec RolloutSpec.json -RolloutInfra Prod -WaitToComplete```
+
+3. Follow the status in [Ev2 Portal](https://ev2portal.azure.net/).
+
+## Parameterize your config  
+You can re-use the same configuration package across multiple cloud environments and with different parameters by enabling [scope tag binding](https://eng.ms/docs/products/ev2/features/parameterization/howtouse) in the main.xml file of your package. 
+
+[Scope binding](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ConfigParamSample/ScopeBindings.json) is defined in a json file for a rollout that defines the binding values for the templatized files in a defined scope. An extended sample is available [here](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ConfigParamSample). 
+
+
+## Manage your Configurations directly from Jarvis and EV2
+You can make changes from Geneva UX portal directly with configuration editing capabilities using the Geneva Logs Configuration Source Control feature. This connects your configuration with an Azure DevOps repository and enforces code review by having configuration changes go through pull requests. 
+
+Read more about [Geneva Logs Configuration Source Control here](../../../../connectors/source_control/_warmpathsettings.md)

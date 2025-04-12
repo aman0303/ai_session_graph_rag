@@ -1,0 +1,141 @@
+---
+title: Scrubbing Configuration
+description: This page describes how to mark up an event for PII scrubbing. 
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring 
+ms.topic: Cosmos/Kusto Upload
+ms.date: 09/24/2018
+---
+>[!Note] 
+>For Schrems II compliance and scrubbing please refer to the [Schrems II doc](schremsDGrep.md)
+
+# Remove PII from logs
+
+## Scrubbing type vs. strategy
+**Scrubbing type** refers to the scope of the input data that needs to be scrubbed. Supported scrubbing types are *EntireColumn, PartialColumn,* and *Annotation*.
+**Scrubbing strategy** refers to the method employed in converting PII data to the scrubbed content. Currently supported scrubbing strategies are:
+- HMACSHA256: One way hash of the PII, 
+- IpAddress (for zeroing-out specified octets in fully qualified IPv4 and IPv6 address values),
+- HMACSHA256+Encryption (for scenarios that require getting original PII data back from scrubbed content),
+- DropValue: Replace PII with an empty string.
+- RotatingSalt: One way hash of the PII using a SALT that rotates every 48 hours (intended to delink the PII to comply with GDPR requirements).
+
+## Specifying Scrubbing Rules
+You can author one or more scrubbing rules to apply before the logs are pushed to Cosmos (or Kusto). When an event has more than one rule specified, the rules are applied one after another, i.e., if an event has 3 scrubbing rules *R_1, R_2,* and *R_3*, the scrubbed value is *R_3(R_2(R_1(Input)))*. The scrubbing rules are specified in the event configuration xml.  To get to the configuration xml:
+1. Navigate to the [Manage section](https://portal.microsoftgeneva.com/account/logs) in the Jarvis portal and choose Geneva Logs.
+2. Once you are authenticated, you will be presented with a list of namespaces that you have access to modify.
+![image.jpg](./../images/namespaces.png)
+3. Select the Configuration file you want to edit like highlighted above.
+4. Select the Advanced tab and navigate to the *EventStreamingAnnotations* section.
+5. Find the element corresponding to the event of interest and add the appropriate rule(s).  See the example below for detailed descriptions of the rules. 
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<EventStreamingAnnotations>
+  <!-- This regex should uniquely match the eventName property for the event -->
+  <EventStreamingAnnotation name ="^TestEvent$">
+    <Cosmos>
+      <Content>
+        <![CDATA[
+        <!-- An empty config tag is necessary and sufficient if you have a cosmos VC provisioned for you by the Azure Analytics team. -->
+        <Config/>
+        ]]>
+      </Content>
+    </Cosmos>
+
+    <!-- If you want to enable scrubbing, add the section below -->
+    <Scrubbing>
+      <Content>
+        <![CDATA[
+        <ScrubbingConfigurationV2>
+            <Rules>
+
+                <!-- This rule scrubs the entire column and output contains the corresponding one-way hash.
+                     Pass in the column names to the ColumnsToApply attribute. Column names are case sensitive.
+                     Use comma to separate multiple column names. -->
+                <Rule Name="SampleRule1" Type="EntireColumn" Strategy="HMACSHA256" ColumnsToApply="Column1,Column2" />
+
+                <!-- Annotation scrubbing type is used to scrub any portion of a column that is marked with annotations.
+                     Anything in between the InputStartMarker and InputEndMarker in the specified columns will be scrubbed.
+                     InputStartMarker will be replaced with OutputStartMarker and InputEndMarker with OutputEndMarker.
+                     Example: The rule below looks at the contents of Column3 and Column4 and scrubs (one-way hashing)
+                     any text in between <pii> and </pii>. -->
+                <Rule Name="SampleRule2" Type="Annotation" Strategy="HMACSHA256" ColumnsToApply="Column3,Column4">
+                    <InputStartMarker>&lt;pii&gt;</InputStartMarker>
+                    <InputEndMarker>&lt;/pii&gt;</InputEndMarker>
+                    <OutputStartMarker>&lt;pii&gt;</OutputStartMarker>
+                    <OutputEndMarker>&lt;/pii&gt;</OutputEndMarker>
+                </Rule>
+
+                <!-- This rule scrubs (zeroes-out) a column containing IP address (fully qualified IPv4) values.
+                     In this specific example, the original value 164.11.109.8 will be replaced by 164.11.0.0 -->
+                <Rule Name="SampleRule3" Type="EntireColumn" Strategy="IpAddress" ColumnsToApply="ColumnIPv4Address">
+                    <AddressFormat>IPv4-FourOctets</AddressFormat>
+                    <ScrubbedAddressPartsCount>2</ScrubbedAddressPartsCount>
+                </Rule>
+
+                <!-- This rule scrubs (zeroes-out) a column containing IP address (fully qualified IPv6) values that are
+                     annotated within markers. In this example, the original value 2001:4898:e0:3ad:64af:e7d9:aaae:cb
+                     will be replaced by 2001:4898:e0:3ad:64af:0:0:0 -->
+                <Rule Name="SampleRule4" Type="Annotation" Strategy="IpAddress" ColumnsToApply="ColumnIPv6Address">
+                    <AddressFormat>IPv6-EightQuads</AddressFormat>
+                    <ScrubbedAddressPartsCount>3</ScrubbedAddressPartsCount>
+                    <InputStartMarker>&lt;ipv6&gt;</InputStartMarker>
+                    <InputEndMarker>&lt;/ipv6&gt;</InputEndMarker>
+                    <OutputStartMarker>&lt;ipv6&gt;</OutputStartMarker>
+                    <OutputEndMarker>&lt;/ipv6&gt;</OutputEndMarker>
+                </Rule>
+
+                <!-- This rule scrubs one part of the column after it is split using a separator string.
+                     In this specific example, anything that occurs *after* the first occurrence of ? character
+                     will be scrubbed. Please note that OutputStartMarker and OutputEndMarker are required. -->
+                <Rule Name="SampleRule5" Type="PartialColumn" Strategy="HMACSHA256" ColumnsToApply="Column5">
+                    <InputSplitMarker>?</InputSplitMarker>
+                    <SearchFrom>Start</SearchFrom> <!-- Other valid value is End -->
+                    <ScrubbedPart>Last</ScrubbedPart> <!-- Other valid value is First -->
+                    <OutputStartMarker>&lt;pii&gt;</OutputStartMarker>
+                    <OutputEndMarker>&lt;/pii&gt;</OutputEndMarker>
+                </Rule>
+
+                <!-- This rule scrubs the entire column and output contains the corresponding one-way hash
+                     as well as the corresponding encrypted value. Use this with restraint - only when there is
+                     business or compliance requirement to get back the original value when there is a security incident.
+                     See Scrubbing with encryption for more details. -->
+                <!-- Important note: we strongly recommend getting sign-off from your respective security and
+                     compliance teams if sending PII data to Cosmos (even in encrypted form) is acceptable.
+                     For example, Azure compliance guidelines prohibit application audit logs containing customer's PII
+                     from reaching cosmos even in encrypted form. -->
+                <Rule Name="SampleRule6" Type="EntireColumn" Strategy="HMACSHA256+Encryption" ColumnsToApply="Column6">
+                    <EncryptionKeyUrl>https://my.vault.azure.net:443/secrets/EncryptionKey/a1e81e8a586c497082297e40d1f9cc</EncryptionKeyUrl>
+                </Rule>
+                
+
+		<!-- This rule replaces the UserId value with an empty string -->
+		<Rule Name="SampleRule7" Type="EntireColumn" Strategy="DropValue" ColumnsToApply="UserId" />
+
+		<!-- This rule replaces PII inside a column called Message with an empty string -->
+		<Rule Name="SampleRule8" Type="Annotation" Strategy="DropValue" ColumnsToApply="Message">
+    			<InputStartMarker>&lt;pii&gt;</InputStartMarker>
+    			<InputEndMarker>&lt;/pii&gt;</InputEndMarker>
+    			<OutputStartMarker>[PII </OutputStartMarker>
+    			<OutputEndMarker>Removed]</OutputEndMarker>
+		</Rule>
+
+		<!-- This rule replaces the UserId value with a hashed value. -->
+		<Rule Name="SampleRule9" Type="EntireColumn" Strategy="RotatingSalt" ColumnsToApply="UserId" />
+            </Rules>
+        </ScrubbingConfigurationV2>
+        ]]>
+      </Content>
+    </Scrubbing>
+  </EventStreamingAnnotation>
+</EventStreamingAnnotations>
+```
+
+## Getting DGrep to read the scrubbed data
+DGrep does no automatically read the scrubbed data, it will continue to read the raw data even after configuration changes were done. To get DGrep to show the scrubbed data when queried please open a ticket based on the template referenced in https://eng.ms/docs/products/geneva/support/findrightgenevateam under the DGrep Support. Make sure to list the namespace and event you wish to scrub.
+
+Please also note the following:
+1. Once updates are done on DGrep side, DGrep will not be able to query data prior to the configuration change. In order to not lose data in DGrep you will have to make the configuration changes, wait the retention period and only then open the above mentioned ticket.
+2. There is no option to have scrubbing only in some regions for DGrep. It is a all or nothing configuration. For EU scrubbing please refer to the [Schrems II doc](schremsDGrep.md).

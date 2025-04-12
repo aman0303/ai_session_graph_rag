@@ -1,0 +1,112 @@
+---
+title: Extensibility SDK usage
+description: This page provides details on how to consume the extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 09/26/2018
+---
+
+# Using the Extensibility SDK
+
+> [!NOTE]
+> This information applies to the original Extensibility SDK `Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension`.
+> For more information, see [Extensibility SDK Overview](./intro.md).
+
+# Prerequisites
+Ensure that you have [set up your account to use the sdk.](gettingstarted.md)
+
+The Extensibility SDK uses `Microsoft.Azure.EventHubs.Processor.EventProcessorHost` to interact with Event Hubs.
+A familiarity with it is useful to understand the inner workings of the Extensibility SDK.
+A good overview is available here:
+
+- [Event Processor Host Best Practices Part 1](https://learn.microsoft.com/en-us/archive/blogs/servicebus/event-processor-host-best-practices-part-1)
+- [Event Processor Host Best Practices Part 2](https://learn.microsoft.com/en-us/archive/blogs/servicebus/event-processor-host-best-practices-part-2)
+
+# SDK location and sample application
+- The nuget package, Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension, can be found [here.](https://msazure.visualstudio.com/One/_packaging?_a=package&feed=Official&package=Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension&protocolType=NuGet&version=6.12.0&view=overview). 
+- The SDK sample code is in a Git repository on MSAzure. It is located [here.](https://msazure.visualstudio.com/DefaultCollection/One/_git/EngSys-MDA-Samples-ExtensibilitySDK?path=%2Fsrc%2Freadme.md&version=GBmaster&_a=preview)
+
+# Usage
+To consume events using the SDK: 
+
+- You need to implement a class that derives from EventStreamBase with an implementation for ProcessEventBatchAsync. This is the method that will get called when there are messages to be processed. 
+
+- You need to instantiate an EventStreamProcessor and use it to start/stop processing events. The EventStreamProcessor class needs the following information: 
+    - *EventHubDetails*: This class contains the details related to interacting with the Event Hub(s). These details are: 
+        - The consumer group to use to listen to the Event Hub.
+        - The connection string to be used for checkpointing.
+        - The broker kind. Valid values are *BrokerKind.Raw* and *BrokerKind.Scrubbed*. This value determines whether you process raw events or scrubbed events.
+        - The maximum batch size (default 32) – this determines the maximum number of messages that the ProcessEventBatchAsync will get for any call. 
+        - The minimum number of seconds between checkpoints (default 0). This setting determines how often we checkpoint.  A value of 0 means that we checkpoint every time ProcessEventBatchAsync completes.  We recommend using a value of 60.  The default value is set to 0 for compatibility with a previous version of the SDK.
+        - Hours to look back if no checkpoint information is found (default 1). The is how far back (relative to the current time) we start from on the first time we listen to an event hub. Subsequent calls will pick up from the last checkpoint.
+
+    - *GenevaAccountInfo*: This class contains the details of your Geneva account: 
+        - The Geneva Logs endpoint where your data is stored. Valid values are *Test*, *DiagnosticsProd,* and *FirstPartyProd*.
+        - WarmPathAccounts: The list of Geneva Logs accounts that your data lives in. Typically, this list will contain only one item.
+        - Certificate information. The thumbprint and the store information of the certificate you use to authenticate with Geneva.
+        - *MdmAccount* and *MdmNamespace* (default string.Empty). If specified, the extensibility SDK pushes metrics on the number of messages and the latency of the same to specified location.
+
+    - List of *EventFilterDetails*:  The list of event filters used to determine the events that are listened to. The full list of events is the union of all the events that match any of the filters in the list. Each filter allows you to specify the following to scope down the events you want to handle – specify an empty string if you do not want to filter (e.g., if you want to listen to all events in a namespace, specify string.Empty for the event name regular expression) 
+        - Namespace regular expression
+        - Event name regular expression
+        - Moniker regular expression, and
+        - The location regular expression (valid location names are defined [here](https://msazure.visualstudio.com/One/_git/EngSys-MDA-MDS?path=%2Fsrc%2FTestClients%2FMdsCache%2Fshared.xsd&version=GBmaster&line=684&lineStyle=plain&lineEnd=684&lineStartColumn=1&lineEndColumn=36))
+
+    - *LogLevel*. The level of SDK logs to be captured.  Valid values are *LogLevel.Standard* and *LogLevel.Verbose*. The default value is *LogLevel.Standard*; verbose logging may be required for troubleshooting.
+
+    - *EventListener*: The listener to capture the SDK logs. An implementation that writes the logs to a specified text file is included with in the samples repo (TextEventListener).  You can use this class during initial development. The SDK emits ETW logs using the provider Microsoft-Geneva-ExtensibilitySDK. These logs can be collected using PerfView by setting additional providers to *Microsoft-Geneva-ExtensibilitySDK in the Collect dialog. These logs can also be collected using the monitoring agent. This is the recommended approach for production.  Before contacting us for support, you need to ensure that the extensibility logs are being collected and are searchable in DGrep. **We require that logs be collected and pushed to DGrep to entertain support requests.**
+
+Once the event stream processor is instantiated, it needs to be started. The code snippet to start and stop processing looks like this:
+```cs
+using (EventStreamProcessor processor = new EventStreamProcessor(
+    eventHubDetails,
+    genevaAccountInfo,
+    new List<EventFilterDetails>() 
+ -- openCurlyBracket -- 
+ filterInfo 
+ -- closeCurlyBracket -- 
+,
+    sampleAsyncExtension,
+    EventStreamProcessor.LogLevel.Standard,
+    null))
+
+ -- openCurlyBracket -- 
+
+    processor.Start();
+    Console.WriteLine("Processor Started. Press enter to exit.");
+    Console.ReadLine();
+    processor.Stop();
+
+ -- closeCurlyBracket -- 
+
+```
+
+# Sample MA config to export Ext SDK ETW to DGrep
+
+    <EtwProvider name="Microsoft-Geneva-ExtensibilitySDK" storeType="CentralBond" format="EventSource">
+        <RemoveHeaderFields>
+          <Field>ProviderGuid</Field>
+          <Field>ProviderName</Field>
+          <Field>EventId</Field>
+          <Field>OpcodeName</Field>
+          <Field>KeywordName</Field>
+          <Field>TaskName</Field>
+          <Field>ChannelName</Field>
+          <Field>EventMessage</Field>
+        </RemoveHeaderFields>
+        <DefaultEvent eventName="DefaultEventTable" />
+        <Event id="2000" eventName="DiagnosticLogs" />
+        <Event id="2001" eventName="DiagnosticLogs" />
+        <Event id="2002" eventName="DiagnosticLogs" />
+        <Event id="2003" eventName="DiagnosticLogs" />
+        <Event id="2004" eventName="DiagnosticLogs" />
+        <Event id="2005" eventName="SkippedEvents" />
+        <Event id="2006" eventName="ReceivedEvents" />
+        <Event id="2007" eventName="QosEvents" />
+        <Event id="2008" eventName="FailedEvents" />
+      </EtwProvider>
+
+

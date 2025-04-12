@@ -1,0 +1,34 @@
+# How do I configure my Geneva Logs account to use HyperNet Lite supported Event Hub stamps
+
+If your service runs outside of Azure (e.g. autopilot/pilotfish), you may not be able to connect to the Event Hubs used by your Geneva Logs account. In this case, you can [SNAT](https://stackoverflow.microsoft.com/questions/90687/the-operation-timed-out-errors-when-posting-to-eventhub) your EventHub/ServiceBus IP addresses. If you are unable to SNAT, you can use resource tags to ensure your Geneva Logs account uses HyperNet Lite supported Event Hub stamps.  
+
+## Configure your Geneva Storage Management (GSM) account
+
+### Prerequisites
+* Check if your account is [GSM enabled](./gsm_gcsenabled.md).
+* Follow [these instructions](../powershell.md) to install the latest version of Geneva Logs Cmdlets.
+* Your Monitoring Agent (MA) deployed version has to be 41.1.3 or newer.
+
+### Configuration steps
+Change your MA startup parameters to use resource tags. Set these parameters before launching the MA. 
+
+```
+set MONITORING_GCS_STORAGE_RESOURCE_TAG_TYPE=EventHubStamp 
+set MONITORING_GCS_STORAGE_RESOURCE_TAG_VALUE=<ScaleUnitName> 
+```
+
+Choose the appropriate Scale Unit Name from [this list](https://msazure.visualstudio.com/One/_git/ServiceBus-Messaging?path=%2Fsrc%2Fproduct%2FInfrastructure%2FAzure%2FDeployment%2FPackaging%2FEnvironment%2FGeneva-Clusters-HypernetLiteEnabled.csv&version=GBmaster&_a=contents) based on the GCS startup region. 
+
+For example, if your GCS startup region is "Australia Central", your MA startup parameters will be:
+```
+set MONITORING_GCS_STORAGE_RESOURCE_TAG_TYPE=EventHubStamp 
+set MONITORING_GCS_STORAGE_RESOURCE_TAG_VALUE=PROD-CBR20-504
+```
+
+If the region you require does not yet support HyperNet Lite, you can point your MA to the nearest region that already supports it. 
+Once this is set, GSM will provision the Event Hubs in the Event Hub stamps that are HyperNet Lite supported, and the MA will be able to connect to them. Visit [this page](../../../getting_started/environments/autopilot.md) to learn more on setting up the MA in AP/PF environments. 
+
+## Configure your non-GSM account
+If your Geneva Logs account is non-GSM, you will have to work with the Service Bus team to make the required changes. Submit a sev 3 IcM to the Service Bus team: "Service Bus ->DRI - Queues/Topics/EventHubs", and provide the region, your subscription ID, and Event Hub namespace. 
+
+Once the Service Bus team completes the configuration, you will have to [register](./subscriptionpermissions.md#register-resource-providers-in-your-subscription) the Event Hub namespaces to Geneva for the logs to flow again. 

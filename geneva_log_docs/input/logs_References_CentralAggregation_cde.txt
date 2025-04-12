@@ -1,0 +1,172 @@
+
+# Derived Events
+
+>[!IMPORTANT]  
+>[Local Derived Events](../../../collect/advanced/derivedintro.md) continue to be supported and improved. Central Derived Events are deprecated except for billing scenarios. Please refer to [this document ](../../../alerts/alertingfrom.md)for an overview of our available alternate aggregation solutions. Most simple aggregation needs can be met through Geneva Metrics either directly or via Local Derived Events.
+
+The Monitoring Agent and the central Geneva services can perform aggregation, filtering and projection of event stream data by executing Derived Events. Derived Events that are executed by the Monitoring Agent are referred to as "Locally Derived Events." Derived Events executed in our central Geneva services are referred to as "Centrally Derived Events." For example
+
+| | ​Local | ​Central |
+| ---------- | ---------- | --------------|
+| Aggregation​ | Count the number of times a particular event happened on the VM running the MA | Calculate the average utilization for a resource (i.e. CPU) across all role instances making up a Role |
+| ​Filtering | ​Create a new event stream that does not contain PII that existed in the original event stream | ​Create a new event stream that contains all Critical or Severe level errors across your Role or Service |
+| ​Projection | Generate a histogram representing statistical distribution of the performance of a particular operation | ​Aggregate histogram information across your Role |
+
+Derived events are defined in your MA Config. One thing to stress is that for your derived events based off of locally collected data, that run within your MA process, you need to **include all of your identity component field names in your groupby and select clauses**. Note that centrally run derived events is a [deprecated feature](https://portal.microsoftgeneva.com/?page=documents&section=6cf6b99f-0a65-4d86-a639-c191e731084c&id=5338e00e-dd82-4b5b-96be-963196e4776b). MA or locally run derived events are fully supported. The algorithm for deciding where to run a derived event is as follows
+
+
+
+> if (the source's **storeType**is Local)
+> 
+> 
+> 
+> > run it locally
+> 
+> 
+> 
+> else if (**whereToRun**is defined)
+> 
+> 
+> 
+> > run it accordingly
+> 
+> 
+> 
+> else if (query has groupby)
+> 
+> 
+> 
+> > if (groupby columns include all the identity columns)
+> > 
+> > 
+> > 
+> > > run it locally
+> > 
+> > 
+> > 
+> > else
+> > 
+> > 
+> > 
+> > > run it centrally
+> 
+> 
+> 
+> else
+> 
+> 
+> 
+> > run it locally
+
+
+
+
+
+
+### Duration
+
+
+The frequency or interval that a derived event is run, is specified using the *duration* attribute in your MA configuration file. You can find [more information about that here](https://portal.microsoftgeneva.com/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=ac0084ad-5065-4b16-8f7d-0a5193143378#/).
+
+
+### Default Columns
+
+
+| ​Column Name | ​Description | ​Central | CentralBond |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ​N | ​The partition load spread. See the comments for the "[eventVolume](http://jarvis-east-int.cloudapp.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=8794f47e-d1b2-4538-8f31-839c41c1710a)" attribute for more details (only if Azure table format is used - i.e. not relevant for CentralBond format) | Yes​ | No​ |
+| ​PreciseTimeStamp | ​The time the event was logged if the query is not an aggregation. This column is not available to reference in a MA run derived event query, but added as a field post-query. | ​Yes | ​No |
+| ​RowIndex | ​A value that ensures the row is unique within the rows emitted by one execution of this query (only if Azure table format is used - i.e. not relevant for CentralBond format) | ​Yes | ​No |
+| ​Tenant | ​Comes from the source event for central and the MA identity for local, assuming TenantRole is the identity. | Yes​ | Yes​ |
+| ​Role | ​​Comes from the source event for central and the MA identity for local, assuming TenantRole is the identity. | Yes​ | Yes​ |
+| ​RoleInstance | ​Comes from the source event for central and the MA identity for local, assuming TenantRole is the identity. | Yes​ | Yes​ |
+| TIMESTAMP | 
+
+When looking at your data in Jarvis DGrep this is the time rounded to the duration you are pushing the data to storage. Use PreciseTimeStamp for the time the event is logged.
+
+
+
+If you are running a derived event query locally in MA and need to reference the time the event was logged, use this as a the keyword to resolve to the UTC typed timestamp for the logged event.
+
+ | Yes | Yes |
+| PartitionKey | Partition key for Azure Table (Central) format | Yes | No |
+| RowKey | RowKey for Azure Table format, but we also included it in CentralBond for a now deprecated CentralBond blob format to Central Azure Table format scenario. | Yes | Yes |
+
+
+## Derived Event Testing
+
+
+See [table2csv.exe usage ](https://eng.ms/docs/products/geneva/collect/troubleshoot/table2csv)for more information.
+
+
+## Partition Format
+
+
+Note that this section is only relevant for the Azure table (storeType="Central") format. The recommended format to use is now CentralBond which is a blob based format and does not use PartitionKey(Pk) and RowKey(Rk). Details about the CentralBond format can be found [here](https://microsoft.sharepoint.com/teams/SPS-AzMon/Shared%20Documents/Design%20Documents/One%20Agent%20Data%20Formats.docx).
+
+
+
+See the [help page on partition keys](https://eng.ms/docs/products/geneva/logs/references/centralaggregation/partitionkeyformat) for more details.  
+  
+>[!NOTE]  
+>We do not recommend overriding the Pk or Rk. If you override the Pk/Rk your data will not be visible to MDS data access clients and the UI.  
+  
+>[!NOTE]  
+>If you define a partition and row key that do not follow the standard Pk pattern (e.g. N\_\_\_TS), you must also specify the attribute whereToRun="Local" in the <DerivedEvent>. If you do not then MA will not load your configuration file.  
+  
+The partition key defines how the time stamp in the first field of the result is formed. In this case the time stamp is the time at the start of the query interval. The TIMESTAMP keyword corresponds to the time the original source event was logged by the agent. After the event is uploaded to the central store the TIMESTAMP is the time specified by the partition key which is why you need to use PreciseTimeStamp to preserve the original event time.
+
+
+## PostTaskActions
+
+
+Post task actions are actions that occur after a derived event finishes executing. In this example an event named *MyWindowsEventName*is signaled and can be used to monitor a derived event from another process on the same system. The event should be signaled by MA every minute in this example. Make sure you create the event as an auto-reset event and not signalled.
+
+
+    
+          <DerivedEvent source="UnstructuredLogEvent"
+                        eventName="UnstructuredLogCopy1Event"
+                        storeType="Local"
+                        duration="PT1M">
+            <PostTaskActions>
+              <SignalEventAction>MyWindowsEventName</SignalEventAction>
+            </PostTaskActions>
+            <Query></Query>
+          </DerivedEvent>
+
+
+NOTE: If the derived event is run in MA, the queue is created in the configuration's default storage account even if the "account" attribute is used in the derived event to change the account for the table. In MDS25.1 you can use the "account" attribute in the <NotificationQueueAction> element to change the queue location also. If the derived event is a Geneva Logs central run event, than the queue account is always the same as the derived event table account unless you override it with the "account" attribute in the <NotificationQueueAction>.
+
+
+## Minimizing Data Loss
+
+
+Data loss can happen in different ways:
+
+
+
+1) MA is not running when the role logs an event.  
+This scenario could occur because MA has not been started yet or if MA recycles due to a configuration update  
+or a fatal error within MA itself. In MDS15, losing events while MA recycles is less likely since we preserve  
+the events in the ETW buffer while MA recycles.  
+2) MA experiences network issues  
+If MA cannot make a connection with Azure Storage, it will continue to retry making the connection and uploading the  
+data until the retryTimeout limit is reached. The default timeout is 1 hour but this can be increased.  
+3) MA garbage collects data  
+The management section contains a global disk quota and individual events can also have quotas. If a quota is  
+hit before data is uploaded to Azure storage, the data could be garbage collected before it is uploaded. This  
+is most likely to happen if the quota is low, the data rate is high, and there are network issues preventing  
+MA from uploading the data in a timely matter. You should ensure that MA has an adaquate global disk quota  
+for the amount of data you are logging.  
+4) MA uploads the data after a dependent Geneva Logs derived event task runs  
+This issue is a correlary to issue (2). If you have a derived task that depends on centrally stored data that is  
+uploaded by a MA, that derived task may run before MA uploads the data if MA is delayed for an extended period  
+of time because of network issues. Typically this could happen if the delay is more than 15 minutes.  
+  
+MA and the Geneva Logs central service work independently and there is no way for the central service to reliably know  
+when to expect all of the data or even what all of the MA instances are that are sending it the data. This means that  
+MDS has to run its derived task after a delay that gets all of the data most of the time. You can extend the central  
+service delay further by using the [deadline ](https://portal.microsoftgeneva.com/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=ac0084ad-5065-4b16-8f7d-0a5193143378#/)attribute on the source event for that data (e.g. the ETW provider event).  
+If you make the [deadline ](https://portal.microsoftgeneva.com/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=ac0084ad-5065-4b16-8f7d-0a5193143378#/)bigger you are telling the central service that MA has more time to upload that data.
+
+

@@ -1,0 +1,73 @@
+# Manage Geneva Logs account administrators access
+
+## How to add domain qualifier to admin user 
+The domain qualifier defines the scope of the user's access. For example, user “AME\alias1” will only have access to the Logs account in AME, while user “alias2” will have access to the Logs account in any domain. **Specifying the domain qualifier for Logs account user access is optional, but strongly recommended. It is expected to become required by 9/30/2022**.
+
+To update an *existing* admin user with the domain qualifier, you have to remove the existing alias that does not have the domain information, and then add the user alias again, this time with the domain qualifier. *New* admin users can be added with a domain qualifier directly. 
+
+>[!Warning]
+>Make sure you don't lock yourself out of the account when you remove your existing alias. We recommend asking another administrator to replace your alias with an alias that has a domain qualifier to avoid issues. 
+
+### Add a domain qualifier to a user alias using Jarvis
+1. Navigate to your Logs account in [Jarvis](http://aka.ms/jarvis).
+2. Go to the **Account** tab. 
+3. Click on **Edit** in the Account Information section of the page.
+
+![EditUserAlias](../images/EditUserAlias.png)
+
+4. Click the **+** to add a new admin user alias of the format: "domain\alias1".
+5. Click the **X** to delete the admin user alias that does not have the domain qualifier.
+6. Click **Update Settings**.
+
+![AddAdminUserAlias](../images/AddAdminUserAlias.png)
+
+### Add a domain qualifier to a user alias using Powershell Cmdlets
+1. Follow these instructions to download and install the [Powershell Cmdlets](../../Howtoguides/powershell.md).
+2. Execute the following command to delete a user alias without a domain qualifier:
+
+```
+$userRole = Get-WarmPathUserRole -WarmPathEnvironment $environment -WarmPathAccountName $accountName -Id $userRoleId
+// update .Users field
+$updatedUserRole = Set-WarmPathUserRole -Id $userRole.Id -Configuration $userRole -WarmPathEnvironment $environment -WarmPathAccountName $accountName
+
+```
+3. Execute the following command to add a user alias with a domain qualifier:
+
+```
+$account = Get-WarmPathAccount -WarmPathEnvironment $environment -WarmPathAccountName $accountName -Credential $credential
+$account.AdminUserAliases = "<Domain\Alias>"
+
+
+//Then set the Logs account context:
+Set-WarmPathAccount -WarmPathEnvironment <environment> -WarmPathAccountName <account name> -Credential <credential> -Configuration $account
+
+```
+Or to update multiple user aliases you can execute the following command:
+
+```
+
+$aliases = New-Object System.Collections.Generic.List[string]
+$aliases.Add("Domain\Alias1")
+$aliases.Add("Domain\Alias2")
+$aliases.Add("Domain\Alias3")
+$account.AdminUserAliases = $aliases
+
+//Then set the Logs account context:
+
+Set-WarmPathAccount -WarmPathEnvironment <environment> -WarmPathAccountName <account name> -Credential <credential> -Configuration $account
+
+```
+
+### Add a domain qualifier to a user alias using MDS tools 
+1. Download the latest version of [MDS tools](../../Resources/Downloads.md).
+2. Execute the following command to remove a user alias without a domain qualifier:
+
+```
+mds.exe account <EndPoint> -command:removeuseralias -userrolename:<UserRoleName> -mdsaccount:<AccountName> -useralias:<UserAlias>
+```
+
+3. Execute the following command to add a user alias with the domain qualifier:
+```
+MDS.exe account <EndPoint> -command:adduseralias -userrolename:MdsAccountAdmin_<AccountName> -mdsaccount:<AccountName> -useralias:<Domain\Alias>
+
+```

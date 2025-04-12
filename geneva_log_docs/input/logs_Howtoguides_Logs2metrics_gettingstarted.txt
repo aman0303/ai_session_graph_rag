@@ -1,0 +1,52 @@
+# Getting started
+Onboarding to [Logs To Metrics](overview.md) requires defining a "conversion" rule that defines how [Geneva Logs](./../../intro.md) should be converted to [Geneva Metrics](../../../metrics/overview.md).
+
+## Adding a Conversion Rule
+
+### Goal
+This tutorial will quickly show you to configure LogsToMetrics by creating a [conversion rule](./overview.md).
+
+### Prerequisites
+* You have verified that your logs are being processed by the pipeline (in the [Logs QoS](../QoS/overview.md) dashboard) and are retrievable via the [DGrep UI](/diagnostics%20apps/dgrep/overview.html).
+* You have permission to modify the configurations of the Geneva Logs namespace from where you would like to extract logs data.
+* You have permission to modify the configurations of the Geneva Metrics account to where you would like to push metrics.
+* You have basic knowledge of [DGrep](../../concepts/DGrepoverview.md) including [MQL](../../References/DGrepQueryLanguage/mql.md) or [KQL](../../References/DGrepQueryLanguage/kql.md) query languages.
+
+### Steps
+1. In Jarvis UI, go to page <a href="https://portal.microsoftgeneva.com/manage/connectors/logs-to-metrics" target="_blank">Manage->LogsToMetrics</a> and select an *endpoint* and *Geneva Logs Namespace*. Once selected and your permissions verified, the **New Conversion** button will be enabled.
+Click it and provide the *Geneva Metrics account* and *Geneva Metrics namespace* to which you would like to publish metrics. Note that you can change this later; this prompt exists purely to ensure you don't lose any progress if for some reason you do not have sufficient priviledges to save your configuration at the end.
+![New conversion](../images/ltm_newconversion.png)
+>[!Note]  
+>Do not use one of the reserved Qos namespaces like LogsToMetricsQos, MdmQos, etc.  
+
+2. *Determine the Scope*: Determine what logs data are to be extracted by this conversion rule:
+![Determine Scope](../images/ltm_determinescope.png)
+
+   1. Configure the broader scope of extraction. These fields are exactly the same as those found in the [DGrep UI](/diagnostics%20apps/dgrep/overview.html). Use these fields to specify which tables to target and the scoping conditions that will narrow down your logs data to what is required.
+        >[!Note] 
+        > Try to be as specific as possible with your scoping conditions, your goal is to reduce data volume so your conversion does not get throttled. With that said, keep in mind that LTM rules support scoping conditions for common columns, and **do not** support [selective indexing](../dgrep/selectiveindexing/selectiveindexing.md).
+
+   2. In order for the "Metrics extraction" service to understand your intent, your query must select one __time__ column, one __metric value__ column, zero or more __dimension__ columns.
+      - Metrics columns must be named with a prefix of "`m_`".
+      - Dimension columns must be named with a prefix of "`d_`".
+      - Exactly one column of type DateTime must be supplied.
+      - Dimension values must be shorter than 1024 characters (though much shorter than this is recommended) and cannot contain any non-printable or invisible characters (like newlines).
+
+      It is important to realize that this step is solely for selecting relevant columns and performing necessary transforms on their values, grouping by time and dimensions will be handled for you by the pipeline and any attempt to do so here will lead to sampling problems like the "average of averages" problem.
+   3. To view the would-be results of the extraction, you may launch a test search with the "**Preview**" button. You can adjust the time scope of the preview search and do further scoping on this preview with the controls provided. 
+   >[!Note]
+   >The values you specify in this part of the UI are purely for previewing purposes and will not affect the metrics produced by your conversion.
+
+3. *Configure metrics*: Determine the [pre-aggregates](../../../metrics/concepts/dataaggregation/dataggregation.md) for the metrics produced by this conversion rule:
+![Configure Metrics](../images/ltm_configuremetrics.png)
+   1. Click the "**Add**" button to generate a blank new preaggregate option. 
+   2. You may specify any of the dimensions that were selected from your extraction step as the preaggregate dimensions. Note that conventional restrictions for preaggregates applies here (i.e. no two preaggregates may have the same exact dimensions set). You may choose to let the UI auto generate a name for your preaggregate, or you may specify one yourself by editing the field directly.
+   3. You may select other preaggreagate options, which are the same as the ones found in the metric management page.
+   4. Like with the extraction step, you may wish to test out your configured preaggregates. this part of the UI will perform a log search and then it will plot the lines for the preaggregate selected.
+4. *Confirm and Enable*: Now that you have configured your logs extraction & metrics preaggregates, it is time to save your work and perhaps put it to work by enabling it. The UI will perform one last round of pre-save validations and notify you of any errors so you can go back and check them by clicking on the links embedded in the messages or the step icons on the top of the page. You may jump through them at any time and to anywhere in the process you like. Once all errors have been addressed, you may enable your conversion rule.
+To enable your conversion rule so that metrics start being published from your logs, ensure that the toggle button under Enable shows "`On`".
+Finally, you can name your conversion rule and click on "`Save`" button to ensure that all rule changes are saved.
+![Cofirm and Enable](../images/ltm_confirmandenable.png)
+Once the rule has been saved and enbaled, it will show up on page <a href="https://portal.microsoftgeneva.com/manage/connectors/logs-to-metrics" target="_blank">Manage->LogsToMetrics</a>. 
+![Rule List](../images/ltm_rulelist.png)
+You can come back to it at any point later on and edit it, disable it or delete it by clicking the button to the right of the rule name (`Edit`, `On`, `Delete`, respectively).

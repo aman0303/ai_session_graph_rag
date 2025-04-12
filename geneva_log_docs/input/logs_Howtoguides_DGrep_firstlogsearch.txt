@@ -1,0 +1,43 @@
+# Perform your first DGrep search
+
+
+Let's suppose you are investigating a Live Site and you need to search your logs. This tutorial, will walk you through the process of how to perform a log search to root cause and analyze the Live Site issue.
+
+## Prerequisites
+
+1. A [Geneva Logs account](../../../getting_started/v2/createaccounts_basic.md)
+1. Enable [DGrep Logs](../../../logs/firstlog.md)
+1. Enable Access to [Logs](../Manageaccount/access.md)
+
+## Step-by-Step
+
+### 1. Specify the Event(s) to search
+
+We could specify one or more events to search. These are the source event(s) that contains the logs for your service. 
+
+![Input endpoint, namespace and event name(s).](../images/dgrep_EventInput.png "Input endpoint, namespace and event name(s).")
+
+### 2. Specify time range and scoping conditions
+
+Input the time range for which the issue is active. Lets say we also know the clusters where the issue is happening. Scope the search down to those individual clusters, thereby excluding other clusters from the search. These help to speed up the search greatly.
+
+![Input time range and search scopes.](../images/dgrep_ScopeInput.png "Input time range and search scopes.")
+
+### 3. Specify the server query
+
+To diagnose the issue, lets say, we want to look only at those logs that indicate errors. So, specify this condition in the server query and hit the search button.
+
+![Input server side query.](../images/dgrep_FilterInput.png "Input server side query.")
+
+### 4. Specify the client query
+
+Now, we've got some results. Want to quickly iterate on the errors, without having to wait for DGrep to re-run a parallel query. So, lets filter on the client side and look for a specific error.
+
+![Input client side query.](../images/dgrep_ClientQuery.png "Input client side query.")
+
+### 5. Observe logs in the output pane
+
+The logs output now reflects the final result of all the search criteria we entered from steps 1 through 4.
+
+![Output logs.](../images/dgrep_Output.png "Output logs.")
+ 

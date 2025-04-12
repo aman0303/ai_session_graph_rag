@@ -1,0 +1,54 @@
+# Updating hybrid Geneva Logs accounts to GSM accounts
+Geneva Logs hybrid accounts are accounts that are [Geneva Storage Management (GSM)](../../concepts/WhatIsGSM.md)-enabled, but still have legacy, non-GSM configurations and resources. To complete the migration to GSM, and to be fully compliant with [Immutable Logs](../Compliance/ImmutableLogs.md), you're required to delete the legacy non-GSM configurations and resources from them. 
+
+## How to identify hybrid accounts
+
+In [Account > Logs Account Settings > Account](https://portal.microsoftgeneva.com/account/logs/account), and select your account. The message should display: "This account is in a hybrid state".
+
+![HybridAccount](../images/HybridAccount.png)
+
+## How to delete legacy configurations from your hybrid account
+
+### 1. Idenitfy GSM configurations in your account
+
+1. Go to the **Resources** tab
+2. Click **Show Storage groups by Namespace**. 
+3. Choose a **Namespace** from the **Namespace** dropdown menue, and find the configuration versions under **Geneva Managed Configuration** secetion in the **Configuration Version** dropdown menu. *Take note* of these configuration versions.  
+
+![GSMConfigs](../images/GSMConfigs.png)
+
+
+### 2. Make sure only GSM configurations are deployed on your monitoring agents 
+
+1. In Jarivs, go to **Agent**
+2. Click **Explorer** to access [Agent Explorer](../../../collect/troubleshoot/agentexplorer.md). 
+3. Choose the **Endpoint**, your **Account** and your **Namespace**. 
+4. Choose the **Agent identities** from the side menu. 
+5. Review the **Config Version** column.
+6. Verify that the GSM configurations you identified in the [previous step](UpdateHybridAccount.md#1-idenitfy-gsm-configurations-in-your-account) are deployed on the monitoring agents. 
+
+![AgentExplorerGSM](../images/AgentExplorerGSM.png)
+
+If one or more of your monitoring agents have non-GSM configurations deployed, please update them to a GSM configuration version following the steps [here](../Manageconfig/configmanagement.md#pushing-configuration-changes-to-your-service). 
+
+>[!Note]
+>Service teams are required to ensure Geneva configuration updates go through Safe Deployment Practices (SDP). Make sure to start with a small number of agents to ensure the configuration is validated and producing the desired results. Go to [the GCS migration guide](MigrateToGCS.md#safe-deployment-practices-sdp) to learn more. 
+
+
+>[!Note]
+>You will have to repeat these steps for each agent in each one of your namespaces to ensure only GSM configurations are deployed in your account. 
+
+### 3. Delete non-GSM configurations
+
+>[!Note]
+>Once you delete configurations from your account, you'll no longer be able to query telemetry data collected with these configurations in DGrep. If you still need access to the data, wait until your data retention policy expires before deleting the configurations and the monikers. 
+
+Once you ensured that the non-GSM configs are not deployed on any monitoring agents, and you confirmed you no longer need access to the logs, go to the **Configurations** tab in your account, find the configuration you want to delete, and click on the three dot icon to find the **Delete** button. 
+
+![DeleteConfig](../images/DeleteConfig.png)
+
+### 4. Delete non-GSM resources
+Once the non-GSM configs were deleted, you can delete the non-GSM monikers. Follow the steps in [this guide](monikerdelete.md) to delete the monikers. *Take note* of the storage account and Event Hub names so you can delete them from your subscription. 
+
+Once the monikers were deleted, you can go to Azure Portal delete the storage accounts and Event Hubs associated with these monikers. Note that you may have to wait until the [immutability policy](../Compliance/ImmutableLogs.md) expires before being able to delete storage accounts used to store audit and security logs. 
+

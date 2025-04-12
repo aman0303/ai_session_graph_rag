@@ -1,0 +1,11 @@
+| Ev2 Rollout Infra  | Geneva Environment | Supported  | Extension Action                |   |
+|--------------------|--------------------|------------|---------------------------------|---|
+|     Test           |     Test           |     Yes    |     ConfigureLogsTestAccount    |   |
+|     Test           |     Prod           |     Yes    |     ConfigureLogsAccount        |   |
+|     Prod           |     Test           |     Yes    |     ConfigureLogsTestAccount    |   |
+|     Prod           |     Prod           |     Yes    |     ConfigureLogsAccount        |   |
+|     Fairfax        |     Fairfax        |     Yes    |     ConfigureLogsAccount        |   |
+|     Mooncake       |     Mooncake       |     Yes    |     ConfigureLogsAccount        |   |
+|     Blackforest    |     Blackforest    |     No     |                                 |   |
+|     USSec          |     USSec          |     Yes    |     ConfigureLogsAccount        |   |
+|     USNat          |     USNat          |     Yes    |     ConfigureLogsAccount        |   |

@@ -1,0 +1,184 @@
+# GDPR compliance
+
+## What is GDPR?
+
+GDPR stands for General Data Protection Regulation, which is a collection of privacy related regulations imposed on data that might include customer information. See [here][GDPRRef] to learn more about GDPR. 
+
+## How can you use Geneva to meet your GDPR needs?
+
+Geneva Logs enable you to meet GDPR requirements through two ways:
+
+1. Helping you set the retention policy on your monitoring data so that they are deleted within the mandated retention period depending on the sensitivity of your data. 
+2. Helping you annotate your monitoring data with privacy classification and data export/delete handling methods in the monitoring configuration. 
+
+> [!NOTE]
+> GDPR annotation support only C+AI Taxonomy with [Privacy Tag][PrivacyTagDefinitions] and [Data Management (Handling)][DataManagementTags]. If you are using [NGP Privacy Tags Taxonomy][NGPTaxonomy], it's not fully supported in GDPR annotation.
+
+> [!NOTE]
+> GDPR annotation is one option to tag (via tagging at source) but not mandatory. Geneva assets will be inventoried and visible both in [S360 Compliance][S360Compliance] and [DataGrid][DataGrid] where service teams can manually tag their assets.
+
+## Controlling data retention of your monitoring logs
+
+Geneva Logs enables you to set retention period for your logs to comply with GDPR regulatory requirements. This document describes how Geneva Logs garbage collection works, which will give you insights into how to set your log retention periods to stay compliant. 
+
+### Garbage Collection
+
+Geneva Logs has a Garbage Collection worker service which periodically deletes monitoring data that are older than the retention days mentioned in the configuration files. The default data retention policy is set to 29 days. You can control how long Geneva retains your monitoring data by specifying a different value for retention days in your configuration. 
+
+To update the retention days value, go to [Jarvis](http://aka.ms/jarvis), and then to **Manage** > **Logs**. Log in to your account, and go to the **Configurations** tab. Choose the config file you want to update, and specify a value for the **Retention Days** in the **Global Collection Settings** tab in the configuration builder.
+
+![Retention period][RetentionPeriodImage]
+
+This value can be overridden at an event level: go to the **What to collect** tab in the configuration builder. Choose the event you want to configure, and specify the retention days in the **Retention** field. 
+
+![Retention period][PerEventRetentionPeriodImage]
+
+Alternatively, you can also set this value in configuration files directly. See [here](../../../collect/references/windows/events.md#attributes-1) for a reference on retentionInDays attribute. 
+
+>[!Note] 
+>Large values for Retention Days attribute could cost your team in terms of storage capacity.
+
+Garbage Collection (GC) is scheduled once per day, and the set of all events from across all accounts that need to be GC'ed are staggered over a 24 hour period. In every turn, a GC task is allocated a fixed window of time to purge as much data as can be purged, beyond the retention period. The window size is typically 3 hours. This means that from the point when you make a configuration change to the Retention Days attribute, it could take up to a maximum of 24 hours prior to your change is honored. The time it takes for all the data to be purged could vary depending on the volume of data being GC'ed. 
+
+For events that are in-scope of GDPR, the Geneva team will monitor the lag in deletion and will take appropriate actions to catch up and stay within SLA. For events that are not in-scope for GDPR, GC will continue to be best effort as before. GC will continue to get scheduled once every 24 hours and delete 3 hours worth of data. The clean up will depend on the volume of data to be deleted. If even after 3 hours data is not deleted we will continue to reschedule the GC events until clean up job has exited successfully. The Geneva team will monitor overall lag in GC and will take mitigating actions to keep it within reasonable bounds.
+
+As noted above, GC will need at least a day to circle through all events in your config. So if your event is in-scope for GDPR and targeted to be deleted in 30 days, set the retention day for that event to 29 days. This will ensure that any data beyond 30 days is cleaned up.
+
+If your event is targeted to be deleted in 2 days, set the retention day to 1 day. This will ensure any data beyond 36 hours is cleaned up.
+
+## Annotating logs through configuration
+
+All data you collect that might contain customer identifying information must be tagged for GDPR compliance regardless of where they are stored. [S360 Compliance][S360Compliance] is the one-stop-shop for tagging all of your data. In order to simplify the tagging process for your monitoring logs, Geneva Logs support annotations on your monitoring configuration files directly. These annotations will flow through to GDPR pipeline automatically. 
+
+At present the Configuration Builder UX for Geneva Logs does not support GDPR annotations, however the underlying [configuration XML][] can be edited to include GDPR annoations directly. The following steps show how to add these annotations. 
+
+- Open the configuration that defines your events from [Jarvis > Account > Logs Account Settings > Configurations](https://portal.microsoftgeneva.com/account/logs/configurations)
+- Click on the configuration that contains the events you want to annotate
+- Select the **Advanced** tab in Configuration Builder UX
+- Find the _EventStreamingAnnotations_ element in the main configuration file
+- Add an _EventStreamingAnnotation_ section for each of the events you want to annotate. See example below. 
+
+````
+<EventStreamingAnnotation name="<Your Event Name>">
+    <Gdpr>
+        <Content>
+        <![CDATA[ 
+            <Config> 
+                <GdprClassification InScope="true">
+                    <Tag Name="Privacy.Subject.User.Puid" ColumnsToApply="Puid,MyOtherPuid" />
+                    <Tag Name="Privacy.Asset.Tenant" ColumnsToApply="TenantId" />
+                    <Tag Name="Privacy.Subject.User.ObjectId" ColumnsToApply="ObjectId" />
+                    <Tag Name="Privacy.Subject.IpAddress" ColumnsToApply="IpAddress" />
+                </GdprClassification >
+                <GdprHandling Export="HandledBy.GDPRExportAgent" ExportAgent="
+ -- openCurlyBracket -- 
+
+ -- openCurlyBracket -- 
+Replace with Your Own Agent GUID
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+" Delete="HandledBy.DeleteBy30Days" />
+            </Config> 
+        ]]>
+        </Content>
+    </Gdpr>
+    <!-- if you are streaming this event to other stores such as Cosmos/Kusto/Adls you can set data handling tags for them as well as shown below. If there's no overridden settings for Cosmos/Kusto/Adls, the setting above (except data handling) will be applied to Cosmos/Kusto/Adls assets.
+    -->
+    <Cosmos>  
+        <Content>
+        <![CDATA[ 
+            <Config> 
+                <GdprHandling Export="HandledBy.RedundantStream" Delete="HandledBy.GDPRDeleteAgent" DeleteAgent="
+ -- openCurlyBracket -- 
+
+ -- openCurlyBracket -- 
+Replace with Your Own Agent GUID
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+" />
+            </Config> 
+        ]]>
+        </Content>
+    </Cosmos>
+</EventStreamingAnnotation>
+````
+
+> [!NOTE]
+> GDPR annotation support only C+AI Taxonomy with [Privacy Tag][PrivacyTagDefinitions] and [Data Management (Handling)][DataManagementTags]. If you are using [NGP Privacy Tags Taxonomy][NGPTaxonomy], it's not fully supported in GDPR annotation.
+
+> [!NOTE]
+> For Export and Delete Agents
+> - For [TP DSR Agent][TPDSRAgent] (for non-MDS assets), use **c814ff83-c132-4f80-9ff3-d7fa05a821f7**
+> - For [TP DSR Agent][TPDSRAgent] (for MDS assets), use **422fc2bd-be5b-49cc-a8b3-8e5aa3ecd58e**
+> - For others please contat your data store provider to get more information which agents will works best for you. It will provide you the valid (registered) GUIDs for the agents.
+
+> [!NOTE]
+> GDPR scope, column tags, data handling and DSR agent in the annotation will override any existing values. For column tags, any tag previously added in annotation but not in current version will be removed. Any manual action (e.g. in S360 Compliance Portal) will be overridden by the annotation.
+
+> [!NOTE]
+> For Cosmos/Kusto/Adls you have to annotate the 'Data Handling – export/delete method'. It will NOT be inherited from handlings of MDS event.
+
+> [!NOTE]
+> For Cosmos/Kusto/Adls if there are multiple annotations for a single asset (events in different namespaces but streaming to the same storage e.g. same Kusto table), service team should ensure there's no conflict on the GDPR settings (including column tags) and they should be consistent across different configurations. GDPR pipeline will consume every annotation and take it as the final status (and won't handle the conflict).
+
+Once the configuration is published to Geneva Platform, GDPR pipeline will consume the GDPR annotation from Geneva and apply to all events configured in the annotation. The annotations are consumed in a daily cadence. Please expected a **24 hours of delay** after the configuration is deployed to Geneva Platform. If there's any error in the annotation, it will not be applied. Service teams can self-validate their annotations:
+- [Before] [Validate GDPR annotation before publishing](#validate-gdpr-annotation-before-publishing)
+- [After] [Validate GDPR annotation result after publishing](#validate-gdpr-annotation-result-after-publishing)
+
+
+## Validate GDPR annotation before publishing
+
+GDPR Team provides a PowerShell cmdlet to  help service teams self-validate the GDPR settings in the MAConfig before submitting to MDS. Please follow [here][PowerShellModule] to install the PowerShell Module.
+
+```
+Show-ValidateMaConfigXml -Endpoint <MdsEndpoint> -XmlFilePath <XmlFilePath>
+```
+
+This cmdlet shows the validation results for the submitted MAConfig. It parses the GDPR settings and compares to the manifest data in Catalog (**but will NOT apply the settings to Catalog**).
+
+MdsEndpoint options:
+
+- DiagnosticsProd
+- BillingProd
+- CaBlackForest
+- CaFairFax
+- CaMooncake
+- ExternalProd
+- FirstPartyProd
+- Stage
+- Test1
+
+## Validate GDPR annotation result after publishing
+
+After 24 hours once the annotation is consumed by GDPR pipeline, service team can check the assets in [S360 Compliance][S360Compliance] to see it has been applied or failed with error.
+
+- Open the S360 Catalog Inventory page [S360 Compliance > Data Catalong Inventory][S360Compliance] and search for the event
+- Click on the event to open the detailed page
+- In "Config Tracking" tab, you can see the annotation linked to this event. If there's no error it means the annotation has been successfully applied. If there's any error, please fix in your annotation accordingly.
+
+![GdprS360Config][GdprS360Config]
+
+
+
+For questions related to GDPR, asset tagging and data handling send an email to __gdprask@microsoft.com__
+
+
+
+<!-- Reference links -->
+[GDPRRef]: https://aka.ms/GDPR "What is GDPR?"
+[configuration XML]: ../Manageconfig/configmanagement.md#configuration-xml "Editing configuration XML through Configuration Builder UX"
+[PrivacyTagDefinitions]: https://microsoft.sharepoint.com/teams/Azure_Compliance/GDPR/GDPR%20Wiki/Geneva.aspx#tagdefs "Privacy tag definitions"
+[DataManagementTags]: https://microsoft.sharepoint.com/teams/Azure_Compliance/GDPR/GDPR%20Wiki/Data%20Management%20Tags.aspx "Data management tag explanation"
+[PowerShellModule]: https://gethelpweb.azurewebsites.net/gethelp/Privacy/content/Data-Management/Meet-GDPR-Compliance/Other-Tools/PowerShell-Cmdlets.html "GDPR PowerShell Cmdlets"
+[NGPTaxonomy]: https://microsoft.sharepoint.com/sites/privacy/SitePages/NGP-PrivacyTagsTaxonomy-Home.aspx "NGP Privacy Tags Taxonomy"
+[S360Compliance]: https://aka.ms/s360compliance "S360 Compliance"
+[DataGrid]: https://datagrid.microsoft.com/ "DataGrid"
+[TPDSRAgent]: https://gethelpweb.azurewebsites.net/gethelp/Privacy/content/Data-Management/Meet-GDPR-Compliance/GDPR-Engineering-Guidance/Stage-11-Configuring-Geneva-DSR-Agents.html "TP DSR Agent"
+
+<!-- Image links -->
+[RetentionPeriodImage]: ../images/RetentionPeriod.png "Global retention period"
+[PerEventRetentionPeriodImage]: ../images/EventRetention.png "Per-event retention period"
+[GdprS360Config]: ../images/GdprS360Config.png "Gdpr S360 Config"
+

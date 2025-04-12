@@ -1,0 +1,111 @@
+# DGrep SDK Troubleshooting Guide
+
+
+
+In this tutorial, you will learn how to troubleshoot your program that consumes DGrep SDK. We have two useful methods at our disposal to diagnose and troubleshoot calls to DGrep SDK:
+
+1. Client side troubleshooting with DGrep client logs
+1. Server side troubleshooting with QueryStatus
+
+## Prerequisites
+1. **[Optional]** Install [PerfView](https://github.com/Microsoft/perfview/blob/main/documentation/Downloading.md) on the machine where your program runs.
+
+## Client side troubleshooting
+
+### 1. Common exceptions
+
+Here is a list of the most common exceptions thrown by the DGrep SDK and how to resolve them.
+
+* **No private key found in client authentication certificate**
+  
+  The certificate loaded by your application does not contain a private key. This happens either because the certificate is installed on the machine without a private key or because the certificate is in the LocalMachine store and the application is being executed without administrative privileges.
+  
+  To verify whether the certificate installed on the machine has a private key, run the following Powershell command:
+  ```powershell
+  (Get-Item Cert:\LocalMachine\my\<thumbprint>).HasPrivateKey
+  ```
+
+* **CryptographicException: Invalid provider type specified**
+
+  This usually happens when trying to authenticate using a Windows Hello PIN certificate. To fix this, please add the following element to your executable's `App.config` file:
+
+  ```xml
+  <configuration>
+    <runtime>
+      ...
+      <AppContextSwitchOverrides value="Switch.System.IdentityModel.DisableCngCertificates=false" />
+    </runtime>
+  </configuration>
+  ```
+
+* **MDS call … failed. Request url: …, StatusCode: Unauthorized, ResponsePhrase: Unauthorized**
+
+The certificate provided to the DGrep SDK is not authorized in any user role in the selected Geneva Logs endpoint. Make sure that the certificate is correctly authorized in a user role that has read access to the events being queried ([instructions](~/collect/authentication/keyvault.md#use the akv certificate in geneva logs)). Also ensure that the correct Geneva Logs endpoint was provided in the query input.
+
+* **System.ArgumentException: The event filter matches no tables or the user has access to none of the matching tables.**
+
+This means either that the events in the query input do not exist or that the certificate provided to the DGrep SDK is not authorized to read those events. Make sure that there are no spelling or casing errors in the event names and namespaces. Also make sure that the certificate is correctly authorized in a user role that has read access to the events being queried ([instructions](~/collect/authentication/keyvault.md#use the akv certificate in geneva logs)).
+
+* **HTTP Forbidden - The certificate is not in the list of authorized certificates**
+  
+  The certificate provided to the DGrep SDK is an unmanaged certificate (in other words, it is not a OneCert certificate). DGrep only supports certificates issued by OneCert and managed by AKV or dSMS ([more details](../References/DGrepSDK/sdk.md#authentication)).
+
+* **System.Threading.Tasks.TaskCanceledException: A task was canceled.**
+
+  This indicates a timeout in a request to the Geneva Logs or DGrep services. This could point to an issue in one of those services or an issue in the client side. Please verify whether there are any networking issues on the client machine. If you believe there is a server side issue, please [contact us](../../support/supportpolicy.md). It might be useful to collect client side logs, as explained in the next section.
+
+### 2. DGrep client logs
+
+The DGrep SDK logs detailed information about queries, including errors and latencies, using the *ETW provider `Microsoft-Geneva-DGrep-Client`*. 
+
+> [!Important]
+> You need to perform atleast one of the following actions to view the logs.
+
+* Those logs can be collected using [PerfView](https://www.microsoft.com/en-us/download/details.aspx?id=28567), by setting additional providers to `*Microsoft-Geneva-DGrep-Client` in the "Collect" dialog.
+
+* Alternatively, you can register the manifest on the machine where the SDK is executed by using the command below. Once this is done, these events will be visible in the **Windows Event Logs**. The provider manifest and assembly files are included in the MDAC nuget package under `lib\net40`.
+
+    ```bash
+    wevtutil.exe im MdsDataAccessClient.Microsoft-Geneva-DGrep-Client.etwManifest.man /rf:"MdsDataAccessClient.Microsoft-Geneva-DGrep-Client.etwManifest.dll" /mf:"MdsDataAccessClient.Microsoft-Geneva-DGrep-Client.etwManifest.dll"
+    ```
+
+Finally, since these are ETW events, MA can upload them to Geneva.
+
+## Server side troubleshooting
+
+### 1. Query result status
+DGrep exposes additional information about a query that can be used to monitor its progress and detect issues. In the example below, we are inspecting the properties of the `QueryStatus` object returned by `DGrepClient.GetRowSetResultAsync`.
+
+```C#
+using (var client = new DGrepClient(DGrepEndpoint, ClientCertificate))
+
+ -- openCurlyBracket -- 
+
+    RowSetResult result = await client.GetRowSetResultAsync(input, cancellationToken);
+    var status = result.QueryStatus.Status;
+    var processedBytes = result.QueryStatus.ProcessedBlobSize;
+    var failedBytes = result.QueryStatus.FailedBlobSize;
+    var queryId = result.QueryId;
+
+ -- closeCurlyBracket -- 
+
+```
+
+*`RowSetResult.QueryStatus.Status` is a `string` which describes the status of a query.* 
+
+It can have one of the following values:
+
+* *Completed:* The query ran to completion without failures.
+* *Throttled:* The query stopped scanning data in storage because one of the query limits was reached. You can get more info by checking the QueryStatus.ThrottlingReason. See more about [throttling limits](../../diagnostics_apps/dgrep/limitsquotas.md)
+* *Cancelled:* The query was stopped using the `IDGrepQuery.StopAsync` method.
+* *Partial:* There was a failure and part of the data was not searched.
+* *Failed:* There was a failure and no data was searched.
+* *Initializing or Searching:* The query has not completed yet. (this will only be returned when using the `IDGrepQuery` interface to interact with the query before it is completed).
+
+### 2. Blob statistics
+`RowSetResult.QueryStatus` also has some query statistics such as `ProcessedBlobSize`, which tells how many bytes have been searched so far, and `FailedBlobSize`, which tells how many bytes could not be searched due to a failure.
+
+### 3. Query ID
+`RowSetResult.QueryId` is a `GUID` used in the DGrep backend logs as well as the SDK logs to identify a query. 
+> [!Important]
+> The `QueryId` is essential when investigating issues either in the client or the backend and when possible, you should hand this information over to the Geneva team should you need assistance.

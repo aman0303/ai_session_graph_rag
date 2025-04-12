@@ -1,0 +1,94 @@
+# SilverLight Portal Deprecation
+
+Due to incompatibility with TLS 1.2, the Silverlight control has been permanently deprecated. 
+
+To request assistance, file an [IcM](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354) ticket. 
+
+To view data previously viewable with Silverlight, here's a possible workaround. 
+
+Use mds.exe download to retrieve table in csv format.
+Mds.exe can (currently) be found [here](file://reddog/Builds/branches/git_engsys_mda_mds_feature_immutable/84.2.5.72/retail-amd64/mds/) <file://reddog/Builds/branches/git_engsys_mda_mds_feature_immutable/84.2.5.72/retail-amd64/mds/>
+
+Mds download command:
+
+```
+Mds.exe download <mds-endpoint> <table-name> [-from:<from-datetime>] [-to:<to-datetime>] [-since:<interval-in-minutes>]
+
+        [-out:<file-name>] [-threadcount:<thread-cnt>] [-retrycount:<attempt-cnt>]
+
+        [-chunksize:<chunk-size-in-minutes>] [-query:<query>] [-clientcert:<client MDS cert>]
+
+        [-partitionindex:<partition index>] [-useIndex] [-saveCsv] [-direct] [-nodirect]
+
+        [-numofversions:<num-of-versions>]
+
+         <mds-endpoint>: base URI for the MDS service
+
+         <table-name>: name of the table to be queried
+
+         <from-datetime>: start of query interval
+
+         <to-datetime>: end of query interval
+
+         <interval-in-minutes>: query interval from now in minutes
+
+         <file-name>: name of output file (default name is data.xml or data.csv if save csv option is enabled)
+
+         <thread-cnt>: number of threads run in parallel (deafult = 1))
+
+         <attempt-cnt>: number of attempts to download a piece of data (deafult = 1))
+
+         <chunk-size-in-minutes>: unit of download in minutes (deafult = entire range))
+
+         <query>: the text of the query   statement
+
+         <client MDS cert>: Private     certificate  issuer name to access MDS (e.g. CN=My MDS Access Cert)
+
+         <partition index>: the MDS partition index
+
+         [-useIndex]: indicates whether to attempt to use secondary indexes
+
+         [-saveCsv]: indicates whether to save the output file into a csv file
+
+         [-direct]: Indicates to use the direct-Xstore access library. This option is ON by default.
+
+         [-nodirect]: Indicates to use the web server data access to download the data.
+
+         <num-of-versions>: retrieve data from the specified number of latest versions of the table
+```
+ This is the simplified grammar that can be used for <query>:
+
+ ```
+  <query> = <expr> | [where <expr>] [orderby <orderings> | groupby <columns>] [select <columns>]
+
+             <orderings> = <column> [asc | desc]
+ -- openCurlyBracket -- 
+, <column> [asc | desc]
+ -- closeCurlyBracket -- 
+
+
+             <columns> = <column>
+ -- openCurlyBracket -- 
+, <column>
+ -- closeCurlyBracket -- 
+
+
+             <expr> is a boolean expression
+
+             <column> is the name of a column in the table
+```
+
+For example:
+
+.\mds.exe download <https://<endpoint>.monitoring.core.windows.net> from:
+```
+"yyyy-dd-mm 00:00:00" -to:"yyyy-dd-mm 00:00:00" -out:<outpath>.csv -saveCSV -query:"where SubscriptionId == \"<SubscriptionID>\" select StartDateTime, InfoFieldMeteredServiceType, InfoFieldMeteredRegion, ServerId, DatabaseId, ServerName, DatabaseName, ResourceGroup, MeterId, Quantity, AdditionalInfo" -useIndex
+```
+> [!NOTE]
+> If the mds download displays an authorization failure, you need to add a claim.
+> - Select an applicable user role.
+> - Choose **Operation**, and then select **Advanced** from the drop down list. 
+> - Add a **READ** claim for "tabledataaccess/.*".  
+> Note there isn't a prefix.
+
+             

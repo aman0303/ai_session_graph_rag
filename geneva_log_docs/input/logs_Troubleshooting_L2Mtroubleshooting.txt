@@ -1,0 +1,27 @@
+# Troubleshooting
+
+## No metrics are published or some metrics seem to be missing
+
+- Go to the [LogsToMetrics Qos dashboard](../Howtoguides/Logs2Metrics/qos.md) for the conversion rule that is missing metrics
+- Check the ***Processing Failures*** section of the dashboard to see if there are failures in processing.
+The ***Metric Publishing Failures*** chart will also show a reason code (such as **OldMetric** or **NullDimension** or **InvalidCharacterInDimension**). See [LogsToMetrics QOS dashboard](../Howtoguides/Logs2Metrics/qos.md) for a list of reason codes.
+For rule processing failures, you can lookup the reason by querying this [DGrep log](https://portal.microsoftgeneva.com/?page=logs&be=DGrep&offset=-1&offsetUnit=Hours&UTC=false&ep=Diagnostics%20PROD&ns=CCDiag&en=CustomerLogs&serverQuery=where%20mdsEnvironment%3D%3D"diagnosticsprod"%20%26%26%20eventNamespace%3D%3D"Fa"%20%26%26%20message.containsi("ruleid")&chartEditorVisible=true&chartType=Line&chartLayers=[["New%20Layer",""]]%20) (replacing 'eventNamespace' in the filtering condition with your namespace).
+  - Resolution: For processing failures due to issues in the rule definition (e.g., ParsingError, PropertyNotPresent, NoTimePropertyDefined), fix the query in the conversion rule.
+For metrics with incorrect values (such as NullDimension) modify the conversion rule query to ensure the metric value and dimensions always have correct data. Note that empty dimension values will also result in the NullDimension error. For instance, to avoid a dimension with null, use a conditional expression such that if value is null, then a default dimension value is produced instead (use a default value, as empty string will also not work):
+    - MQL: `select ... (errorcode == null ? "noerror" : errorcode) as d_errorcode ...`
+    - KQL: `| project ... d_errorcode = iff(isempty(errorcode), "noerror" : errorcode) ...`
+- If you find metric publishing failures with reason code == OldMetrics, check the ***Latency*** section in the same dashboard. If the ***Geneva latency per blob*** is low and the ***End-to-end metric latency*** is high, it means that the delay happens before the data is uploaded to Geneva pipeline, typically at the Monitoring Agent.
+  - Resolution:
+Check if the moniker where logs are stored is getting throttled, verify whether MA is having connectivity issues and ensure that the event upload period defined in MA configuration is not too high.
+- If you find metric publishing failures with reason code == InvalidCharacterInDimension.
+  - Resolution:
+Check the DGrep query and see if you are getting any forbidden characters. Follow this link for [list of forbidden characters in MDM dimensions](https://en.cppreference.com/w/cpp/string/byte/iscntrl) and change the data accordingly.
+- Check the ***Throttling*** section in the dashboard to see if there is throttling in your namespace. To find out what quota has been exceeded, you can query this [DGrep log](https://portal.microsoftgeneva.com/?page=logs&be=DGrep&offset=-1&offsetUnit=Hours&UTC=true&ep=Diagnostics%20PROD&ns=CCDiag&en=CustomerLogs&serverQuery=where%20mdsEnvironment%3D%3D"diagnosticsprod"%20%26%26%20eventNamespace%3D%3D"Fa"%20%26%26%20%20message%20!%3D%20null%20%26%26%20message.containsi("Sampling")&clientQuery=where%20message%20!%3D%20null%20%26%26%20message.containsi("Sampling")) (replacing 'eventNamespace' in the filtering condition with your namespace).
+  - Resolution: If a per-rule quota is being exceeded buth the per-namespace quota is not, try to modify the rule query with extra *Scoping Conditions* to reduce the number of blobs processed.
+If a per-namespace quota is being exceeded, then you may want to separate rules into different Log namespaces.
+Otherwise, you can contact support by clicking [Contact Us](https://aka.ms/genevasupport) button in Jarvis (select the *Pipeline* area) and ask whether it is possible to increase your quota.
+- Check that LTM rule responsible for production of missing metrics does not use columns subject to [selective indexing](../Howtoguides/DGrep/Selectiveindexing/selectiveindexing.md) in its scoping conditions.
+
+## Problems with automated deployment of LogsToMetric rules using Geneva extension
+
+- Collect activity id from an execution of your LTM rule deployment and follow [these steps to query Geneva Actions logs](../../actions/How%20Do%20I/queryandpublishlogs.md#geneva-log-search-dgrep) to obtain and examine the logs related to it. To narrow down logs to only those specific to LogsToMetrics extension use `TraceMessage contains "[LogsToMetrics Extension]"` condition in the client query.

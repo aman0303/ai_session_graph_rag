@@ -1,0 +1,335 @@
+# DGrep SDK samples and walkthrough
+
+
+
+In this tutorial, you will learn how to use DGrep SDK to programmatically query logs.
+
+## DGrep SDK vs MdsDataAccessClient 
+
+DGrep SDK offloads log download and processing to the DGrep backend whereas MdsDataAccessClient performs those operations on the client machine where it is invoked. 
+
+## When to use DGrep SDK
+
+* Offloading the query to DGrep should be preferred when the amount of data the caller wants to retrieve is small compared to the amount of data to be scanned in storage. In such situations, a thin client can take advantage of the distributed processing capacity and bandwidth of the DGrep backend. 
+
+## How to write efficient and performant queries with DGrep SDK
+
+* Be as specific as possible regarding account monikers and event versions to search in order to minimize the number of storage accounts and blob containers to be scanned.
+
+* Use identity columns whenever possible to scope down the amount of data to be searched.
+
+* Be judicious when determining the query time range. Query times are typically proportional to their input time ranges.
+
+* If you use regular expressions in your MQL queries, test them locally against realistic data to ensure they perform well. In particular, avoid catastrophic backtracking.
+  > [!Tip]
+  > KQL provides a better regex library via RE2 and is highly performant when compared with an MQL query containing the same regular expression.
+
+* Always test your queries in the DGrep UI to make sure they perform adequately before running them programmatically.
+
+## A hello world DGrep query
+
+**Scenario:**
+ 
+ Let's suppose, we want to search the “LogTrace” event in the “DGrep” namespace of the “production” environment and we want to retrieve all events logged in the last 30 minutes.
+
+**Code:**
+```C#
+var input = new QueryInput
+
+ -- openCurlyBracket -- 
+
+    MdsEndpoint = new Uri("https://production.diagnostics.monitoring.core.windows.net/"),
+    EventFilters = new List<EventFilter>
+    
+ -- openCurlyBracket -- 
+
+        new EventFilter 
+ -- openCurlyBracket -- 
+ NamespaceRegex = "^DGrep$", NameRegex = "^LogTrace$" 
+ -- closeCurlyBracket -- 
+,
+    
+ -- closeCurlyBracket -- 
+,
+    StartTime = DateTimeOffset.Now.AddMinutes(-30),
+    EndTime = DateTimeOffset.Now
+
+ -- closeCurlyBracket -- 
+;
+
+// Using certificate based authentication
+using (var client = new DGrepClient(DGrepEndpoint, ClientCertificate))
+
+ -- openCurlyBracket -- 
+
+    RowSetResult result = await client.GetRowSetResultAsync(input, cancellationToken);
+    var firstMessage = result.RowSet.Rows.First()["Message"];
+    var status = result.QueryStatus.Status;
+
+ -- closeCurlyBracket -- 
+
+
+// Using user based authentication
+using (var client = new DGrepUserAuthClient(DGrepEndpoint))
+
+ -- openCurlyBracket -- 
+
+    RowSetResult result = await client.GetRowSetResultAsync(input, cancellationToken);
+    var firstMessage = result.RowSet.Rows.First()["Message"];
+    var status = result.QueryStatus.Status;
+
+ -- closeCurlyBracket -- 
+
+```
+**Steps:**
+
+> [!Note]
+> DGrepUserAuthClient is currently not supported for .net core.
+
+1. Create an instance of the `QueryInput` class, which defines the input parameters for our scenario.
+
+1. For certificate based authentication, create an instance of the `DGrepClient` class with a given DGrep endpoint and a client certificate.
+    > [!Note]
+    > The certificate used by DGrepClient should be authorized to access the events being searched. See more on [Authentication](./sdk.md#authentication).
+
+1. For user based authentication, create an instance of the `DGrepUserAuthClient` class with a given DGrep endpoint (this will open an authentication dialog prompting for the user's credentials)
+
+1. Call the `GetRowSetResultAsync` method on the client, which runs the query and returns the results.
+
+1. The `RowSetResult.RowSet.Rows` contains the rows found by the query. The rows  are represented as a list of dictionaries mapping column names to values.
+
+1. Finally, look at result.QueryStatus.Status to verify whether the query ran without failures. See more on [QueryStatus](../../troubleshooting/dgrepsdktroubleshoot.md#server-side-troubleshooting).
+
+## A closer look at QueryInput
+
+**Scenario:**
+ 
+ Let's take a deep dive into `QueryInput` type which represents the parameters of a query.
+
+ 
+**Code:**
+```C#
+var input = new QueryInput
+
+ -- openCurlyBracket -- 
+
+    MdsEndpoint = new Uri("https://production.diagnostics.monitoring.core.windows.net/"),
+    EventFilters = new List<EventFilter>
+    
+ -- openCurlyBracket -- 
+
+        new EventFilter
+        
+ -- openCurlyBracket -- 
+
+            NamespaceRegex = "^DGrep$",
+            NameRegex = "^LogTrace$",
+            VersionRegex = "^(Ver2v0|Ver3v0)$"
+        
+ -- closeCurlyBracket -- 
+,
+        new EventFilter
+        
+ -- openCurlyBracket -- 
+
+            NamespaceRegex = "^Test$",
+            NameRegex = "^MyEvent$",
+            MonikerRegex = "^wusmoniker$"
+        
+ -- closeCurlyBracket -- 
+,
+    
+ -- closeCurlyBracket -- 
+,
+    IdentityColumns = new Dictionary<string, List<string>>
+    
+ -- openCurlyBracket -- 
+
+        
+ -- openCurlyBracket -- 
+ "Tenant", new List<string> 
+ -- openCurlyBracket -- 
+ "WUS" 
+ -- closeCurlyBracket -- 
+ 
+ -- closeCurlyBracket -- 
+
+        
+ -- openCurlyBracket -- 
+ "Role", new List<string> 
+ -- openCurlyBracket -- 
+ "Worker", "Frontend" 
+ -- closeCurlyBracket -- 
+ 
+ -- closeCurlyBracket -- 
+,
+    
+ -- closeCurlyBracket -- 
+,
+    StartTime = DateTimeOffset.Now.AddMinutes(-30),
+    EndTime = DateTimeOffset.Now,
+    ServerQuery = "where Level <= 2",
+    MaxRowCount = 750000
+
+ -- closeCurlyBracket -- 
+;
+```
+**Steps:**
+
+1. **Querying multiple events:** The first thing to note in this sample is that we are querying two events with different namespaces and event names.
+
+1. **Event filters:** The next thing to note is that we specify filters for event versions and account monikers. 
+
+    *In this example, we want to scope the search in `event DGrep/LogTrace` to `versions "Ver2v0" and "Ver3v0"` only. We also want to scope the search in event `Test/MyEvent` to a single `moniker: “wusmoniker”`*.
+
+    > [!Note]
+    > Notice that the event namespace, name, versions and monikers are specified as regular expressions. We use anchors (^$) to avoid matching strings for which the input is only a substring.
+
+1. **Identities:** we specify identity columns as a dictionary mapping identity names to lists of identity values. Identities are defined in the Geneva Logs configuration and are used to identify MA instances. 
+
+    *In this example, we are only interested in identities were the Tenant is “WUS” and Role is either “Worker” or “Frontend”.*
+    
+    > [!Important]
+    > This `IdentityColumns` property is used to scope down the amount of data to search and it as a great impact on query performance.
+
+1. **ServerQuery:** We also provide a ServerQuery, which is an MQL query used to filter and process the logs downloaded from storage.
+    
+    To use a KQL server query, you must also set `ServerQueryType = QueryType.KQL`. 
+    For instance,
+    a KQL server query functionally equivalent to the earlier MQL server query can be specified like this:
+    ``` C#
+    ServerQuery = "source | where Level <= 2",
+    ServerQueryType = QueryType.KQL,
+    ```
+
+1. **MaxRowCount:** This property limits the number of rows produced after applying the ServerQuery. This does not impact the rows fetched from storage.  
+
+    *In this example, we specify the maximum number of rows to collect as 750,000.*
+
+    > [!Note]
+    > The default value for this property is 500,000 and its maximum value is 1,000,000.
+
+## Client Query
+
+**Scenario:**
+ 
+ So, we've run a DGrep search and it had returned several rows of results. Now, we'd like to further process and transform the output rows. Say we'd like to filter down the results further,then group them and order them but we'd like to do these without having to run another DGrep search.
+ 
+**Code:**
+```C#
+var input = new QueryInput
+
+ -- openCurlyBracket -- 
+
+    ...
+    ServerQuery = "where Level <= 2",
+
+ -- closeCurlyBracket -- 
+;
+
+RowSetResult result = await client.GetRowSetResultAsync(
+    input,
+    @"where Role == "FrontEnd" groupby Tenant let Count = Count() orderby Count",
+    cancellationToken);
+```
+
+**Steps:**
+
+1. Run a Server query which returns rows where Level <= 2.
+2. Run a Client query which further narrows down to logs from a particular role, then count the number of rows by Tenant and then sort the results by count.
+
+To use a KQL client query, you must also pass `QueryType.KQL` as last argument to `GetRowSetResultAsync()`. 
+For instance,
+a KQL client query functionally equivalent to the earlier MQL client query can be specified like this:
+``` C#
+RowSetResult result = await client.GetRowSetResultAsync(
+    input,
+    @"source | where Role == "FrontEnd" | summarize Count = count() by Tenant | order by Count asc",
+    cancellationToken,
+    QueryType.KQL);
+```
+
+
+> [!Note]
+> The *Server query* is applied at blob level granularity, meaning it operates on *a chunk* of data from a *single event* at a time.
+> The *Client query* operates on the entire dataset of rows, returned by the Server query.
+
+## Single server query, multiple client queries
+
+**Scenario:**
+
+So, we've run a DGrep search and it had returned several rows of results. Now, we'd like to further process and transform the output rows, but we'd like to iterate over the dataset several times and examine the output of each iteration.
+
+> [!Tip]
+> Client queries are run entirely in-memory, so they are a lot faster than server queries. To take advantage of that, DGrep allows running multiple client queries on top of results produced by a single server query.
+
+**Code:**
+```C#
+var input = new QueryInput
+
+ -- openCurlyBracket -- 
+
+    ...
+    ServerQuery = "where Level <= 2",
+
+ -- closeCurlyBracket -- 
+;
+
+IDGrepQuery query = await client.RunQueryAsync(input, cancellationToken);
+
+var countByTenant = await query.GetResultAsRowSetAsync(
+    "groupby Tenant let Count = Count()",
+    cancellationToken);
+
+var countByRole = await query.GetResultAsRowSetAsync(
+    "groupby Role let Count = Count()",
+    cancellationToken);
+
+await query.CloseAsync(cancellationToken);
+```
+
+**Steps:**
+
+1. We use the `DGrepClient.RunQueryAsync` API to get an object which implements the `IDGrepQuery` interface. This object exposes methods that allow the caller to interact with the DGrep backend.
+
+1. Next, we use the `IDGrepQuery` object to run two client queries, one that groups the rows by Tenant and another that groups them by Role.
+
+> [!Important]
+> We need to call `IDGrepQuery.CloseAsync` method after we are done with the query. This informs DGrep backend to dispose the query. See more about [Quotas](./sdk.md#quotas).
+
+## Writing search outputs to CSV files
+
+**Scenario:**
+
+Let's suppose we found the relevant logs we were looking for. Now, we'd like to download them as a CSV file for further offline processing.
+
+**Code:**
+```C#
+using (var client = new DGrepClient(DGrepEndpoint, ClientCertificate))
+
+ -- openCurlyBracket -- 
+
+    // Perform relevant searches here.
+    // Download as CSV.
+    CsvResult result = await client.GetCsvResultAsync(input, cancellationToken);
+    Uri uri = result.CsvUri;
+
+ -- closeCurlyBracket -- 
+
+```
+
+**Steps:**
+
+1. We invoke the `GetCsvResultAsync` method and DGrep saves the query results to a blob, which is a ZIP archive containing a CSV file.
+
+1. The blob can be accessed through the SAS URI returned by `CsvResult.CsvUri` and it is **valid for 6 hours**.
+
+## Advanced scenarios
+
+1. Retrieve results in small batches in order to limit the amount of memory allocated in the client.
+
+1. For purposes of Interactive applications, it is possible to run client queries and retrieve results before the server query is fully completed.
+
+## Next steps
+
+1. Get the [complete sample](https://msazure.visualstudio.com/One/_git/EngSys-MDA-DGrepSDK?path=%2Fsrc%2Fsample&version=GBmaster&_a=contents).

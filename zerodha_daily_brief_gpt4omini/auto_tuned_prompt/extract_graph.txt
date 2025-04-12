@@ -1,0 +1,166 @@
+
+-Goal-
+Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
+
+-Steps-
+1. Identify all entities. For each identified entity, extract the following information:
+- entity_name: Name of the entity, capitalized
+- entity_type: One of the following types: [organization, policy, energy source, economic system, supply chain, technology, market, tariff, renewable energy, electricity, government, manufacturer, trade agreement, infrastructure, climate trend, financial instrument]
+- entity_description: Comprehensive description of the entity's attributes and activities
+Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
+
+2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+For each pair of related entities, extract the following information:
+- source_entity: name of the source entity, as identified in step 1
+- target_entity: name of the target entity, as identified in step 1
+- relationship_description: explanation as to why you think the source entity and the target entity are related to each other
+- relationship_strength: an integer score between 1 to 10, indicating strength of the relationship between the source entity and target entity
+Format each relationship as ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>)
+
+3. Return output in The primary language of the provided text is **English**. as a single list of all the entities and relationships identified in steps 1 and 2. Use **{record_delimiter}** as the list delimiter.
+
+4. If you have to translate into The primary language of the provided text is **English**., just translate the descriptions, nothing else!
+
+5. When finished, output {completion_delimiter}.
+
+-Examples-
+######################
+
+Example 1:
+
+entity_types: [organization, policy, energy source, economic system, supply chain, technology, market, tariff, renewable energy, electricity, government, manufacturer, trade agreement, infrastructure, climate trend, financial instrument]
+text:
+ Ember puts it:
+
+“Cleantech, not fossil fuels, is now the driving force of economic development. The era of fossil growth is coming to an end.”
+Frankly, it’s about time.
+
+Tidbits:
+After a gap of 34 months, the Centre has raised excise duty on both petrol and diesel by ₹2 per litre, effective April 8. This brings the Special Additional Excise Duty to ₹13 per litre on petrol and ₹10 on diesel. Despite the hike, retail prices will remain unchanged as oil marketing companies (OMCs) are expected to absorb the additional burden using existing inventories. In parallel, the price of domestic LPG cylinders has been increased by ₹50 for both PMUY beneficiaries and regular consumers.
+Shriram Finance Ltd., one of India’s largest shadow lenders, has approached the Reserve Bank of India for a primary dealership license, with plans to set up a separate entity for the purpose. The move comes as India’s sovereign bond market continues to expand, with the outstanding amount of federal government bonds reaching ₹112.5 lakh cr.($1.3 trillion) as of April 7, according to RBI data.
+Apple exported iPhones worth ₹1.5 lakh cr. from India in FY25, marking a 76% year-on-year jump and doubling its committed target of ₹74,900 crore under the government’s PLI scheme. The company accounted for 75% of India’s total smartphone exports, which crossed ₹2 lakh cr. in the last financial year. Monthly shipments averaged ₹12,500 crore, with March alone contributing ₹20,000 crore—Apple’s highest monthly figure—followed by ₹18,000 crore in January and ₹17,500 crore in February.
+
+- This edition of the newsletter was written by Pranav and Kashish
+------------------------
+output:
+("entity"{tuple_delimiter}EMBER{tuple_delimiter}ORGANIZATION{tuple_delimiter}Ember is an organization advocating for clean technology as the driving force of economic development, emphasizing the decline of fossil fuel growth)
+{record_delimiter}
+("entity"{tuple_delimiter}SPECIAL ADDITIONAL EXCISE DUTY{tuple_delimiter}POLICY{tuple_delimiter}A government policy that imposes excise duty on petrol and diesel, recently raised to ₹13 per litre on petrol and ₹10 per litre on diesel effective April 8)
+{record_delimiter}
+("entity"{tuple_delimiter}PETROL{tuple_delimiter}ENERGY SOURCE{tuple_delimiter}Petrol is a fossil fuel used for transportation, subject to excise duty under the Special Additional Excise Duty policy)
+{record_delimiter}
+("entity"{tuple_delimiter}DIESEL{tuple_delimiter}ENERGY SOURCE{tuple_delimiter}Diesel is a fossil fuel used for transportation and industrial purposes, subject to excise duty under the Special Additional Excise Duty policy)
+{record_delimiter}
+("entity"{tuple_delimiter}DOMESTIC LPG CYLINDERS{tuple_delimiter}ENERGY SOURCE{tuple_delimiter}Domestic LPG cylinders are a source of cooking fuel, with their price recently increased by ₹50 for PMUY beneficiaries and regular consumers)
+{record_delimiter}
+("entity"{tuple_delimiter}SHRIRAM FINANCE LTD.{tuple_delimiter}ORGANIZATION{tuple_delimiter}Shriram Finance Ltd. is one of India’s largest shadow lenders, seeking a primary dealership license from the Reserve Bank of India to expand its operations in the sovereign bond market)
+{record_delimiter}
+("entity"{tuple_delimiter}RESERVE BANK OF INDIA{tuple_delimiter}GOVERNMENT{tuple_delimiter}The Reserve Bank of India is India’s central bank, overseeing monetary policy and financial regulations, including the issuance of sovereign bonds)
+{record_delimiter}
+("entity"{tuple_delimiter}SOVEREIGN BOND MARKET{tuple_delimiter}MARKET{tuple_delimiter}India’s sovereign bond market is expanding, with the outstanding amount of federal government bonds reaching ₹112.5 lakh crore ($1.3 trillion) as of April 7)
+{record_delimiter}
+("entity"{tuple_delimiter}APPLE{tuple_delimiter}MANUFACTURER{tuple_delimiter}Apple is a global technology company that exported iPhones worth ₹1.5 lakh crore from India in FY25, marking a significant increase under the government’s PLI scheme)
+{record_delimiter}
+("entity"{tuple_delimiter}PLI SCHEME{tuple_delimiter}POLICY{tuple_delimiter}The Production Linked Incentive (PLI) scheme is a government policy aimed at boosting manufacturing and exports, under which Apple doubled its committed target for smartphone exports)
+{record_delimiter}
+("entity"{tuple_delimiter}SMARTPHONE EXPORTS{tuple_delimiter}SUPPLY CHAIN{tuple_delimiter}India’s smartphone exports crossed ₹2 lakh crore in FY25, with Apple accounting for 75% of the total exports)
+{record_delimiter}
+("relationship"{tuple_delimiter}EMBER{tuple_delimiter}SPECIAL ADDITIONAL EXCISE DUTY{tuple_delimiter}Ember advocates for clean technology, contrasting with policies like the Special Additional Excise Duty that focus on fossil fuels{tuple_delimiter}5)
+{record_delimiter}
+("relationship"{tuple_delimiter}PETROL{tuple_delimiter}SPECIAL ADDITIONAL EXCISE DUTY{tuple_delimiter}Petrol is subject to the Special Additional Excise Duty policy, which recently increased the excise duty{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}DIESEL{tuple_delimiter}SPECIAL ADDITIONAL EXCISE DUTY{tuple_delimiter}Diesel is subject to the Special Additional Excise Duty policy, which recently increased the excise duty{tuple_delimiter}8)
+{record_delimiter}
+("relationship"{tuple_delimiter}DOMESTIC LPG CYLINDERS{tuple_delimiter}SPECIAL ADDITIONAL EXCISE DUTY{tuple_delimiter}The price of domestic LPG cylinders was increased alongside the excise duty hike on petrol and diesel{tuple_delimiter}6)
+{record_delimiter}
+("relationship"{tuple_delimiter}SHRIRAM FINANCE LTD.{tuple_delimiter}RESERVE BANK OF INDIA{tuple_delimiter}Shriram Finance Ltd. has approached the Reserve Bank of India for a primary dealership license to expand its operations{tuple_delimiter}7)
+{record_delimiter}
+("relationship"{tuple_delimiter}RESERVE BANK OF INDIA{tuple_delimiter}SOVEREIGN BOND MARKET{tuple_delimiter}The Reserve Bank of India oversees the sovereign bond market, which has expanded significantly{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}APPLE{tuple_delimiter}PLI SCHEME{tuple_delimiter}Apple doubled its committed target for smartphone exports under the government’s PLI scheme{tuple_delimiter}9)
+{record_delimiter}
+("relationship"{tuple_delimiter}APPLE{tuple_delimiter}SMARTPHONE EXPORTS{tuple_delimiter}Apple accounted for 75% of India’s total smartphone exports in FY25{tuple_delimiter}10)
+{record_delimiter}
+("relationship"{tuple_delimiter}PLI SCHEME{tuple_delimiter}SMARTPHONE EXPORTS{tuple_delimiter}The PLI scheme facilitated the growth of India’s smartphone exports, which crossed ₹2 lakh crore in FY25{tuple_delimiter}8)
+{completion_delimiter}
+#############################
+
+
+Example 2:
+
+entity_types: [organization, policy, energy source, economic system, supply chain, technology, market, tariff, renewable energy, electricity, government, manufacturer, trade agreement, infrastructure, climate trend, financial instrument]
+text:
+TITLE: The Daily Brief
+AUTHOR: ZERODHA
+
+ARTICLE: Can Tariffs Break the Global Economy?
+DATE: April 9, 2025
+
+In today’s edition of The Daily Brief:
+
+Why are tariffs such a big deal?
+Energy all over the world
+
+Why are tariffs such a big deal?
+So you’ve seen the world lose their collective minds over the Trump tariffs. Everyone seems to consider this the financial apocalypse. The stock markets are deep in the red, and a range of businesses are making cryptic statements about how they need to “restructure their supply chains.”
+
+Through all this, there’s a good chance that you don’t actually know why this is such a big deal. You’ve probably heard all the basic explainers already — about how tariffs are essentially import taxes — without a real sense of why a few tax hikes can cause the world to lose its collective mind.
+
+We get it. This isn’t something you’re expected to know. People don’t spend their days thinking about supply chains. It’s really easy to underestimate how critical global value chains are, how widely they spread, or how fragile they can be in the face of a crisis. But make no mistake, they’re the basis of the plentiful lives we live. They’re the reason you even have the device you’re reading this on, even.
+
+To help you understand why, though, we’ll need to take you into the mundane, boring exchanges at the heart of the global economy. If you stick with us, though, we promise you’ll learn a little more about why it’s so tragic that these are all suddenly in jeopardy.
+
+Global supply chains are a miracle of mankind
+Modern commerce exists because of global value chains.
+
+Most modern industrial products are like giant lego installations. They’re made by putting together a huge array of pieces, most of which are made by other people. As the economist Leonard Reed noted almost seventy years ago, there isn’t a single person alive who knows how to make a single lead pencil from scratch. Pencil-making is a collaborative exercise between millions of people. Some of them chop the wood, some of them dig for clay, some of them mine raw graphite, and so on. None of these people can see more than the smallest sliver of the complete supply chain. And yet, by coming together, they make millions of pencils every day.
+
+What’s true of pencils is a million times as true for the more advanced products we take for granted: from car batteries to mobile phones.
+
+There are places in the world that have world-beating expertise in making single, specific parts of those giant lego installations. Their products, by themselves, could seem mundane. For instance, you may run an entire business around making one very specific spring, which only goes into making the accelerometers that are used in iPhones. We aren’t exaggerating at all, by the way. Consider this: Toyota, for instance, sources 400,000 different products to make its cars. Boeing sources 6 million different components for its airplanes. Anything they do depends on layers and layers of suppliers. If this is hard to wrap your head around, here’s an illustration of a simple supply chain. This should tell you how quickly the number of suppliers can multiply:
+
+This extreme specificity brings huge advantages. You can spend all your time and energy thinking of how to perfect one specific spring, making it more cheaply and efficiently than anyone else. Different suppliers do the same thing for their own components. Because of all the effort of all those suppliers, taken together, making extremely complicated products becomes cheaper and quicker as a whole. That is why you can get an entire phone — a computer, communications device, camera, music system, and a dozen other things rolled into one — for just a few thousand Rupees.
+
+But here’s the catch: this only works because of the incredible scale at which these value chains operate. Making accelerometer springs for phones sold in Southern Karnataka, where we live, isn’t really a viable business idea. But if you can do so for a big chunk of every phone sold in the world, suddenly, you have a million-dollar business plan. When you hear headlines about India trying to ‘establish itself as part of global value chains’, this is what they’re talking about — creating excellent, hyper-specialised businesses that can become small parts of mammoth supply chains.
+
+This is why the scale and efficiency of global supply chains are two sides of the same coin. Neither makes sense without the other.
+
+These supply chains are incredibly fragile
+When you zoom into any part of one of those global supply chains, you’ll realise how incredibly fragile they are. If any one node of a supply chain goes under, that hurts everyone that it supplies products to. Which, in turn, hurts the next entity in the chain. And so on.
+
+The results can be dramatic. If one supplier in a smartphone supply chain faces problems sourcing a single 5 cent capacitor, for instance, that could block entire shipments of $1000 phones.
+
+We saw hints of this in the COVID-19 pandemic.
+
+When people across the world began working from home, there was a huge surge in the demand for computers all over the world. Chip manufacturers started routing their production to this segment, while car manufacturers temporarily stopped placing orders for them. A few months later, though, when they resumed production, there were no chips available.
+
+Now, chips aren’t too big a part of cars: they run things like power steerings, sensors and infotainment systems. They’re no more than 5-10% of a car’s cost. But you can’t make cars without chips. And so, as chips became hard to come by, global automobile production slumped by 26%. The price of cars swung wildly for years, only easing late last year.
+
+This is why simple intuitions don’t work if you’re thinking about world trade. Supply chains are complex and
+------------------------
+output:
+("entity"{tuple_delimiter}TRUMP TARIFFS{tuple_delimiter}TARIFF{tuple_delimiter}The Trump tariffs are import taxes that have caused significant disruptions in global markets and supply chains, leading to financial instability and restructuring efforts by businesses){record_delimiter}
+("entity"{tuple_delimiter}GLOBAL SUPPLY CHAINS{tuple_delimiter}SUPPLY CHAIN{tuple_delimiter}Global supply chains are interconnected networks of suppliers and manufacturers that enable the production of complex products by sourcing components from specialized entities worldwide){record_delimiter}
+("entity"{tuple_delimiter}LEAD PENCIL SUPPLY CHAIN{tuple_delimiter}SUPPLY CHAIN{tuple_delimiter}The supply chain for lead pencils involves millions of people collaborating to source wood, clay, graphite, and other materials, illustrating the complexity of modern commerce){record_delimiter}
+("entity"{tuple_delimiter}TOYOTA{tuple_delimiter}MANUFACTURER{tuple_delimiter}Toyota is a global automobile manufacturer that sources 400,000 different products to assemble its cars, relying heavily on intricate supply chains){record_delimiter}
+("entity"{tuple_delimiter}BOEING{tuple_delimiter}MANUFACTURER{tuple_delimiter}Boeing is a leading aerospace manufacturer that sources 6 million components for its airplanes, showcasing the complexity of its supply chains){record_delimiter}
+("entity"{tuple_delimiter}COVID-19 PANDEMIC{tuple_delimiter}CLIMATE TREND{tuple_delimiter}The COVID-19 pandemic disrupted global supply chains, causing shifts in demand for products like chips and leading to significant economic impacts, such as a slump in automobile production){record_delimiter}
+("entity"{tuple_delimiter}CHIP MANUFACTURERS{tuple_delimiter}MANUFACTURER{tuple_delimiter}Chip manufacturers produce semiconductors essential for electronics and automobiles, and their production shifts during the pandemic caused supply chain disruptions){record_delimiter}
+("entity"{tuple_delimiter}GLOBAL AUTOMOBILE PRODUCTION{tuple_delimiter}MARKET{tuple_delimiter}The global automobile production market experienced a 26% slump due to chip shortages during the COVID-19 pandemic, highlighting supply chain fragility){record_delimiter}
+("relationship"{tuple_delimiter}TRUMP TARIFFS{tuple_delimiter}GLOBAL SUPPLY CHAINS{tuple_delimiter}The Trump tariffs disrupted global supply chains by increasing import taxes, leading to financial instability and restructuring efforts{tuple_delimiter}8){record_delimiter}
+("relationship"{tuple_delimiter}GLOBAL SUPPLY CHAINS{tuple_delimiter}TOYOTA{tuple_delimiter}Toyota relies on global supply chains to source 400,000 products for its car manufacturing{tuple_delimiter}9){record_delimiter}
+("relationship"{tuple_delimiter}GLOBAL SUPPLY CHAINS{tuple_delimiter}BOEING{tuple_delimiter}Boeing depends on global supply chains to source 6 million components for its airplanes{tuple_delimiter}9){record_delimiter}
+("relationship"{tuple_delimiter}COVID-19 PANDEMIC{tuple_delimiter}GLOBAL SUPPLY CHAINS{tuple_delimiter}The COVID-19 pandemic disrupted global supply chains, causing shifts in production and demand{tuple_delimiter}8){record_delimiter}
+("relationship"{tuple_delimiter}COVID-19 PANDEMIC{tuple_delimiter}CHIP MANUFACTURERS{tuple_delimiter}The COVID-19 pandemic led chip manufacturers to shift production to meet increased demand for electronics, causing shortages in other industries{tuple_delimiter}7){record_delimiter}
+("relationship"{tuple_delimiter}CHIP MANUFACTURERS{tuple_delimiter}GLOBAL AUTOMOBILE PRODUCTION{tuple_delimiter}Chip shortages caused by production shifts during the pandemic led to a 26% slump in global automobile production{tuple_delimiter}8){record_delimiter}
+{completion_delimiter}
+#############################
+
+
+
+-Real Data-
+######################
+entity_types: [organization, policy, energy source, economic system, supply chain, technology, market, tariff, renewable energy, electricity, government, manufacturer, trade agreement, infrastructure, climate trend, financial instrument]
+text: {input_text}
+######################
+output:

@@ -1,0 +1,88 @@
+
+# Backfilling for central derived events is only available for Billing teams
+
+
+
+
+
+
+\*\* Please make sure that the derived events are idempotent, if they are not, you may end up incorrectly billing customers.
+
+
+
+Customer's are required to create a complete set of commands to execute :
+
+
+
+**Step 1**: Download the following utility:  \\reddog\Builds\branches\git_engsys_mda_mds_release_latest\retail-amd64\MdsWorkItemBackfiller
+
+
+
+**Step 2**: Create the command for re-running a particular CDE.
+
+
+
+*MdsWorkItemBackfiller.exe -command:ListStaticIds -MdsEndPoint:https://production.diagnostics.monitoring.core.windows.net/ -ConfigId:MdsVer12v0*
+
+
+
+>[!Note]  
+>Replace these values with the appropriate [endpoint ](https://jarvis-west.dc.ad.msft.net/?page=documents&amp;section=1363da01-b6ed-43d4-970e-f89b011d591f&amp;id=d18a0cdb-eb0e-485b-b1bb-cbb6069d352b)and configid. Remember that config id is of the form "<namespace>Ver<eventVersion>v0". Get the namespace and eventVersion from the MA configuration file.
+
+
+
+**Step 3**: Understand the delay there should be with respect to the next CDE in the chain. Insert the sleep in between the each of the backfilling command.
+
+
+
+*MdsWorkItemBackfiller.exe -command:Schedule -MdsEndPoint:https://production.diagnostics.monitoring.core.windows.net/ -StaticId:255c21f217c333ee9d175571adaab0be\_\_\_\_\_\_MdsQosEventEtwTableUSWVer12v0\_\_\_MdsTfsProxyKpiFiveMinuteTableUSCVer12v0 -FromTime:2016-03-28T00:00:00.0Z -ToTime:2016-03-31T00:00:00.0Z -ConfigId:MdsVer12v0*
+
+
+
+>[!Note]   
+>These are the static ids listed through ListStaticIds command.
+
+
+
+example:
+
+
+
+CDE X runs first
+
+
+
+CDE Y reads from destination table of CDE X.
+
+
+
+CDE Z reads from destination table of CDE Y.
+
+
+
+You will provide the following:
+
+
+
+    
+    re-schedule statements for CDE X
+    sleep i
+    re-schedule statements for CDE Y
+    sleep j
+    re-schedule statements for CDE Z
+    Where i, j, k are the the amount of time you CDE typically needs to run multiplied by 1.5.
+
+
+
+You can find the time needed to successfully run your CDE from our [Qos table query](https://jarvis-west.dc.ad.msft.net/42EC0AAE) (take average of few runs).
+
+
+
+**Step 4:** File an ICM ticket containing this information using the following template:
+https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354
+
+
+
+
+
+

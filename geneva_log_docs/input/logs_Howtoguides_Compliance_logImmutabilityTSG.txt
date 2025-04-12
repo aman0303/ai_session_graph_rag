@@ -1,0 +1,107 @@
+# Immutable Logs Troubleshooting Guide
+Service teams that have onboarded to AzSecPack and IFx audit will receive the immutability feature via Geneva based on the WORM (Write Once Read Many) feature of Azure Blob Storage. Any service teams leveraging classic storage accounts are required to migrate their Geneva Logs accounts to GSM (Geneva Storage Management) to meet the JEDI Enterprise Promise. If you have not migrated your Geneva Logs account to GSM, or are experiencing issues, this topic covers reasons and possible solutions for making all of your storage account logs immutable.
+## If you have not migrated your Geneva Logs account to GSM
+If you're using classic storage accounts or ARM storage accounts not managed by GSM for Geneva logs, you must migrate to GSM. For more information on how to migrate your storage accounts to GSM, see [Migrate to GSM](../../Howtoguides/Manageaccount/MigrateToGSM.md).
+
+### How do I know if GSM is enabled for my Geneva Logs account?
+To verify if GSM is enabled for your Geneva logs account, navigate to your account in [Jarvis](https://portal.microsoftgeneva.com/account/logs/configurations). In the **Account** tab you will find **Account Information**. If GSM is enable in the account, you will see a blue banner as displayed in the image:
+
+![GSM (verify GSM)](../../images/VerifyGSM.png "GSM (verify GSM)")
+
+
+## If you have migrated your Geneva logs accounts to GSM and receive an action in S360
+
+### Delete legacy resources
+To complete the GSM migration and ensure compliance with Immutable Logs, you are required to remove the non-GSM legacy resources. **Once the legacy resources are deleted, the data cannot be accessed**. As such, it is highly recommended to wait for 30 days (or the number of days dictated by your data retention policy) after GSM migration was complete before deleting the legacy resources, to allow the data to age out. Please follow the instructions outlined [in this document](../Manageaccount/monikerdelete.md) to delete your legacy resources. 
+
+### Error handling
+As part of enforcing log immutability all storage accounts must be verified. If we cannot verify one or more of your storage accounts, a status of **Forbidden** or **Not Found** is returned. The following paragraphs describe possible solutions based on the status that was received:
+
+#### Forbidden 
+If a status of **Forbidden** is returned when validating your storage accounts, then Geneva does not have access to mark storage containers as immutable.  
+ 
+As a result geneva will log the following **error message:**  *
+ -- openCurlyBracket -- 
+"error":
+ -- openCurlyBracket -- 
+"code":"AuthorizationFailed","message":"The client '3c2f3efc-0197-4fd5-b566-0e3f07a17f0c' with object id '3c2f3efc-0197-4fd5-b566-0e3f07a17f0c' does not have authorization to perform action 'Microsoft.Storage/storageAccounts/blobServices/containers/immutabilityPolicies/read' over scope '/subscriptions/<subscription ID>/resourceGroups/Default-Storage-<region>/providers/Microsoft.Storage/storageAccounts/<storage account>/blobServices/default/containers/<container name>/immutabilityPolicies/default' or the scope is invalid. If access was recently granted, please refresh your credentials."
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+* 
+- **Required action:** Follow these instructions [here](../Manageaccount/subscriptionpermissions.md) to grant Geneva the necessary access.
+
+  
+#### Not Found
+If a status of **Not Found** is returned when validating your storage accounts, one of the following might have occurred: 
+
+ - **Error Message:**  *
+ -- openCurlyBracket -- 
+"error":
+ -- openCurlyBracket -- 
+"code":"ParentResourceNotFound","message":"Can not perform requested operation on nested resource. Parent resource 'obtestappauditaoniker' not found."
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+*
+
+   This means that the specified account is a classic storage account and the Geneva Logs account is required to be migrated to GSM. 
+
+    - **Required action:**  [Migrate Geneva Logs account to GSM](../../Howtoguides/Manageaccount/MigrateToGSM.md).
+   
+
+ - **Error Message:** *
+ -- openCurlyBracket -- 
+"error":
+ -- openCurlyBracket -- 
+"code":"ResourceGroupNotFound","message":"Resource group 'GenevaWarmPathManageRG' could not be found."
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+*  
+   This error message can indicate one of the following:
+      - The storage account was deleted. 
+      - The default resource group was deleted.
+      - The storage account was moved to a different subscription. 
+      - The storage account was moved to a different resource group.
+
+   The result of all these actions is that the Geneva configurations and monikers are still referring to the missing storage account.
+    - **Required action:**  File an [IcM](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354) to the Geneva Infra team to restore the GSM managed monikers. 
+
+  - **Error Message:** *
+ -- openCurlyBracket -- 
+"error":
+ -- openCurlyBracket -- 
+"code":"ParentResourceNotFound","message":"Can not perform requested operation on nested resource. Parent resource 'mdsbrkslamsecam' not found."
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+*
+  
+    This error means that your service was or still is using RDFE. 
+    - **Required action:**
+      - If your service is still using classic storage accounts, please [migrate your Geneva account to GSM](../../Howtoguides/Manageaccount/MigrateToGSM.md).
+      - If your service had already been migrated to GSM, make sure to [delete the legacy resources](../Manageaccount/monikerdelete.md) as described above. The error message will disappear after the legacy resources are removed.
+    
+
+## FAQ
+
+### My Retention period on the Resource is completed but still I am unable to delete the resource with Immutability Policy
+
+If you are getting a notification that immutability is still in affect after 30 days have passed, it means that there is some monitoring agent still sending data to these resources. It is not enough to delete the monikers in Geneva, you have to make sure you delete the configs and/or ensure the configs are not deployed on any agents. Also note that IFX event have a 180 day immutability policy. There is no way to remove the immutability policy, you have to wait until it expires. Here are the steps to check the Access Policy/Retention interval
+
+  1. Go to Storage Account
+  2. Navigate to Data Storage -> Containers
+  3. Select your respective container
+  4. Go to Access Policy
+
+If you have confirmed that the retention period is completed and no agents are sending data but still unable to delete the Resource Group/Subscription due to immutable resource, please follow below steps through UI/Azure PowerShell cmdlets:
+  1. Navigate to the respective Storage Account and delete the blobs
+  2. Wait 24 hours to ensure no more access to the blob
+  3. Delete containers
+  4. Delete Storage Account
+  5. Delete resource group (if you want to delete the RG completely)
+  6. Cancel subscription  (if you want to cancel/remove complete subscription)
+
+## Still have questions?
+If your issue is not covered here, please reach out to the team through the [Geneva Monitoring Discussion teams room](https://teams.microsoft.com/l/channel/19%3a04bde84e79c8474f94990f8cce995f21%40thread.skype/Logs?groupId=5658f840-c680-4882-93be-7cc69578f94e&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47).

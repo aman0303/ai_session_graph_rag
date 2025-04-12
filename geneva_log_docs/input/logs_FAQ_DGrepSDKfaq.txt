@@ -1,0 +1,60 @@
+# DGrep SDK FAQ
+
+> Don't miss the [DGrep SDK](../References/DGrepSDK/sdk.md) document.
+
+## How do I get my certificate approved to access DGrep programmatically?
+
+If you plan to use certificate based authentication: 
+
+* please follow [these steps](../../collect/authentication/keyvault.md#how-to-use-azure-keyvault-certificate-with-geneva) to create an Key Vault certificate issued by OneCert or [these](../../collect/authentication/dsms.md) for a dSMS Managed certificate. 
+* DGrep supports automatically authorizing the AKV/DSMS certs for any User roles with “read” permission.
+* In case you already don’t have a user role, create a new **User role with read permission** and add/create the AKV/DSMS cert to it. Now this cert should be authorized to query data via DGrep SDK. [Here are the detailed steps](../../collect/authentication/keyvault.md#how-to-use-azure-keyvault-certificate-with-geneva) to add a managed certificate to Geneva Logs account.
+
+> [!IMPORTANT]
+> DGrep accepts only OneCert certificates from Azure KeyVault or trusted certificates from dSMS.
+
+## I need help creating an Azure KeyVault OneCert certificate.
+
+Please follow up with `onecertfeedback@microsoft.com`
+
+## I need help creating a dSMS certificate.
+
+Please follow this [troubleshooting guide](https://microsoft.sharepoint.com/teams/AzureSecurityCompliance/Security/SitePages/dSMSGenevaHotPath.aspx#Troubleshooting) from dSMS team.
+
+## DGrepUserAuthClient fails with CryptographicException: Invalid provider type specified
+
+This usually happens when trying to authenticate using a Windows Hello PIN certificate. To fix this, please add the following element to your executable's `App.config` file:
+
+```xml
+<configuration>
+  <runtime>
+    ...
+  	<AppContextSwitchOverrides value="Switch.System.IdentityModel.DisableCngCertificates=false" />
+  </runtime>
+</configuration>
+```
+## Queries always fail with "The remote server returned an error: (502) Bad Gateway" when querying DGrep National cloud endpoint(s) from SAW device
+
+This is because various national cloud domains aren't properly whitelisted on SAW devices. In this case, DGrep endpoints are not whitelisted in your SAW SILO. Thus, requests never made it to DGrep.
+
+Please contact the administrator of the SAW silo that is facing this issue. They should be able to whitelist domains. Each SAW silo needs to whitelist individually due to the design of the SAW service.
+
+DGrep endpoints are [here](../FAQ/DGrepfaq.md#list-of-dgrep-endpoints).
+
+See this [StackOverflow post](https://stackoverflow.microsoft.com/questions/83874) for more information.
+
+## Queries run into an error: Maximum number of outstanding requests reached for this client
+
+This means you have reached the maximum number of parallel queries you could perform with that certificate. See more about [Quotas](../References/DGrepSDK/sdk.md#quotas).
+
+## Query returned with QueryStatus.Status Throttled.
+
+This means you have reached one of the limits DGrep sets on the queries. See more about [Troubleshooting](../Troubleshooting/DGrepSDKtroubleshoot.md#server-side-troubleshooting).
+
+## Does DGrep SDK support .NET Core?
+
+Yes, DGrep SDK is supported for .netstandard 2.0, but currently supports only certificate type authentication. 
+
+## How do I get access to msazure nuget feeds?
+
+All access to msazure is granted through the process described here: https://aka.ms/azaccess. Please contact `cdpsup@microsoft.com` (onebranch support) for follow up questions.

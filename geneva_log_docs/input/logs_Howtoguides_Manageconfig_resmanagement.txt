@@ -1,0 +1,53 @@
+# Where to store?
+
+## Storage Management
+
+Geneva automatically manages storage resources to meet your monitoring needs. The Azure subscription you provided during onboarding will be used by Geneva to provision resources to store your monitoring data as required. Geneva determines the regions where to provision resources based on the MONITORING_GCS_REGION environment variable set on your Monitoring Agent launch environment. 
+
+````
+set MONITORING_GCS_REGION=<ARM region name>
+````
+
+### Azure Subscription Management
+
+Geneva also monitors all storage resources for signs of overload and automatically provisions new resources to cope. In order for Geneva to manage your monitoring resources automatically, you need to provide Geneva with enough Azure subscriptions. Don't worry, Geneva also monitors your Azure subscriptions to determine if they are about to run out of resource quota and alert you about them. You can register additional Azure subscriptions under your Geneva Logs account when you receive such an alert. 
+
+To view/register Azure subscriptions, go to Jarvis\Account\Logs\Resources section and view/update as shown below. 
+
+![Subscription management][SubscriptionManagementImage]
+
+### Kusto settings and Storage Access Key rotation
+
+If you want to push your monitoring data from your storage accounts into Kusto, you can specify your Kusto cluster and database in the same Resources section. See below image for an example.
+
+![Kusto settings][KustoSettingsImage]
+
+In the example above, all events that are stored in __apheleiademoaudit__ Storage Group will get routed to __logandb5__ in __loganid5__. 
+
+> [!NOTE]
+> - A Storage Group comprises of multiple storage accounts across multiple regions. The example above shows a setup where data from across all regions get routed to a single Kusto database. If you want to route data to regional Kusto clusters, you will need to add more regions and specify Kusto cluster/database values for each region. 
+> - When Geneva scales out to a new region, data from the new region will get routed to the Default Kusto cluster/database if no regional setting is specified. 
+
+Geneva supports automatic storage key rotation per the rotation frequency you define. Storage keys rotation policies can be set up at individual Storage Group level. To setup up rotation policy:
+
+1. Go to Jarvis\Account\Logs\Resources 
+2. Click on the Storage Group of interest
+3. Enter value for Rotation Interval as shown below
+
+![Key Rotation Policy][KeyRotationImage] 
+
+### Adding a new Storage Group
+
+Geneva automatically creates three Storage Groups, one each for Diagnostics (suffixed with diag), Audit and Security logs, for every new namespace. This should be sufficient for most purposes. In some cases you may want to create a new Storage Group to route some logically grouped events to a different set of storage accounts. You can create new Storage Group as shown in the example below.
+
+![Create new Storage Group][NewStorageGroup]
+
+> [!NOTE]
+> - Storage Group names __must__ begin with the namespace name (case sensitive)
+> - Newly create Storage Groups must be manually added to your configuration files, and events meant to be routed to the new Storage Group must be manually updated through the _Account_ attribute
+
+<!-- Image links -->
+[SubscriptionManagementImage]: ../images/Subscription.png "Azure Subscription management"
+[KustoSettingsImage]: ../images/Streaming.png
+[KeyRotationImage]: ../images/KeyRotationUX.png "Key rotation policy"
+[NewStorageGroup]: ../images/NewStorageGroup.png "Create new Storage Group"

@@ -1,0 +1,16 @@
+## Logs Namespace
+
+A Log Namespace is essentially a unique prefix that you reserve per Log endpoint. 
+All the monitoring data collected from your service will be identifiable through this unique prefix. 
+Once you own a prefix, you can create multiple <i>Config</i> namespaces starting with that prefix.
+We recommend that the namespace prefix you pick either match, or, in the event that it cannot, closely resemble your Log account name.
+
+A valid Namespace field should adhere to the following constraints - 
+* Must be between 5 and 31 characters
+
+Note: We recommend users to create smaller namespaces (less than 15 characters). 
+Event names are appended to end of the namespace when creating a blob container (namespace + event name + version info). 
+If Event names become longer in the future, it would cause validation issues with config save.
+
+* Must start with an alphabet
+* Must be alphanumeric

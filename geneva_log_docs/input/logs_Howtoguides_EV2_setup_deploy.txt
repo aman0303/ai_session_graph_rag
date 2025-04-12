@@ -1,0 +1,12 @@
+## Deploy to environment and validate
+
+It's possible to invoke the plugin multiple times in a single rollout, so you can still produce rollouts that update multiple namespaces. The extension tries not to do unnecessary updates. New configs are only published if they are different from the previous config to prevent a proliferation of configs that will need to be managed.
+
+1. Open the **AzureServiceDeployClient** shortcut.
+
+2. Copy the examples to the same folder.
+
+3. Start new rollout with: New-AzureServiceRollout -ServiceGroupRoot . -RolloutSpec RolloutSpec.json -RolloutInfra Prod -WaitToComplete
+
+4. Follow the status in [Ev2 Portal](https://ev2portal.azure.net/).
+

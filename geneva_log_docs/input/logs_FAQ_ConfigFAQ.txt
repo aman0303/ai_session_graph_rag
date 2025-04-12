@@ -1,0 +1,134 @@
+# FAQ
+
+### 1. How do I share Logs Account Configuration link?
+
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account
+2. Go to the **Configurations** page
+3. Click on your desired configuration of a namespace to open the configuration
+4. Click on **Share** button on top right corner (below profile icon) to copy the link
+5. Once link is copied to clipboard, share it with others
+
+![LogsConfigShareLink][LogsConfigShareLink]
+
+### 2. How do I increase/update my Logs Configuration major version?
+
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account
+2. Go to the **Configurations** page
+3. Click on your desired configuration of a namespace to open the configuration
+4. Navigate to the "Advanced" section of the configuration (Select the Main Configuration file with name &lt;Namespace Name&gt;Ver&lt;Current version&gt;v0.xml file in the dropdown if not selected.)
+5. You will see `eventVersion` in the 'MonitoringManagement' tag (mostly present in first line of the configuration).
+
+    > <MonitoringManagement **eventVersion="1"** version="1.0" timestamp="2018-05-07T00:00:00Z" namespace="RaviKiran">
+
+6. Update the necessary changes (if any) to the configuration and then change `eventVersion` from 'n' to 'n+1' like for example `eventVersion="1"` to `eventVersion="2"`
+
+    ![ConfigMajorversionUpgrade][ConfigMajorversionUpgrade]
+
+7. Click **Save** to update/bump up the major version of Logs configuration.
+
+### 3. How do I delete Logs Account Configuration?
+
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account
+2. Go to the **Configurations** page
+3. Click on **elipses (...)** on right side of your desired version configuration of a namespace
+
+    ![DeleteConfiguration][DeleteConfiguration]
+
+4. Click on **Delete** button from the context menu
+5. Provide confirmation to delete
+
+### 4. How can I delete a legacy AIMS configuration?
+
+Download the latest version of [MDS tools](../Resources/Downloads.md).
+
+Run the following command to list all configs in your account,
+
+```
+mds.exe account <endpoint> -command:listone -mdsaccount:<account>
+```
+
+and run following command to delete the AIMS config:
+
+```
+mds.exe config <endpoint> -configkind:aimsruleconfig -command:delete -configid:<AIMS Config Id> -mdsaccount:<account>
+```
+
+### 5. How to handle Event streaming annotation tag configuration?
+
+In "EventStreamingAnnotation" element "name" should contain all annotations. If any of the annotations are missing the elements then system will not produce an expected outcome.
+
+For an instance please refer to the below mentioned configuration where the element "EventStreamingAnnotation" has been repeated twice and it does not contain all the annotations within the configuration. This is an invalid configuration and the system will not behave as expected.
+
+```
+<EventStreamingAnnotations>
+    <EventStreamingAnnotation name="^Span$">
+        <Gdpr>
+          <Content>
+            <![CDATA[ 
+                  <Config> 
+                  <GdprClassification InScope="false" />
+                  </Config> 
+              ]]>
+          </Content>
+        </Gdpr>
+        <LogAnalytics>
+          <Content>LogAnalyticsContent</Content>
+        </LogAnalytics>
+      </EventStreamingAnnotation>
+       <EventStreamingAnnotation name="^Span$">
+        <DistributedTracing>
+          <Content>
+            <![CDATA[
+              <CorrelationPlatform>
+                <TraceEventSchema>
+                  <SchemaId>CommonSchema_4_0</SchemaId>
+                </TraceEventSchema>
+              </CorrelationPlatform>
+            ]]>
+          </Content>
+        </DistributedTracing>
+      </EventStreamingAnnotation>
+      ...
+</EventStreamingAnnotations>
+```
+
+The correct configuration would be as mentioned below. The element "EventStreamingAnnotation" should contain all annotations as per the specification.
+
+```
+ <EventStreamingAnnotations>
+     <EventStreamingAnnotation name="^Span$">
+        <Gdpr>
+          <Content>
+            <![CDATA[ 
+                  <Config> 
+                  <GdprClassification InScope="false" />
+                  </Config> 
+              ]]>
+          </Content>
+        </Gdpr>
+        <LogAnalytics>
+          <Content>LogAnalyticsContent</Content>
+        </LogAnalytics>
+        <DistributedTracing>
+          <Content>
+            <![CDATA[
+              <CorrelationPlatform>
+                <TraceEventSchema>
+                  <SchemaId>CommonSchema_4_0</SchemaId>
+                </TraceEventSchema>
+              </CorrelationPlatform>
+            ]]>
+          </Content>
+        </DistributedTracing>
+      </EventStreamingAnnotation>
+      ...
+<EventStreamingAnnotations>
+```
+
+<!-- Reference Links -->
+[LogsAccount]: https://portal.microsoftgeneva.com/account/logs "Logs Account"
+
+<!-- Image References-->
+[LogsConfigShareLink]: ../images/LogsConfigShareLink.png
+[DeleteConfiguration]: ../images/DeleteConfiguration.png
+[ConfigMajorversionUpgrade]: ../images/ConfigMajorversionUpgrade.png

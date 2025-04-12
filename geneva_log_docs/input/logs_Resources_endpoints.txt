@@ -1,0 +1,150 @@
+# Logs Environments
+
+## Endpoints for programmatic management
+
+When using the client SDK or PowerShell for programmatically managing your Logs account, you will actually be connecting to the Geneva Control-plane Service (GCS) which exposes the endpoints listed below. When accessing your Logs account in the environments listed in the above section, use the mapping as specified below.
+
+Management endpoint|Logs environment
+-------------------|-------------------
+gcs.ppe.monitoring.core.windows.net|Test/Stage
+gcs.prod.monitoring.core.windows.net|DiagnosticsProd/FirstpartyProd/BillingProd/ExternalProd
+mooncake.warmpath.chinacloudapi.cn|CaMooncake
+gcs.monitoring.core.usgovcloudapi.net|CaFairfax
+gcs.monitoring.sovcloud-core.fr|Bleu
+gcs.monitoring.sovcloud-core.de|Delos
+gcs.monitoring.sovcloud-core.sg|GovSG
+
+>[!Note]
+
+> Please make a note that the below mentioned Managment endpoints are deprecated.
+> ppe.warmpath.msftcloudes.com, prod.warmpath.msftcloudes.com, fairfax.warmpath.usgovcloudapi.net. Please use the new DNS management endpoints based on the logs environment.
+
+Old DNS Entry |New DNS Entry
+-------------------|-------------------
+ppe.warmpath.msftcloudes.com|gcs.ppe.monitoring.core.windows.net
+prod.warmpath.msftcloudes.com|gcs.prod.monitoring.core.windows.net
+fairfax.warmpath.usgovcloudapi.net|gcs.monitoring.core.usgovcloudapi.net
+
+## Geneva Logs Networking: Start here
+
+> [!IMPORTANT]
+> Read this section entirely before proceeding.
+
+Ensure you are using Geneva Monitoring Agent [version 44+](https://microsoft.sharepoint.com/teams/SPS-AzMon/MonWiki/Wiki%20Pages/Release%20Notes.aspx), which uses newer GCS endpoints [reachable without requiring SNAT](https://aka.ms/hypernetlite), and use VIPs from a [Service Tag range](https://docs.microsoft.com/en-us/azure/virtual-network/service-tags-overview).
+
+Also, you MUST join the `genevaipnotify` distribution list on [IDWeb](https://aka.ms/idweb). Networking changes to Geneva Logs are posted to this alias.
+
+You should also join `azmonnotify`. We are occasionally required to make other breaking changes, and it's critical you are aware of them.
+
+Please consult the table below based on your connectivity needs:
+
+Scenario|Recommendation
+--------|--------------
+My service cannot SNAT| SNAT is highly recommended. If you absolutely cannot SNAT, you must begin migration to IPv6, as Geneva will eventually require it for non-SNAT scenarios. In the meantime, see [this page](https://microsoft.sharepoint.com/teams/WAG/EngSys/_layouts/OneNote.aspx?id=%2Fteams%2FWAG%2FEngSys%2FShared%20Documents%2FNotebooks%2FGeneva%20Infra%20and%20Manageability&wd=target%28Operational%20Docs.one%7C7C7AD2F8-337A-4860-946F-E4F4BD8258DA%2FSNAT%20Eventhub%20unreachable%3A%20%2812002%20timeout%20error%5C%29%7CE043C6AF-F2CA-4E50-958F-3B5E3766B230%2F%2) to use Event Hubs that do not require SNAT.
+I need to configure SNAT for my service|Configure SNAT for IPs in the /AzureMonitor service tag. Note that IPs can change so you must query the Service Tag REST API and update your SNAT configuration periodically.
+My service must have its outbound connectivity restricted to certain IPs.| Configure outbound firewall rules based on the `/AzureMonitor` service tag. If you are not using NSGs, you must query the Service Tag REST API periodically to update your firewall rules.
+I need to block access to Azure Storage from my service, or my service is a HOBO/partial trust service. | Geneva has a "No Storage" mode, but you need to email `VulnScanAndGeneva` before blocking Azure Storge access, **and read the guidance on [this page](../../collect/references/genevaingestiongateway.md)**
+
+## Configuring firewall rules?
+
+Most* Geneva clusters are allocated from the `AzureMonitor` [service tag](https://docs.microsoft.com/en-us/azure/virtual-network/service-tags-overview). You can use this in your Network Security Groups to enable outbound traffic to Geneva.
+
+You also need to allow the service tags for Azure Storage and Azure Event Hubs.
+
+> [!IMPORTANT]
+> If you need to ACL IP addresses directly in your firewall, you *must* keep your them up to date with the latest IPs in the `AzureMonitor`, Azure Storage, and Azure Event Hubs tags, as we are continually expanding and adding IP addresses. Downloadable IP ranges and a discovery API are documented [here](https://docs.microsoft.com/en-us/azure/virtual-network/service-tags-overview).
+
+Questions about service tags? Email Azure Networking at `AzServiceTagOnboard` alias or visit [their sharepoint site](https://microsoft.sharepoint.com/teams/vnet/SitePages/Service%20Tags.aspx).
+
+*Is your service in Blackforest or Mooncake, or using GIG in any cloud? See the list of clusters below, until we onboard to service tags there.
+
+## Configuring SNAT
+
+If you are running Monitoring Agents inside a VNET and need to setup SNAT for communicating with GCS, here is a list of our actual GCS service clusters.
+
+> [!IMPORTANT]
+> Though the IP addresses for these service clusters are static, there may be situations that arise that require that they change. If such a change is to occur advanced notification will be sent to `genevaipnotify`.
+
+### GCS (Logs Control Plane) Endpoints
+
+#### GCS IP Addresses
+
+> [!IMPORTANT]
+> **This may change in the future due to compliance reasons. Subscribe to `genevaipnotify` to get updates.**
+
+**Individual IP address are NOT provided, they may change at any time.**
+The following service tag needs to be allow-listed in the firewall or NSG:
+
+Service Tag: **AzureMonitor** or **AzureMonitor.Core**
+
+**Note that IPv6 traffic does not flow over the service tag yet. IPv6 VIPs will be added to the tag in the future.**
+
+### GIG (Logs Data Plane) Endpoints
+
+#### GIG IP Addresses
+
+> [!IMPORTANT]
+> **This may change in the future due to compliance reasons. Subscribe to `genevaipnotify` to get updates.**
+
+**Individual IP address are NOT provided, they may change at any time.**
+The following service tag needs to be allow-listed in the firewall or NSG:
+
+Service Tag: **AzureMonitor** or **AzureMonitor.Core**
+
+**Note that IPv6 traffic does not flow over the service tag yet. IPv6 VIPs will be added to the tag in the future.**
+
+#### DNS Endpoints
+
+> [!IMPORTANT]
+> The GIG DNS Zones (below) may change for compliance reasons; subscribe to `genevaipnotify` to get updates. If you need to perform firewalling based on FQDN, you may whitelist the below zones. Do not whitelist individual FQDNs in these zones, because they are dynamic and may change at any time. 
+
+Geneva Logs Environment | DNS Zone
+------------------------|-------------------------------
+Public (Test/Stage/Smoke Endpoints) | `*.ppe.warm.ingest.monitor.core.windows.net`
+Public | `*.prod.warm.ingest.monitor.core.windows.net`
+Fairfax | `*.prod.warm.ingest.monitor.core.usgovcloudapi.net`
+Mooncake | `*.prod.warm.ingest.monitor.core.chinacloudapi.cn`
+Air Gapped Environments | `*.prod.warm.ingest.monitor.core.<DNS suffix>`
+
+Learn more about what GIG is [here](../../collect/references/genevaingestiongateway.md).
+
+### EventHub / ServiceBus
+
+If you are seeing ServiceBus/EventHub requests timeout in your agent, refer to the [following link](https://4sysops.com/archives/service-tags-and-augmented-security-rules-in-azure-network-security-groups/) for help in creating NSG rules for your VNET. There are multiple *EventHub* service tags (keyword: ServiceTag) that you can use, plus tags for other Azure services.
+
+## Geneva Logs - Smoke Endpoint/URI Deprecation
+
+The Smoke endpoint/URI will be deprecated on July 29, 2024, and it will no longer function after this date. If you are using the “Smoke” Mds Endpoint, please update your applications and integrations to use the new version of the endpoint/URI at your earliest convenience.
+
+|  | Old Version | New Version |
+| --- | --- | --- |
+| **Endpoint Name** | **Smoke** | **Dev** |
+| Mds Endpoint URI | test2.diagnostics.monitoring.core.windows.net | mds.dev.monitoring.core.windows-int.net |
+| GCS Endpoint URI | gcs.canary.monitoring.core.windows.net | gcs.dev.monitoring.core.windows-int.net |
+
+
+
+Should you use client tools or SDK, kindly ensure to explicitly provide the new endpoint URI, as the endpoint mappings on these tools will not be up to date until new versions are available. This change is essential to eliminate dependency on production identities for the Smoke endpoint and to comply with the latest security standards.
+
+## Environments to onboard to
+
+There are multiple environments for Logs. You need to repeat the onboarding process for each environment you plan to use. The environments are listed below, along with their intended usage and SLA.
+
+​Endpoint URL|Name|​Description
+------------|----|-----------
+<https://test1.diagnostics.monitoring.core.windows.net/> | Test|This is the Geneva Logs Test instance. We strongly recommend that you host your test and dev deployments in this endpoint.  We deploy the latest bits every night and you can use this instance to test the very latest bits from the team. There is no SLA.
+<https://stage.diagnostics.monitoring.core.windows.net/> | ​Stage|This instance is used for final integration testing/validation before deploying to production. The bits are typically updated once every couple of weeks. Use this instance if you want to do validation of your monitoring configuration somewhere other than production. There is no SLA.
+<https://production.diagnostics.monitoring.core.windows.net/> | Diagnostics Prod|This is the preferred production environment of Geneva Logs. See [here](../../support/supportpolicy.md) for the SLAs offered on all our production environment.
+<https://firstparty.monitoring.windows.net/> | First Party Prod| This instance was originally intended for non-C&E services. This is also a production instance. This instance is currently locked down for new teams to onboard. If you already have one or more Geneva Logs accounts in this instance, and would like to onboard more accounts in this endpoint for the sake of uniformity, you may do so.
+<https://monitoring.core.usgovcloudapi.net/> | FairFax|The US Government instance of Azure. For instructions on accessing Fairfax see the [Fairfax wiki](https://microsoft.sharepoint.com/teams/Fairfax/SiteAssets/FairfaxHome.aspx).
+<https://monitoring.core.chinacloudapi.cn/> | Mooncake|The China instance of Azure. For instructions on accessing Mooncake see the [Mooncake wiki](https://microsoft.sharepoint.com/teams/AZCompute/eng/Security/compliance/SitePages/Mooncake%20Access%20Control%20Wiki.aspx).
+<https://monitoring.windows.net/> | External Prod|This instance is for some legacy external-facing services. It is locked down to a few teams and will be merged with First Party in the future.
+<https://production.billing.monitoring.core.windows.net/> | Billing Prod|This instance is intended for exclusive use of Azure teams that use Central Derived Events to aggregate usage data for billing purposes.
+<https://mds.monitoring.core.microsoft.scloud/> | USSec|The USSec instance of Azure.
+<https://mds.monitoring.core.eaglex.ic.gov/> | USNat|The USNat instance of Azure.
+<https://mds.monitoring.sovcloud-core.fr/> | Bleu | French Cloud for Government and Public Sector.
+<https://mds.monitoring.sovcloud-core.de/> | Delos | German Cloud for Government and Public Sector.
+<https://mds.monitoring.sovcloud-core.sg/> | GovSG | Singapore Cloud for Government and Public Sector.
+
+>[!Note]
+>If you're onboarding to [Geneva Synthetics](../../runners/synthetics.md), host all your public cloud deployments (including pre-production deployments) on Diagnostics Prod or First Party Prod. Test/Stage environments are not supported in Synthetics.

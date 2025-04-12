@@ -182,3 +182,5 @@ The pencil-making process exemplifies the global nature of supply chains. For in
 
 ### Conclusion
 The pencil is a testament to the complexity of modern commerce. Its production involves a vast network of suppliers, manufacturers, and distributors working together across borders. This intricate process underscores the interdependence of global supply chains and the remarkable coordination required to produce everyday items [Data: Entities (3, 8); Sources (0, 1)].
+
+graphrag query --root .\zerodha_daily_brief --method "global" --query "how is global warming affecting electricity consumption?"

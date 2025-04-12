@@ -1,0 +1,23 @@
+# General Onboarding & Migration 
+
+### Do we have to create a new subscription for our services, or we can use an existing subscription that we already have in place for Geneva Logs? 
+
+We recommend having one or more subscriptions dedicated to Geneva Logs only. You can also use existing subscriptions. 
+
+### We are in Fairfax and is [second step](../../Howtoguides/EV2/ev2.md) applicable to us? 
+
+Please follow the general steps to create and deploy Ev2 files. If an account already exists, you should add the permissions.
+
+### Permissions are manually done on RBAC. Are we supposed to do these again in the Ev2 template? 
+
+You don't need a subscription that is dedicated to Ev2, but you do need a subscription that is dedicated to Geneva Logs.
+
+### Security groups for Geneva control access – Redmond SG or AME? 
+
+Redmond security group 
+
+### Will all existing Geneva logs certs be replaced by ones we specify in the Ev2 template or will it just append? 
+
+It will append.
+
+

@@ -1,0 +1,87 @@
+# Server Query
+
+When using Log Search (DGrep) **server query** is executed in a distributed fashion close to where the data is located.
+
+For example, if you are searching logs that are located in West Europe and West US, the server query will be executed in West Europe on the West Europe data and in West US on the West US data. This design allows maximizing the thoughput and minimizing the latency to the Azure Storage accounts containing the logs and to avoid cross-DC bandwidth charges.
+
+The server query should be used to extract a medium number of rows (< 1 million) for a large amount of data (< 5 TB). These filtered rows can be further analyzed interactively with a [client query](clientquery.md).
+
+## Distributed Nature
+
+Because the server query is executed in **multiple regions** _and_ **each BLOB** independently, the aggregation (`groupby`, `summarize`) features **might not work** as you might expect.
+
+For example, if the query contains a `groupby Type let Count=Count()` or `summarize count() by Type`, and the data is made of BLOB A containing the following rows:
+
+```javascript
+Message="Foo";Type="Int"
+Message="Bar";Type="String"
+```
+
+and BLOB B containing:
+
+```javascript
+Message="Foo";Type="Int"
+Message="Bar";Type="String"
+Message="Nope";Type="String"
+```
+
+Expected result will be
+
+```javascript
+Type="Int";Count=1
+Type="String";Count=1
+Type="Int";Count=1
+Type="String";Count=2
+```
+
+Because the query is executed per BLOB and then the result is sent to the centralized service handling, the client query, the solution is to merge the results in the client query:
+
+```javascript
+// MQL
+groupby Type let Count=Sum(Count)
+
+// KQL
+summarize sum(count_) by Type
+```
+
+Expected result will be:
+
+```javascript
+Type="Int";Count=2
+Type="String";Count=3
+```
+
+Here is an example showing a `summarize` in the **server query ONLY**. Notice the duplicate results:
+
+![summarize on server only](../images/dgrep_summarize_serveronly.png "summarize on server only")
+
+Now, we apply the `summarize` to *both* the server and client queries, and you'll see the expected result:
+![summarize on client and server](../images/dgrep_summarize_serverclient.png "summarize on client and server")
+
+## Make it faster
+
+### Region & Moniker Scoping
+
+Based on the selected events, Log Search (DGrep) will first figure out which storage accounts have to be searched. **The fewer, the faster**. To reduce that number, add a **scoping condition** for **Region**:
+
+![image.png](../images/dgrep_ScopingRegion.png)
+
+A moniker maps to a single storage account, and if possible add a **scoping condition** for **Moniker** directly:
+
+![image.png](../images/dgrep_ScopingMoniker.png)
+
+### Identity Scoping
+
+The next step for Log Search (DGrep) is to enumerate the BLOBs containing the logs. Again, **the fewer, the faster**. Log Search (DGrep) uses the source identity of the BLOB to filter down BLOBs. If possible add a **scoping condition** for the identity:
+
+![image.png](../images/dgrep_ScopingIdentity.png)
+
+### Field Number
+
+The rows that match the server query are sent to the service in charge of executing the client queries. The less amount of data that has to be sent, the better. The best way to achieve this is to drop the fields that are not going to be used.
+
+For example, if only **Timestamp** and **Message** fields are needed, add the following clause at the end of the server query:
+
+```javascript
+select Timestamp, Message
+```

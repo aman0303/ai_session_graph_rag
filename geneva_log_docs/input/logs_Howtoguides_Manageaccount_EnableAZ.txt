@@ -1,0 +1,170 @@
+# How do I enable availability zones (AZ) on my Geneva Logs account? 
+
+## Storage accounts
+All *new* storage accounts provisioned and used by Geneva Logs to collect monitoring data are Zone Redundant Storage (ZRS) by default. However, you can choose to provision Locally Redundant Storage (LRS) or Geo-Redundant Storage (GRS) storage accounts. [Learn more about storage redundancy](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy). 
+
+You can choose the storage replication strategy on the *Geneva Logs account* level, which will apply to all storage accounts provisioned in this Logs account, or at the *Storage Group* level, which will apply only to storage accounts provisioned as part of this specific Storage Group. 
+
+>[!Note]
+>Specifying the storage replication strategy on the Storage Group level will override the setting on the Logs account level. Please make a note that that we cannot provision Premium  Storage account types - Premium_LRS or Premium_GRS and it is not supported with Geneva Logs.
+
+The parameter storageReplicationType is an optional parameter for both Logs account and Storage Group settings. This parameter can accept multiple values in a comma separated format. The values storageReplicationType can accept are Standard_ZRS, Standard_GRS, Standard_LRS, Standard_RAGRS, Standard_GZRS, Standard_RAGZRS. If multiple values are set for this parameter, GSM will attempt to provision storage accounts according to the order of the provided values, based on region availability. 
+
+## Configure multiple replication types for an MDS account (Based on Customer's need & to specific scenarios) 
+
+GSM will always provision **new storage accounts** as VR (Variable Resiliency for Storage) based on the first entry in the replication type setting. If the preferred replication type is not available in the region, then the fallback storage replication type will be provisioned according to the order of precedence - **Standard_ZRS** -> **Standard_GRS** -> **Standard_LRS**. In Future, if the region adds support to the preferred replication type, then Storage RP will automatically migrate the storage accounts to that replication type. For any country the paired region is outside the national boundary, Standard_GRS will not be provisioned and the next type from the order will be chosen instead.
+
+For the migration of **existing storage accounts**, if the first replication type entry is not supported in a region, then the Geneva migration engine will attempt to migrate the moniker to the  next available replication type in the configured list. If none of the replication types in the list are supported then there will be no migration and the moniker will be left as-is. Also, if the current replication type of a moniker belongs to a type that is already present in the list (even if is not the first option), then the moniker will not be migrated since it already belongs to the list of configured replication types.
+
+There is no limit on the number of values you can set for $storageReplicationType. When no value is specified, GSM will provision new Standard_ZRS storage accounts by default. If ZRS is not available in the region, GSM will default to provisioning GRS storage accounts. If GRS is not available, GSM will default to provisioning LRS storage accounts.  
+
+### How to configure the preferred storage replication type on the Logs account level 
+
+#### Configure a preferred storage replication type on the Logs account using Jarvis UI
+
+1. Access the admin accounts page through Jarvis portal, go to the accounts page and press the "Edit Storage Replication" button.
+
+![EditStorageReplication][EditReplicationType]
+
+2.  Select "Add" to continue adding the "Storage Replication" types you want and then click on "Update Settings" button to complete it.
+
+![UpdateStorageReplication][UpdateReplicationType] 
+
+#### Creating new GSM-enabled Logs account with a preferred storage replication type using Powershell commandlets
+
+You can use the Powershell commandlets to set the preferred storage replication type on new **GSM-enabled** Geneva Logs accounts. 
+
+```powershell
+CreateWarmPathAccount 
+$environment <environment> 
+$account <accountName> 
+$isGsmEnabled <isGsmEnabled> 
+$adminSecurityGroup <adminSecurityGroup> 
+$accountAdminAlias  <adminUserAliases>
+$storageReplicationType "<storageReplicationType1>","<storageReplicationType2>","<storageReplicationType3>"
+```
+
+Visit [this page](../powershell.md#create-and-provision-an-account) for a more detailed review of account creation. 
+
+#### Updating an existing Geneva Logs account with a preferred storage replication type Powershell cmdlets
+
+```powershell
+$account = Get-WarmPathAccount -WarmPathEnvironment <environment> -WarmPathAccountName <accountname>
+$replicationType = "<storageReplicationType1>,<storageReplicationType2>,<storageReplicationType3>"
+($account.StorageReplicationType) = $replicationType
+Set-WarmPathAccount -WarmPathEnvironment <environment> -WarmPathAccountName <accountname> -Configuration $account
+Get-WarmPathAccount -WarmPathEnvironment <environment> -WarmPathAccountName <accountname>
+
+```
+
+### How to configure the preferred storage replication type on a Storage Group level
+
+#### Creating a new Storage Group with a preferred storage replication type using Powershell commandlets
+
+```powershell
+New -WarmPathStorageGroup 
+$storageGroupNameDiag <StorageGroupName>
+$WarmPathNamespace <Namespace> 
+$location <Location> 
+$WarmPathEnvironment <WarmPathEnvironment> 
+$WarmPathAccountName <WarmPathAccountName> 
+$storagestorageReplicationType "<storageReplicationType1>,<storageReplicationType2>,<storageReplicationType3>" 
+$credential <Credential>
+```
+
+#### Updating an existing Storage Group with a preferred storage replication type using Powershell commandlets
+
+```powershell
+$stg = Get-WarmPathStorageGroup 
+$storagegroupid <Id> 
+$WarmPathEnvironment <WarmPathEnvironment> 
+$WarmPathAccountName <WarmPathAccountName>
+$credential <Credential>
+$stg.StorageReplicationType = "<storageReplicationType1>,<storageReplicationType2>,<storageReplicationType3>"
+Set-WarmPathStorageGroup -Configuration $stg -WarmPathEnvironment <WarmPathEnvironment> -WarmPathAccountName <WarmPathAccountName> -Credential <credential>
+```
+
+## Event Hubs
+
+Event Hub availability zones for *newly provisioned* Event Hub namespaces are enabled by default, based on region availability. No action is required to enable this. [Learn about Event Hub zone availability](https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-geo-dr).
+
+## Updating existing non-AZ monikers to AZ
+
+You can update your existing non-AZ monikers to AZ [manually](#update-your-monikers-manually), each moniker at a time, or contact the [Geneva Logs control plane team](mailto:warmpathAZ@microsoft.com) to opt-in to allow GSM to [automatically update](#automatically-update-your-existing-non-az-monikers-to-az) your monikers.  
+
+>[!Note]
+>Both the manual and the automated processes of updating your existing monikers to AZ require deactivation of existing non-AZ monikers and creation of new AZ monikers. As a result, the number of monikers in your logs account will temporarily increase, which could lead to a short term increase in COGs. 
+
+### Update your monikers manually 
+
+Geneva Logs provides a manual process for updating non-AZ monikers to AZ. This process has to be performed individually on each moniker you want to update, and has to be re-perfomed anytime you change your storage replication type on the account or storage group level. 
+
+#### Considerations
+Consider the following before initating the migration:
+
+1. Check for region availability.
+    * EH AZ is not available in every region.
+2. Specified EH resource tag stamp.
+    * Some customers have a critical requirement to connect to a specific EH stamp that supports Hypernet Lite. EH AZ is mutually exclusive with Hypernet Lite, so GSM cannot provision AZ-enabled EH resources if you have a resource tag specified that requires Hypernet Lite.
+3. Getting close to storage/EH quotas.
+    * The migration process will temporarily double the number of GSM monikers being migrated. If you are already past the halfway point for quota usage (250 storage accounts per region per subscription, 1000 EH namespace per subscription) then the migration will fail.
+4. This migration process is designed for GSM-enabled Geneva Logs accounts only.
+
+#### Migration steps
+1. Download the latest version of [MDS tools](../../Resources/Downloads.md).
+2. Ensure that you set your preferred storage replication strategy on the [account](#how-to-configure-the-preferred-storage-replication-type-on-the-logs-account-level) or [storage group](#how-to-configure-the-preferred-storage-replication-type-on-a-storage-group-level) level.
+
+3. Manually provision additional monikers in each region as needed:
+
+```
+mds.exe resourcemanagement <endpoint> -command:expandStorage -mdsAccount:<mdsAcccount> -mdsNamespace:<mdsNamespace> -azureRegion:<region> -storageGroupName:<storageGroupName> -targetMonikersCount:<numberOfMonikers> -preferredReplicationTypeOnly:true
+```
+
+*numberOfMonikers* is the target number of monikers in a storage group per region you will have after the migration. If, for example, there are 10 monikers in a storage group in a region, and you want to migrate 5 out of these 10 monikers, then the *numberOfMonikers* should be 15 - 5 "old" active monikers, 5 "old" deactivated monikers, and 5 new AZ-enabled monikers. You’ll still have to run the command 5 times because it will provision one moniker at a time.
+
+4. Ensure that the new storage account and EH were provisioned with your preferred replication strategy and AZ-enabled EH respectively.
+
+5. Mark "old", non-AZ monikers as deactivated. Deactivating a moniker will keep the logs stored in this moniker available for query in case there is an issue, but it will ensure that no new telemetry is emitted to that moniker:
+
+```
+mds.exe resourcemanagement <endpoint> -command:deactivateMoniker -mdsAccount:<mdsAcccount> -monikerName:<monikerName> -deactivateMoniker:True [-clientcert:X] 
+```
+
+* *clientcert* is an optional parameter.
+
+6. Use DGrep to observe that data flows to the newly provisioned monikers without disruption, and that data shows up in Kusto, Cosmos, or any other streaming endpoint.
+
+7. [Delete](./monikerdelete.md) the deactivated monikers from Geneva (after the log retention period passes).
+
+8. Delete the deactivated moniker resources (e.g. storage account and EH resources) from your subscription.
+
+## Automatically update your existing non-AZ monikers to AZ
+
+>[!Note]
+>Contact the [Geneva Logs control plane team](mailto:@warmpathAZ@microsoft.com) to enable the automatic update of your non-AZ monikers to AZ
+
+If your Geneva Logs account is GSM-enabled, you can [opt-in](mailto:@warmpathAZ@microsoft.com) to allow GSM to automatically update your existing monikers. The GSM health monitor will scan your monikers on a regular basis, and ensure that the storage replication type of your storage accounts matches the setting on the [Storage group level](#how-to-configure-the-preferred-storage-replication-type-on-a-storage-group-level) or the [Logs account level](#how-to-configure-the-preferred-storage-replication-type-on-the-logs-account-level) (if no Storage group level setting is available). If there is a mismatch, GSM will deactivate the existing monikers with the mismatching storage accounts, and provision new monikers instead with storage accounts with the requested replication strategy and AZ-enabled Event Hubs (depending on region availability). Deactivating a moniker will keep the logs stored in this moniker available for query in case there is an issue, but it will ensure that no new telemetry is emitted to that moniker. When the data retention period passes, the deactivated monikers can be [deleted](./monikerdelete.md). GSM will run this automatic moniker update process every time it identifies a new storage replication setting.
+
+>[!Note]
+>Once you opt-in to allow GSM to automatically update your existing monikers to AZ, GSM will continuously ensure your GSM-managed storage accounts match your preferred replication startegy. That means that each time you update your replication type choice at the account or storage group level, GSM will apply this change automatically. As a result, every time you make a change to the replication startegy choice, you can expect a temporary increase in the number of monikers in your account. 
+>We recommend registering additional subscriptions to your logs account to ensure sufficient capacity for GSM to provision additional monikers. 
+
+>[!Note]
+>If ZRS is not yet available in a region, and you only specify ZRS as your replication strategy choice (and you do not provide multiple values as described [here](#storage-accounts)), the migration will fail. Once ZRS becomes available in the region, GSM will be able to complete the migration process automatically. 
+
+### How to migrate the monikers from Standard_GRS to Standard_ZRS. What are the configuration settings?
+
+Before onboarding to Geneva auto migration, MDS account owners should configure the preferred replication types by using one of two options mentioned below:
+
+1. **Standard__ZRS**: All monikers with Standard_GRS/Standard_LRS replication type will be migrated to Standard_ZRS in regions where Standard_ZRS is supported. For regions that do not support Standard_ZRS replication type, these monikers will be migrated only when the region adds Standard_ZRS support in the future.
+2. **Standard__ZRS, Standard__LRS**: All monikers with Standard_GRS/Standard_LRS replication type will be migrated to Standard_ZRS in regions where Standard_ZRS is supported. For the regions that do not support Standard_ZRS, monikers will be migrated to Standard_LRS. Monikers which already belong to the Standard_LRS replication type will continue to stay as-is. 
+
+>[!Note]
+> For the regions that do not support Standard_ZRS replication type, if the user wants monikers with Standard_GRS replication type to temporarily move to Standard_LRS replication type until the region adds support for Standard_ZRS replication type: then the user can choose to configure Option 2, observe the desired migrations, and then update the configuration settings to Option 1.
+
+### Regions that support availability zones in Azure
+Please refer to this [page](https://docs.microsoft.com/en-us/azure/availability-zones/az-region) for list of regions.
+
+<!-- Image links -->
+[EditReplicationType]: ../../../logs/images/AZ-edit-RepType1.png "Edit Storage Replication Type(s)"
+[UpdateReplicationType]: ../../../logs/images/AZ-edit-RepType2.png "Update Storage Replication Type(s)"

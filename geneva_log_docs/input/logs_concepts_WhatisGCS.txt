@@ -1,0 +1,52 @@
+# What is GCS?
+
+Geneva Control-plane Service (GCS) is the frontend service used by Geneva Monitoring Agent to retrieve its configuration, version, storage access keys etc. 
+
+# Why migrate to GCS?
+
+GCS is designed to solve many of the challenges customers have today with managing Logs configuration, storage, and updating Monitoring Agents (MA). Specifically, GCS helps simplify MA deployment by enabling the following: 
+
+__Configurations Consistency:__ Deploy MA without a configuration package thus eliminating the need to keep central configuration and agent-side configuration in sync
+
+__Storage Account Consistency:__ Centrally scale out storage and avoid having to specify storage keys at MA startup
+
+__Security:__ Eliminate the need for AutoKey
+
+__Safely updating Monitoring Agents:__ Enable safe update of Monitoring Agents (and extensions) without the need to explicitly package MA binaries with the service (Windows platform only)
+
+__Use Managed Certificates for Authentication:__ Use dSMS / AKV managed certificates, instead of unmanaged certificates, for authenticating Monitoring Agents with central service 
+ 
+> [!NOTE]
+> Going forward, GCS will be the foundation for building new Logs features. 
+
+See below for details on each of the above items. 
+
+## 1. Configurations Consistency
+If you are not using GCS, Geneva configuration must be separately deployed to the Geneva service via the Geneva portal (Jarvis) and to all of your MA instances. This creates an issue where sometimes the configuration deployed to the Geneva service does not exactly match, event for event, the configurations deployed to each MA instance. The result is that some events are lost, because they are either not visible to our Jarvis search tools or MA does not get the storage keys it needs to push the data to storage.
+
+With GCS, the configuration is only deployed to the Geneva service. MA then directly requests the configuration from Geneva, so there can be no mismatch.
+
+GCS introduces the concept of configuration minor versions. The configuration major version is still determined by the eventVersion attribute inside your config, but every time you update your config, GCS creates a new minor version so that old versions are not overwritten. When you start MA, you specify which major/minor version of your configuration MA should use. Because minor versions are never overwritten, and you specify the config version MA should use in the local deployment environment of MA, MA sticks with that version until you redeploy with a new version specified. This prevents somebody from making a configuration change in the Geneva service and accidently breaking MA instances currently running a different version. You can still use configuration update to update configs on the fly.
+
+See the MA GCS reference documentation or more details on how to enable GCS usage from the MA side.
+
+## 2. Storage Account Consistency
+As with configuration, storage account information also faces consistency issues when using the pre-GCS model. In the pre-GCS model, the storage information was stored with Geneva centrally, and each MA instance was separately passed credentials for the storage accounts associated with the central configuration deployment.
+
+With GCS, MA not only gets the configuration from the service, MA also gets the storage and service bus credentials it needs to push data to storage based on that configuration. In addition to specifying which configuration major/minor version MA should use, you also specify your region. MA then communicates with GCS to get the storage credentials associated with your config in the region you are in. If you don't have a storage account registered for the region specified, it will return a different storage account associated with your config that is the best match region wise.
+
+Scaling out is simplified too, since you can centrally register a new storage account in a region and then add that account to the pool of accounts associated with your configuration. GCS will automatically distribute credentials to each MA in the region evenly. This does mean that an MA instance can dynamically change from pushing data from one storage account to another after you do the configuration update, but our data access tools hide the actual location of where your data resides. See the FAQ for more details.
+
+Storage account configuration changes (i.e. adding new storage mappings) result in a new minor version, like other configuration changes. The difference is that those changes apply to all of the configurations deployed to your MA instances with the same major version, so scale out happens without redeploying your MA instances with a new minor version specified. This also means that you should never remove a mapping moniker from an account group in your configuration without also bumping up the configuration major version.
+
+## 3. Security
+GCS and MA communicate with each other about configuration and storage information. MA uses certificate based access to secure the interface. The private key certificate you install on your system gives MA access to make GCS requests for the Geneva account and namespace you enable through our management user role API's and tools. This replaces the current private key you install on your system to decrypt the storage keys you now pass directly to MA from the node.
+
+GCS always sends MA EventHub and storage account SAS keys that expire within 24 hours of their creation. MA gets write-only keys that allow it to write the data it collects to storage and EventHub. This is similar to the older auto-key mechanism of securing your data, except that it greatly simplifies the process. With auto-key, you are required to manually manage your auto-keys and configuration. With GCS it all happens automatically through the GCS/MA communication channel. As long as you provide the correct certificate for access to your Geneva account and namespace, GCS and MA will ensure that your storage account keys and configuration are in sync. When you rollover your storage account key and re-register that new key with the Geneva service, your MA instances will automatically receive new SAS keys based on the rolled over storage shared key and EventHub service bus keys within a day.
+
+## 4. Safely updating Monitoring Agents
+From MA version 39 and above, you can use MA startup parameters to specify the version of MA that you would like to self-update to. This eliminates the need for you to explicitly update the Geneva Monitoring Agent package in your service and redeploy. If you are using GCS settings to specify MA startup parameters, then you can update MA to the desired version by updating your service configuration and performing a config-only deployment of your service. See [here](~/collect/manage/upgradeagent.md) for more information. This is a safe and convenient way of updating your agents as it plugs directly into your existing deployment systems. 
+
+## 5. Use Managed Certificates for Authentication
+GCS supports managed certificates for MA to Logs Service communication. Both dSMS and AKV managed certificates are supported. 
+

@@ -1,0 +1,7 @@
+# Troubleshooting
+
+### Need help to debug an error 
+
+- Please review documentation for the [extension](../../Howtoguides/EV2/ev2.md)
+- Extension [sample usage](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample%2FRolloutParameters&version=GBmaster)
+- Still need support? Open an [ICM ](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=K2O3nB)

@@ -1,0 +1,28 @@
+# Limits and Quotas
+LogsToMetrics enforces quotas across four dimensions:
+* Number of bytes per second
+* Number of blobs per second: Logs data is stored in Azure blob storage. In the worst case, the number of blobs per second for a given event is the product of the number of Monitoring Agent instances uploading that event and the event upload frequency.
+* Number of metrics emitted per second
+* Computation units per second: This is a measure of the computational resources used to convert logs to metrics. Technically, each computation unit corresponds to 1 millisecond of CPU time. This metric is determined by the number of processed bytes per second and the complexity of the conversion logic (for example, regular expressions are usually more expensive than simple equality filtering).
+
+Each of those dimensions has separate limits per rule and per Logs namespace. If a rule limit is exceeded, that rule is sampled, but other rules on the same Logs namespace are not affected. If a namespace limit is exceeded, all rules in that namespace are sampled.
+
+Dimensions | Per rule | Per namespace
+--- | --- | ---
+Bytes/s | 250 MB/s | 500 MB/s
+Blobs/s | 2,500 | 5,000
+Metrics/s | 250,000 | 500,000
+Computation units/s | 25,000 | 50,000
+
+Here is an example of how these limits might be applied:
+
+Suppose that there are three LogsToMetrics rules in a Logs namespace. The number of blobs/s to be processed by each rule is R1: 3125, R2: 1400 and R3: 1650.
+
+Rule R1 exceeds the per-rule blob/s limit, so it will be sampled at a `2500/3125 = 0.8` rate (i.e., only 80% of blobs will be processed by that rule).
+
+After rule R1 is sampled, the overall number of blob/s in the namespace is `0.8*3125+1400+1650 = 5,550`, which is still above the per-namespace limit. So we apply an additional sampling on the entire namespace at rate `5000/5550 = 0.9`.
+
+The result is that rule R1 is sampled at a rate of `0.8*0.9 = 0.72` (so it processes `3125*0.72 = 2250` blob/s) and R2 and R3 are sampled at rate 0.90 (processing `1400*0.9 = 1260` and `1650*0.9=1485` blobs/s, respectively).
+
+>[!Note]
+>These quotas can by adjusted per Logs namespace with proper business justification.

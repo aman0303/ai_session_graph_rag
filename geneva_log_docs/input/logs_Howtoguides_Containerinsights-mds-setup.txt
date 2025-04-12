@@ -1,0 +1,127 @@
+# Container Insights - Geneva Logs Integration (Public Preview)
+
+## Setup Container Insights with Geneva Logs
+
+### Configure Managed Identity Authentication
+
+1. Make a note of the Object Id of Managed Identity & Tenant Id of your AKS cluster through Azure cli.
+
+  ```
+    az account set -s  <AKS cluster Azure Subscription Id>
+    az account show | grep -i tenantId
+    az aks show -g <AKS Cluster RG> -n <AKS ClusterName> | grep -i KubeletIdentity -A 5 | grep -i objectId
+  ```
+>[!Note]
+>"grep" only works on Linux. For Windows please use cloudshell or the "findstr" command.
+
+2. Navigate to logs settings page in the <a href="https://portal.microsoftgeneva.com/account/logs/configurations" target="_blank">Jarvis portal.</a>
+3. Select Logs Endpoint & Account Name, then select User Roles.
+4. Select the "Managed Certificates" option on "_MaCommunication" Role.
+5. Add ObjectId & TenantId obtained in above step under Managed Identity (Preview) option.
+
+  ![MetricsAccount](./images/ci-mds-4.png)
+
+### Configure Container Insights for Geneva Logs Destination
+
+
+1. Download the Kubeconfig of your AKS cluster:
+
+  ```
+    az login --use-device-code
+    az account set -s <AKSClusterSubscriptionId>
+    az aks get-credentials -g <clusterRgName> -n <clusterName> --file MyAKSClusterKubeConfig
+    export KUBECONFIG="<full file path of the MyAKSClusterKubeConfig file>"
+  ```
+
+ 
+2. Download configmap for Container Insights here: <a href="https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/kubernetes/container-azm-ms-agentconfig.yaml" target="_blank">https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/kubernetes/container-azm-ms-agentconfig.yaml</a>. Or, follow the below command to do the same:
+
+  ```
+    curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/kubernetes/container-azm-ms-agentconfig.yaml
+  ```
+
+3. Add below settings under **integrations** in downloaded configmap.
+
+  ```
+    [integrations.geneva_logs]
+      enabled = true
+      environment = "<geneva logs account environment name>"
+      namespace = "<geneva logs account namespace>"
+      namespacewindows = "<geneva logs account namespace for windows>"
+      account = "<geneva logs account name>"
+      region = "<geneva logs gcs region>"
+      configversion = "<containerlogs geneva config version for linux>"
+      windowsconfigversion = "<containerlogs geneva config version for windows>"
+  ```
+
+4. Update the place holder values for environment, namespace, namespacewindows , account, region, configversion and windowsconfigversion.
+
+5. Configure for V2 schema by uncommenting below lines in downloaded ConfigMap:
+
+  ```
+    [log_collection_settings.schema]
+      containerlog_schema_version = "v2"
+  ```
+
+6. With default container insights daemonset agent ama-logs container limits (**memory: 750Mi and cpu: 500mc**), ~5K logs/sec per node can be achieved on 16 core VM SKU node. Use the following setting in the ConfigMap for 5K log/sec per node:
+
+  ```
+    [agent_settings.fbit_config]
+      log_flush_interval_secs = "1"
+      tail_mem_buf_limit_megabytes = "500"
+      tail_buf_chunksize_megabytes = "10”
+      tail_buf_maxsize_megabytes = "20
+  ```
+
+And if your logs scale per node is higher than 5K logs/sec per node, follow the below steps:
+
+  a. Create an ICM against container insights team (Owning Service: ContainerInsights and Owning Team: ContainerInsightsAgent) to increase resource limits to meet your high Log scale requirements.
+
+  For 40K logs/sec per node , resource limits for ama-logs deamonset container should be **cpu: 3 core and memory: 7GB**. 
+
+  b. Configure below ConfigMap settings in container-azm-ms-agentconfig ConfigMap:
+
+  ```
+    [agent_settings.fbit_config]
+      log_flush_interval_secs = "1"
+      tail_mem_buf_limit_megabytes = "4000" # 4GB, ensure ama-logs agent container memory limit higher than this to avoid OOM kill errors
+      tail_buf_chunksize_megabytes = "10"
+      tail_buf_maxsize_megabytes = "20"
+    [agent_settings.mdsd_config]
+      monitoring_max_event_rate = "100000" # default is 20K eps
+  ```
+
+>[!Note]
+> - Logs throughput will vary based on the VM SKU. For max throughput, please use the high end VM SKUs to get the maximum throughput
+> - If you have Windows nodes in your cluster and you want to collect and ingest container stdout & stderr logs, ensure to have tail_mem_buf_limit_megabytes = "1000" and if its more than "1000" MB, fluent-bit on windows container gets terminated
+> - 40k logs/sec (i.e. 40 MB/sec) tested on Standard_F16s_v2 VM SKU with ama-logs Linux agent container resource limits, CPU: 3 core and memory: 7GB
+> - If you have per node log scale requirements, more than 40k logs/sec (i.e. 40 MB/sec), please reach out to the Container Insights Agent team via Azure Monitor for containers OMScontainers@microsoft.com
+
+7. Apply the ConfigMap to your AKS cluster via **kubectl apply -f container-azm-ms-agentconfig.yaml**.
+
+8.  Wait for 2 to 5 minutes for the ama-logs pods to get restarted with applied configuration effect. You can also run below command to watch for the ama-logs pods restart:
+  
+  ```
+    kubectl get po -n kube-system --watch
+  ```
+
+9. Check if ama-logs pods are succesfully onboarded to Geneva logs account, using the below command
+
+  ```
+    kubectl logs <podName> -n kube-system
+  ```
+
+## Geneva Logs
+
+Navigate to <a href="https://portal.microsoftgeneva.com/logs/dgrep" target="_blank">Jarvis Logs</a> and select the Endpoint, Namespaces for both Linux and Windows, container stdout/err logs should get ingested to ContainerLogV2 table.
+
+## Reference
+
+Refer <a href="https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli" target="_blank">https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli</a> for supported versions.
+
+## Contact Us
+
+For any help or queries, please reach out to Container Insights team at OMScontainers@microsoft.com.
+
+
+

@@ -1,0 +1,18 @@
+# Simple
+
+
+ [!NOTE]
+> DGrep now translates Simple Query language into KQL. This fixes some bugs where Simple query language has incosistent behavior with KQL and MQL. Some of these bug fixes may raise User errors that where once hidden from customers.
+
+DGrep supports a non language based way to query the data.
+
+To use it, select **Simple** mode:
+
+![Simple Query Selector](../images/dgrep_LegacySelector.png)
+
+Then add one or more field predicates. Predicates are combined with a logical AND, i.e. they must all match for a row to be considered a match.
+
+![Simple Query Selector](../images/dgrep_LegacyExample.png)
+
+### Operator specific notes:
+**Contains any of**: values are comma separated, no surrounding quotes.

@@ -1,0 +1,2 @@
+# Scoping conditions
+Represents a predicate that is used to match blobs that should be searched. More precise and strict scoping conditions will make search faster. Region, Moniker and Identity fields are commonly available scoping parameters.

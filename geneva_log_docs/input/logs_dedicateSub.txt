@@ -1,0 +1,2 @@
+>[!NOTE]
+>Choose a new subscription to ensure that Geneva has access only to the resources that it needs. The identity team has an [S360 KPI]( https://identitydivision.visualstudio.com/IdentityWiki/_wiki/wikis/IdentityWiki.wiki/8145/Geneva-RBAC-KPI) that flags teams with subscriptions where Geneva has over-privileged permissions. 

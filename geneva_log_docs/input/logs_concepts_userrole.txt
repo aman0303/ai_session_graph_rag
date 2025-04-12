@@ -1,0 +1,23 @@
+## User Role
+
+A User Role represents a collection of permissions that are granted to members of the role. Security Groups, Users and Certificates are the supported as role members. 
+
+When a Log account is created, two user roles are automatically created. One user role is created for account administration. This user role will start with __MdsAccountAdmin__ followed by your account name. Another user role is created for the Monitoring Agents in your service to communicate with Geneva. This user role will start with __MACommunication__. 
+
+> [!NOTE]
+> If you are migrating to GCS the MACommunication role is created as part of migration. Additional MACommunication roles can be created as required if you want to use different MA-Geneva communication certificates for different namespaces. Follow the below steps to create additional MACommunication roles using the UX:
+> - Go to Manage\Logs
+> - Locate your account ( provide endpoint and account name)
+> - Navigate to user roles tab
+> - Click on "View/Edit" for the &lt;acctname>_MaCommunication Role that you are enabling GCS on.
+> - Select kind as Agent
+> - Enter namespace name:  ^YourNamespace.*
+> - Select Execute as claim
+> - Hit Add button
+> - It may take up to an hour for this to take effect
+
+You will be required to provide either a Security Group or a set of Users to be designated as your account's administrators. The Security Groups that are assigned to User Roles require to be onboarded to an authentication service called dSTS. Security Groups can be registered with dSTS through the onboarding wizard or through the manageability UX.
+
+You will be required to register one or more authentication certificates with the MACommunication role. These certificates (along with their private key) can be used by the Monitoring Agents to authenticate with Geneva. 
+
+Additional user roles can be set up to provide finer-grained access control to other users and/or certificates as required. 

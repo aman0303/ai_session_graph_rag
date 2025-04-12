@@ -1,0 +1,156 @@
+# FAQ
+
+### 1. How can I verify if I'm using GSM?
+Please follow [these steps](../Howtoguides/Manageaccount/gsm_gcsenabled.md) to check whether you have GSM enabled in your Logs account.
+
+### 2.  With GSM enabled accounts, do we still need to map monikers in the config?
+No, you don't need to update or add anything under the <Accounts> section of your config. With GSM the monikers are completely managed by Geneva.
+
+### 3. I don't see any moniker information in the the resources tab of the Geneva Logs manage page. Is this expected?
+Yes, for GSM enabled account, the moniker information is abstracted from the users, because it's completely managed by Geneva.
+
+### 4. Why do we still need the <Accounts> section in the configuration file? 
+This is to allow you to create non-standard Storage Group besides the standard ones that are automatically created, namely, Diag, Audit, and Security, for a new namespace. 
+
+### 5. We generate and upload configurations through automation. What are the changes we need to be aware of when generating a configuration for GSM-enabled namespace?
+As previously noted, the concept of Mapping Monikers is now removed with GSM-enabled accounts. Here are some non-GSM vs. GSM configuration snippets to illustrate the changes.
+
+````
+Ex 1. 
+  Non GSM:
+  
+   <Accounts>
+    <Account moniker="MyGroupDiag">
+      <Mapping moniker="MyGroupDiagWUS" isDefault="true" />  
+      <Mapping moniker="MyGroupDiagEUS" />
+    </Account>
+    <Account moniker="MyGroupAudit" alias="AuditStore">
+      <Mapping moniker="MyGroupAuditWUS" />  
+      <Mapping moniker="MyGroupAuditEUS" />
+    </Account>
+    <Account moniker="MyGroupSecurity" alias="AzSecurityStore">
+      <Mapping moniker="MyGroupDiagWUS" />  
+      <Mapping moniker="MyGroupDiagEUS" />
+    </Account>
+   </Accounts> 
+
+   GSM equivalent:   
+
+   <Accounts> 
+    <Account moniker="MyGroupDiag" /> 
+    <Account moniker="MyGroupAudit" alias="AuditStore" />
+    <Account moniker="MyGroupSecurity" alias="AzSecurityStore" />
+   </Accounts>
+````
+
+Note that the "MyGroup" prefix in the above example must match (case sensitive) the namespace attribute in the MonitoringManagement element of the configuration file and the namespace name listed under the Namespace tab in manageability UX. 
+
+### 6. How do I create non-standard Storage Groups?
+When you create a new namespace in a GSM-enabled account, Geneva will automatically create three standard Storage Groups. One each for Diagnostics, Audit, and Security. These Storage Groups will follow the naming pattern of "<namespace>diag", "<namespace>audit" and "<namespace>security". These are the recommended set of Storage Groups. Most customers will not need to create any additional Storage Groups. However, if you are one who does want to create a distinct Storage Group, you can do so from the Manageability UX. Go to **Manage** > **Geneva Logs** > **Resources** tab, and add a new **Storage Group** as shown below.
+
+![New Storage Group in GSM](../images/gsmNewStorageGroup.png)
+
+This will create the underlying storage account and event hub namespace for the selected region in one of your registered Azure subscriptions. At this point, the new Storage Group is ready to be referenced in your configurations. 
+
+> [!NOTE]
+> The new Storage Group must start with the configuration namespace name. If you are creating the Storage Group through automation (using PowerShell cmdlet, for example), remember to follow this naming convention. 
+
+### 7. In DGrep log search, we used Moniker as scoping condition. With GSM, the moniker information is not visible. How do I scope my query to a moniker?  
+Use *Region* scoping condition instead of the Moniker scoping condition. Internally, the monikers are scoped to region.
+
+### 8. Our team uses MDAC to download data. We currently specify our table name patterns to include the moniker suffix (e.g. MyNamespaceMyEventUSW.*) to specifically download data from a single moniker (i.e. USW in the previous example pattern). How do we continue to use such patterns with GSM?
+GSM hides monikers from users. Monikers (or more appropriately storage shards) are internal scale-out units for monitoring data storage. Since GSM, by definition, can create additional shards to keep up with your monitoring data volume/traffic, and paired with GCS, your MA may get an arbitrary shard to write the monitoring data to, you can no longer rely on a priori knowledge of the location of your monitoring data. You should assume that your monitoring data from a region will be confined to the shards in the region, but are not guaranteed that it will be a specific shard. You should convert your table name patterns to those that do not specify a moniker suffix, and to improve scalability, use region filters instead. Note that MDAC supports new APIs that allow you to pass region regex along with table name regex. 
+
+### 9. I notice monikers with weird looking storage account / event hub names (like gsm16266*xt). What are these?
+These are storage accounts / event hub namespaces that are automatically created by Geneva in your subscriptions on your behalf. A bit more housekeeping information on these resources can be gleaned by looking at the ARM tags associated with them in Azure portal as shown below. With GSM, this is nice-to-know information. 
+
+![Tags on GSM resources][GSMTags]
+
+### 10. Azure subscription registered with GSM account is Unhealthy and firing alerts
+Subscriptions registered with GSM accounts turn unhealthy when the particular resource usage reaches a certain limit of the defined resource quota. Geneva has a default quota of 250 Storage accounts per region in a subscription, and a default quota of 1000 Event Hub namespaces per subscription. The health status of your account can be checked by going to your Geneva Logs account in the [Geneva Portal](http://aka.ms/jarvis), and clicking on the **Resources** tab. On that page you will see the list of subscriptions you have registered with Geneva Logs, the storage account and Event Hub usage for each subscription, and the health status. If your subscription is unhealthy, you can hover over the Unhealthy box and a tooltip will appear indicating why the subscription turned unhealthy.
+
+Your subscription will become unhealthy in the following cases:
+1. Storage account usage - you used over 235 of the 250 storage accounts available in a region.
+    Mitigation steps:
+    * Add another subscription to your logs account, and GSM will use it to provision resources.
+    * Remove unused storage accounts from the subscription.
+2. Event Hub usage - you used over 985 of the 1000 Event Hub namespaces available in the subscription.
+    Mitigation steps:
+    * Add another subscription to your logs account, and GSM will use it to provision resources.
+    * Remove unused Event Hubs from the subscription.
+
+> [!Note] 
+> To avoid issues with your subscription, use a subscription that is dedicated to your Geneva Logs account.
+
+### 11. Will I get an alert when my subscription quota is about to run out?
+Yes. GSM will file an ICM incident against your team when one of your Azure subscriptions is about to run out of storage or event hub quota. See [here](https://portal.microsofticm.com/imp/v3/incidents/details/94531899/home) for an example of the ICM incident that you will get. 
+
+### 12. My Geneva accounts only authorize AME accounts, and when I use an AME account to run the Migration Tool validation, it fails with:
+```
+Migration failed with the exception: Failed to request a security token for realm 'svc://mds@production.diagnostics.monitoring.core.windows.net/' using available federation urls https://msft.sts.microsoft.com/adfs/services/trust/13/windowstransport, https://msft.sts.microsoft.com/adfs/services/trust/13/certificatemixed.
+```
+From command prompt, run the following to set an environment variable, then re-run the Migration Tool command -- set dstsfederationnamespace=ame.gbl
+
+### 13. How do I migrate my existing storage accounts from GRS to LRS or ZRS?
+Geneva Logs does not currently support migration of *existing* storage accounts from one replication type to another. To perform this migration, you have to submit a request to the storage team following these guidelines:
+* To migrate your GRS storage account to LRS you have to use Azure portal, PowerShell or CLI to change the replication setting. 
+* To migrate your LRS storage account to ZRS you have to request a live migration with the storage team.
+* To migrate your GRS storage account to ZRS, you have to first migrate it to LRS, and then request a live migration with the storage team to move to ZRS. 
+
+Learn [how to change the replication setting and how to contact the storage team](https://docs.microsoft.com/en-us/azure/storage/common/redundancy-migration), and stay updated on [AZ availability timelines and support](https://dev.azure.com/msazure/AzureWiki/_wiki/wikis/AzureWiki.wiki/60776/Storage-migrating-to-ZRS-or-GZRS).
+
+### 14. I get "Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host.,retrying..." error while running GSM Migration tool
+```
+Caught exception Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host.,retrying...  
+Caught exception Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host.,retrying...  
+Caught exception Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host.,retrying...  
+Failed to load security context from MDS, please retry the command  
+Running validations.  
+An error occurred while sending the request. 
+```
+This error occurs because the machine you are using to run GSM Migration tool is not TLS 1.2 enforced or it might be blocking with some firewall blockers. To avoid please check if there are any firewall blockers in your machine or switch to a different machine (escort operator if its in National cloud).
+
+### 15. Geneva Logs: Switching to use VRS (Variable Resiliency Storage) Storage Accounts
+
+> [!Note] 
+> What does VRS replication type offer? VRS is not actually a different replication type; it is merely a way of specifying the use of existing (ZRS/GRS/LRS) replication types at the storage metadata level. If a region does not support the desired replication type, storage accounts created as VRS would temporarily belong to a fallback replication type and would later be automatically migrated to the desired type when the region starts including the support.
+
+GSM is going to start provisioning all storage accounts as VRS over the coming months starting with Poland Central and the EUAP regions first, and then worldwide afterwards. Go-live is expected to be in October '22 for the rest of the world. 
+
+Today when we create a storage account, we have to specify the resiliency type of the storage account we want i.e. ZRS, GRS, LRS etc. If the preferred replication type is not supported in the region, GSM will create a storage account from a backup replication type belonging to the order (ZRS > GRS > LRS). And the expectation is that when the region starts supporting the replication type, GSM will migrate the storage account to the preferred type. 
+Instead, the storage team has come up with a better way to do this. While creating a storage account type we can set some Variable Resiliency properties (hence, VRS) where we provide a Maximum and Minimum replication type. If the region does not support that type, it will temporarily create a replication type based on the minimum replication type specified during provisioning. But when the region does eventually support the desired replication type, they will migrate the storage account in place on their end. Hence, customers do not have to worry about regional support at all and avoid the need to migrate monikers.. 
+
+<!-- Reference links -->
+[MigrateToGCS]: ./gcs.md "Migrate to GCS"
+[RBAC settings]: ../references/subscriptionpermissions.md "How to setup an Azure subscription for GSM?"
+[MA startup parameters]: ../../../collect/references/start.md "MA startup parameters"
+
+<!-- Images -->
+[GSM-enabled configuration]: ../images/GsmEnabledConfig.bmp "GSM-enabled configuration"
+[GSMStorageGroup]: ../images/GsmStorageGroup.png "New Storage Group in GSM"
+[GSMTags]: ../images/GsmTags.png "Tags on GSM resources"
+
+### 16. Geneva Logs: I have GSM resources (storage accounts or event hub namespaces) whose keys aren't getting rotated. Why not?
+
+GSM will rotate account keys for any resources that it is tracking as a registered resource. In some cases, customers may have deleted the monikers that refer to the resources, but not delete the actual underlying resources. In this case, the Geneva Logs control plane is no longer aware of these resources, and will not rotate the keys.
+
+> [!Note]
+> Geneva does not have delete permissions on managed resources in customer subscriptions; it is incapable of deleting any resources itself.
+
+If you would like to determine if resources are still registered with Geneva, examine [this Kusto query](https://dataexplorer.azure.com/clusters/genevawarmpath.westus2/databases/GenevaWarmPathSnapShots?query=H4sIAAAAAAAAAz2NSwrCQAyG954i9BxWcCVC68K66DYOP%2B1Qm0iSIoKHr0PR%2FfdoVfIE60KNBxxT0kXCdx96jTBQJ%2Fz0UaPhOx5U13RCtOpxRYLEWRwWWeWWZ%2FydvsR%2BqQvPoKQSnMWp2n8tGL11MfLtSbyRJAUthUO1Ahf%2FpkCWAAAA) and enter the storage account names in the placeholder values. If no rows are returned, then Geneva will not rotate the keys for those resources (and they may be candidates for deletion). Please note that if the resources still contain data in immutable containers, the accounts will not be deletable until the immutable policy on those containers have expired.
+
+### 17. Geneva Logs: I can't delete the storage account due to an immutable policy, even though the account is empty.
+
+Deletion of a storage account can generally be done using Azure portal/Geneva actions. However, if any of the events associated with a storage account was marked as immutable, the deletion of the storage accounts gets blocked due to the immutability locks on the containers. This is because a storage account with immutable containers can be deleted only when they meet the following conditions:
+ 
+1.	All the containers with immutability are empty.
+
+If you are sure that this condition is met, jump to condition 2.
+
+If there is immutable data in a container, then the container/storage account cannot be deleted until the data has expired. To check the Expiry Date of the Immutable Blob containers, you can follow: [Configure immutability policies for containers](https://learn.microsoft.com/en-us/azure/storage/blobs/immutable-policy-configure-container-scope?tabs=azure-portal).
+
+If the storage account is still connected to a Geneva moniker, then Geneva would be regularly cleaning the expired blobs and you need to wait for all the blobs to expire. However, if the moniker reference has been deleted from Geneva, then the cleanup would have stopped, and the containers need to be cleaned up manually by setting a lifecycle management policy. You need to follow this documentation by Azure on the required steps: [Configure a lifecycle management policy](https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure?tabs=azure-portal).
+ 
+2.	All the containers with immutability are deleted explicitly, even when they are empty.
+ 
+Once we ensure that containers are empty in the above steps, we need to iteratively fetch and delete all containers with marked immutability policy and then delete the storage account. This can be achieved using the following PowerShell Script: [Remove-StorageAccount.ps1](https://microsoft.sharepoint.com/:u:/t/GenevaManageability/EZ8ZGq2urC9CkwjuxNUqFYEBBEdqkJPjun-c7xis9aILrA?e=BeBWCa)

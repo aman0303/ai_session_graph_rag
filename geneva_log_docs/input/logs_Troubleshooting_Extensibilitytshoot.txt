@@ -1,0 +1,118 @@
+---
+title: Extensibility SDK Troubleshooting
+description: Troubleshooting page for extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 09/26/2018
+---
+
+
+# Extensibility SDK Troubleshooting
+
+Start here: [Extensibility SDK Overview](~/logs/references/extensibilitysdk/intro.md).
+
+> [!WARNING]
+> **We require that telemetry be collected and exported to Geneva Monitoring to entertain support requests.**
+> For more information, see [Using the Extensibility SDK - TelemetryDetails](~/logs/references/extensibilitysdk/usage.md#telemetrydetails).
+
+
+# Event Data Processing
+
+## I am not getting any events or data
+You can perform the following Extensibility SDK configuration self-check:
+
+- Verify that your events are in DGrep.
+  For more information, see [Getting Started - Step 1: Configure the events of interest for streaming](~/logs/references/extensibilitysdk/gettingstarted.md#step-1-configure-the-events-of-interest-for-streaming).
+
+- Verify that your [EventHubDetails](~/logs/references/extensibilitysdk/usage.md#eventhubdetails) consumer group is entered on your Logs account storage groups in Jarvis.
+  For more information, see [Getting Started - Step 2: Create an event hub consumer group](~/logs/references/extensibilitysdk/gettingstarted.md#step-2-create-an-event-hub-consumer-group).
+
+  > [!WARNING]
+  > GSM enabled accounts are strongly encouraged so that storage accounts are automatically configured for you.
+  > If you are using a non-GSM account, you need to ensure that your storage account is configured correctly.
+  > Azure Event Hubs requires that the following storage account blob service settings are disabled:
+  >
+  > - Hierarchical namespace
+  > - Blob soft delete
+  > - Versioning
+  >
+  > For more information, see [Azure Event Hubs - Checkpointing](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-features#checkpointing).
+
+- Verify that your [GenevaAuthentication](~/logs/references/extensibilitysdk/usage.md#genevaauthentication) certificate or managed identity is authorized on your Logs account, namespaces, and events in Jarvis.
+  For more information, see [Getting Started - Step 3: Authorize the SDK to read your data](~/logs/references/extensibilitysdk/gettingstarted.md#step-3-authorize-the-sdk-to-read-your-data).
+
+- Verify that your [EventFilterDetails](~/logs/references/extensibilitysdk/usage.md#eventfilterdetails) match your namespaces and events.
+
+- Check your SDK telemetry logs for errors.
+
+## How can I determine what events were matched by my event filters?
+You can check your SDK telemetry logs for messages starting with `[EventReceived] Received Event Hub event data.`
+These messages show the log events that are processed and not filtered out.
+However, these messages only show the log events received.
+The SDK does not track events that are not in your logs.
+
+
+# Runtime Errors
+
+## I am getting Microsoft.Identity.Client.MsalServiceException: [Managed Identity] Authentication unavailable... AADSTS500011: The resource principal was not found in the tenant...
+This error occurs when MSI authentication is used in an unsupported Azure tenant.
+For example:
+
+```
+Microsoft.Identity.Client.MsalServiceException: [Managed Identity] Authentication unavailable. Either the requested identity has not been assigned to this resource, or other errors could be present. Ensure the identity is correctly assigned and check the inner exception for more details. For more information, visit https://aka.ms/msal-managed-identity.
+Status: BadRequest
+Content:
+
+ -- openCurlyBracket -- 
+"error":"invalid_resource","error_description":"AADSTS500011: The resource principal named https://monitoring.azure.com was not found in the tenant... This can happen if the application has not been installed by the administrator of the tenant or consented to by any user in the tenant. You might have sent your authentication request to the wrong tenant...
+```
+
+You need to ensure the SDK is used in a supported tenant: [GenevaAuthentication](~/logs/references/extensibilitysdk/usage.md#genevaauthentication).
+
+## I am getting System.IO.FileLoadException: Could not load file or assembly...or one of its dependencies
+You need to ensure that your application loads dependencies.
+If you are using .NET Framework, you may need assembly binding redirects in your `app.config`.
+For more information, see [.NET Framework - Redirecting assembly versions](https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions).
+
+
+# Build Errors
+
+## I am getting CodeSign Error CodeSign.MissingSigningCert
+This error occurs when a build performs CodeSign validation on unsigned dependencies.
+For example:
+
+```
+CodeSign Error CodeSign.MissingSigningCert - File: .../Thrift.dll
+```
+
+ExtSDK DLLs are strong-named and signed with a digital signature.
+Some third-party DLLs do not have digital signatures.
+
+If possible, sign the third-party DLLs in your build.
+For OneBranch information, see:
+
+- [OneBranch Signing](https://aka.ms/obpipelines/signing)
+- [OneBranch Container Build Signing](https://eng.ms/docs/products/onebranch/signing/containerbuildsigning)
+- [OneBranch Samples: OpenTelemetry.dll ext:yml](https://msazure.visualstudio.com/One/_search?action=contents&text=OpenTelemetry.dll%20ext%3Ayml&type=code&lp=code-Project&filters=ProjectFilters%7BOne%7D)
+
+If that is not possible, please contact us with your requirements.
+
+
+# Original Extensibility SDK Troubleshooting
+
+> [!WARNING]
+> The original Extensibility SDK will be out of support when the .NET Standard version is generally available.
+
+## I get an error when trying to install Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension
+A workaround is to first install Microsoft.Data.OData 5.6.2 itself before Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension.
+That way the first dependency ('Microsoft.Data.OData (≥ 5.6.2)') is not going to install a newer version and the second dependency ('Microsoft.Data.OData (= 5.6.2)') will be satisfied.
+(From a clean state where no packages are installed)
+Install-Package Microsoft.Data.OData -Version 5.6.2
+Install-Package Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension
+
+## I am seeing the following exception in the logs: System.Security.SecurityException: User does not have permission.​
+Your Logs account user role that the SDK is using does not have the Streaming claim.
+To add the claims, follow [Getting Started - Step 3: Authorize the SDK to read your data](~/logs/references/extensibilitysdk/gettingstarted.md#step-3-authorize-the-sdk-to-read-your-data).

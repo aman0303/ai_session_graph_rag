@@ -1,0 +1,90 @@
+# Using PowerShell to manage logs
+The Geneva Logs Cmdlets used to manage logs are available in the NuGet package GenevaWarmPathPowerShellCmdlets on MSBlox. 
+
+## Install
+1. Install the [NuGet CLI tool](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#nugetexe-cli).
+2. Register required NuGet sources (see [references](#references) section).
+3. Download the GenevaWarmPathPowerShellCmdlets NuGet by running the command below. When prompted, sign in with your regular Microsoft account.
+```bat
+    nuget.exe install GenevaWarmPathPowerShellCmdlets
+```
+
+## Sign in
+1. Import module
+
+    Module location ..\GenevaWarmPathPowerShellCmdlets\GenevaWarmPathPowerShellCmdlets.[version]\lib\net452
+    The location may be in c:\Windows\SysWOW64.
+```powershell
+    Import-Module .\GenevaWarmPathClient.psm1
+```
+    
+2. Create credential object
+
+    Certificate and dSTS authentication are supported. Certificates can be retrieved by thumbprint or subject distinguished name. By default, certs identified by thumbprint are retrieved from StoreName.My and StoreLocation.LocalMachine.
+    Partial support is also included for Akv and Dsms certificates, which can now also be retrieved by Akv SAN and Dsms URL. However, the cmdlets currently do not support accessing the certificates directly from those systems. Instead, a copy of the certificate must be installed to the local user or machine store.
+    Alternatively, if just in time access to a remote managed cert is necessary, credentials can be created directly based on a certificate object that has been previously retrieved through a tool like the [Azure Powershell Cmdlets](https://docs.microsoft.com/en-us/powershell/azure/?view=azps-4.3.0).
+
+```powershell
+    # Using cert
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.CertificateCredential("1272457D65E7EB013519683A4B070338A2C2977D", "My", "LocalMachine")
+
+    # Using local keyvault cert
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.CertificateCredential("TestMDS100.geneva.keyvault.warmpathfecanary.cloudapp.net")
+
+    # Using remote keyvault cert
+    $secret = Get-AzKeyVaultSecret -VaultName "MdsAkvTest" -Name "test34343"
+    $secretByte = [Convert]::FromBase64String($secret.SecretValueText)
+    $authcert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+    $authcert.Import($secretByte, "", "Exportable,PersistKeySet")
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.CertificateCredential($authcert)
+
+    # Using local dSMS cert
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.CertificateCredential("/genevacustomers/monitoring/warmpath/public/test/test123/certificates/chained/testcert.pfx")
+
+    # Using dSTS
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.UserCredential
+```
+
+3.  Setup Geneva Logs context. Please refer [here](../Resources/endpoints.md) for the list of Logs environments and endpoints for programmatic management.
+
+```powershell
+    Set-WarmPathContext [-Credential $credential] [-WarmPathEnvironment '<WarmPathEnvironment>'] [-WarmPathAccountName '<MyWarmPathAccount>']  
+    # Example
+    Set-WarmPathContext -Credential $credential -WarmPathEnvironment 'Stage' -WarmPathAccountName 'Mds'
+
+    #WarmPathEnvironment: (Smoke|Test|Stage|DiagnosticsProd|FirstpartyProd|BillingProd|ExternalProd|CaMooncake|CaFairfax|CaBlackforest)
+```
+
+## References
+
+#### Nuget Sources
+```bat 
+nuget sources add -name AzureGenevaMonitoring -Source https://msblox.pkgs.visualstudio.com/_packaging/AzureGenevaMonitoring/nuget/v3/index.json
+nuget sources add -name Official -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/Official/nuget/index.json
+nuget sources add -name CoreXT -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/CoreXTMirror/nuget/index.json
+nuget sources add -name nugetorg -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/NugetMirror/nuget/index.json
+nuget sources add -name Manual -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/ManualMirror/nuget/index.json
+nuget sources add -name CloudBuild -Source https://cloudbuild.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/CloudBuild/nuget/index.json
+nuget sources add -name DEV -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/Dev/nuget/index.json
+nuget sources add -name OSS -Source https://msazure.pkgs.visualstudio.com/_packaging/OSS/nuget/v3/index.json
+nuget sources add -name MsNuget -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/MSNugetMirror/nuget/index.json
+```
+
+#### National Clouds
+
+If you want to run the PowerShell commands in an escort session national clouds, choose the appropriate GenevaWarmPathPowerShellCmdlets folder under the following locations for respective national clouds 
+
+```
+Mooncake
+\\\caz.gbl\Builds\branches\git_engsys_mda_mds_master\<Latest_Build>\GenevaWarmPathClient
+
+Blackforest
+>\\\deoe.gbl\Public\builds\branches\git_engsys_mda_mds_master\<Latest_Build>\GenevaWarmPathClient
+
+Fairfax
+>\\\USOE.GBL\public\Builds\Branches\git_engsys_mda_mds_release\<Latest_Build>\GenevaWarmPathClient
+```
+
+>[!NOTE]  
+>If you are using USME credentials in Fairfax, Please set the evenvironment variable $env:dstsFederationNamespace=usme.gbl​ 
+If you are using AME credentials in fairfax, Please set the environment variable $env:dstsFederationNamespace=ame.gbl​ 

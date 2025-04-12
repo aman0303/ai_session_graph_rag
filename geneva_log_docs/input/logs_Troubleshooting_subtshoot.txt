@@ -1,0 +1,48 @@
+# Troubleshooting issues with your subscription
+
+## I am getting errors during the subscription validation step when giving Geneva access to my subscription
+
+### 1. Invalid/Unhealthy subscription, Error: [Not enough storage account or event hub quota to provision 5 regions. Storage Account Usage <num> [RequestId: &lt;guid&gt;]].
+
+![Error Image 1](../images/ErrorImage1.png)
+
+You have reached the quota limits on storage accounts or event hub namespaces. If you are onboarding to a new account, we advise you to provide a new subscription and not reuse another one. If you have a dedicated subscription and reached the limits of your quota, please [register](../Howtoguides/Manageaccount/subscriptionpermissions.md) an additional subscription
+
+### 2. Invalid/Unhealthy subscription, Error: [Validation of subscription failed with error:Subscription: &lt;subscription id&gt; doesn't have Resource Provisioning Setup. [RequestId: &lt;guid&gt;]].
+
+![Error Image 2](../images/ErrorImage2.png)
+
+Geneva doesnt have access to your Azure subscription. Learn more
+[here](../Howtoguides/Manageaccount/subscriptionpermissions.md#grant-geneva-permissions-to-manage-monitoring-resources). To allow Geneva access to your Azure subscription, you're required to configure an RBAC role in your subscription.
+
+### 3. Invalid/Unhealthy subscription, Error: [Validation of subscription failed with error:The given subscription with Id &lt;subscription id&gt; is not found under 'https://management.azure.com/'. [RequestId: &lt;guid&gt;]].
+
+![Error Image 3](../images/ErrorImage3.png)
+
+Geneva can't find your subscription. Make sure the entered Azure subscription ID is correct, and you are able to access this in Azure portal. If this ID is correct, please reach out to the [Geneva team](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354).
+
+### 4. Invalid/Unhealthy subscription, Error: [Validation of subscription failed with error:AADSTS900382: Confidential Client is not supported in Cross Cloud request. Trace ID: &lt;guid&gt; Correlation ID: &lt;guid&gt; Timestamp: &lt;Timestamp&gt; [RequestId: &lt;guid&gt;]].
+
+![Error Image 4](../images/ErrorImage4.png)
+
+This error means that you're using a subscription from a DevOps tenant. Geneva Warm Path (Logs) in Fairfax only supports subscriptions in production tenants, please try using production tenant subscription to unblock.
+
+## Monikers not being provisioned in specific regions
+
+If a moniker is not being provisioned in a particular region, then there is a high likelihood that the issue is related to provisioning resources in that region. 
+
+In some cases, especially for regions that are more recently built-out, your subscription may not yet be authorized to provision resources for that region; in this case, GSM will fail the moniker provisioning operation, and either return a nearest region or fail the call entirely (depending on your configuration). [This article](../Howtoguides/Manageaccount/FailoverMonikers.md) provides more information on moniker failover scenarios. 
+ 
+There are a few ways that you can confirm if this is the cause of your missing moniker: 
+* In [Azure portal](https://portal.azure.com), open the subscription in question, and try to create a storage account or Event Hub in that region manually; if you are unable/get an error, it's likely the same reason that GSM is failing.
+* Alternatively, you can examine this [DGrep query](https://portal.microsoftgeneva.com/s/B869BF51) used by the Geneva Warm Path team. Customize the time window to when your agents last tried to communicate with GCS, and then search for your MDS account name in the client query window. If you see a message similar to this, then it is due to not being authorized to provision resources for that region:  
+
+```
+Error adding moniker MdsAccount: <MdsAccountName>, Moniker: <MdsMonikerName>, Location: brazilsoutheast, StorageGroup: <MdsStorageGroupName>, StorageAccount: , EventHub: , Subscription: 00000000-0000-0000-0000-000000000000, ResourceGroup: ,IsPatchRequest: False,IsDisabled: False: System.AggregateException: Storage or service bus account creation failed ---> Microsoft.Rest.Azure.CloudException: The provided location 'brazilsoutheast' is not available for resource type 'Microsoft.Storage/storageAccounts'. List of available regions for the resource type is 'eastus,eastus2,westus,westeurope,eastasia,southeastasia,japaneast,japanwest,northcentralus,southcentralus,centralus,northeurope,brazilsouth,australiaeast,australiasoutheast,southindia,centralindia,westindia,canadaeast,canadacentral,westus2,westcentralus,uksouth,ukwest,koreacentral,koreasouth,francecentral,australiacentral,southafricanorth,uaenorth,switzerlandnorth,germanywestcentral,norwayeast,westus3,jioindiawest,eastus2euap,centraluseuap,australiacentral2'. 
+```
+ 
+If this is your issue, then choose one of the following options to mitigate it:
+1. Go to https://aka.ms/lionrock and use the tool to submit region access requests for your subscriptions.
+2. File a support request in Azure portal to enable access to that region. Please follow the steps outlined in the [Azure support document](https://docs.microsoft.com/en-us/troubleshoot/azure/general/region-access-request-process).
+
+If you are still having trouble having a moniker provisioned in a particular region, and it's not due to this issue above, please file a [support incident](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354) and we will investigate as soon as possible. 

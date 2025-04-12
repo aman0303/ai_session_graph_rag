@@ -1,0 +1,37 @@
+## Geneva Warm Path – JIT Request - Access Management
+
+### Prerequisites
+The service team need to make sure that the following prerequisites are met to start using JIT based access management with their Geneva Logs account.
+1.	The service team to ensure that **MDS Account name / namespace(s)** are onboarded to the service tree.  
+2.	Ensure that a suitable DSCM JIT policy is in place, either at the Resource level (“**GenevaWarmPath**”) or service level to configure/approve JIT access.
+
+### Submit JIT Request – GenevaWarmPath
+> [!NOTE]
+> As of June 2024, JIT based access for Geneva Logs account is supported only for Admin role. This JIT request will support only the account management operations of MDS account and not to read/query logs via DGrep. 
+1.	Please visit [the JIT access requesting portal][JIT-Tool-Link]
+2.	Select Resource Type as “**GenevaWarmPath**” and enter the environment, Logs Endpoint, Logs Account Name, Namespace and requested access level.
+3.	Please consider these points while submitting the JIT access request.
+- The fields in the JIT access request form are **case sensitive**.
+- Mapping in the **Environment and Logs Endpoint** Field 
+
+<br>
+
+| Environment | Logs Endpoint |
+| ------ | ------ |
+| Prod | DiagnosticsProd, BillingProd, FirstpartyProd, ExternalProd |
+| PPE | Test, Stage |
+
+<br>
+
+![Geneva MDS Accounts JIT Request Form submission][JITRequestFormImage]
+
+<br>
+
+4.	After entering all the required fields, click “**Validate Resource**” button to do a final validation.
+5.	Click **Submit** and get your JIT approval according to the rules set in the DSCM policy.
+
+<!-- Reference links -->
+  [JIT-Tool-Link]: <https://jitaccess.security.core.windows.net/>
+
+<!-- Image links -->
+[JITRequestFormImage]: ../images/JIT-Request-Form.png "JIT Request Form submission"

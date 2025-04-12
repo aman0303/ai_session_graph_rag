@@ -1,0 +1,202 @@
+# Troubleshooting Authentication
+
+### dSTS authentication fails with ACS0: Please use a smartcard for authentication"
+![ACSImage][ACSImage]
+
+**Reason:**: This occurs when the PIN option is selected/remembered and msft.sts does not find a matching smartcard for the STS on the authenticating device.
+
+**Steps to Mitigate:**
+
+- Clear your browser's cache. Clear cookies for msft.sts.microsoft.com that clears the remembered option.
+  - Chrome: Open "chrome://settings/privacy" in a tab in chrome. Clear browsing data. Open chrome://settings/content/cookies". Click "See all cookies and site data". Search for "msft.sts.microsoft.com". Delete.
+
+  - Edge: Open "edge://settings/siteData?search=cookies" in a tab in edge. Search for "msft.sts.microsoft.com". Delete. Clear browsing data. Make sure Cookies and other site data is checked. Clear now.
+
+- Use Incognito/In Private Mode to browse temporarily.
+- Please select **Active Directory** from the Sign in options when you get these options.
+
+  ![SigninOption][SigninOption]
+
+- If this is a SAW device, try browsing Jarvis outside the SAW machine.
+
+Please contact [Geneva Support](https://aka.ms/genevasupport), if this issue persists.
+
+### DGrep Search doesn't work in Internet Explorer and throws the following error in a popup dialog: "Hmm, we can't reach this page".
+
+**Reason:** Adding our site to the trusted sites will resolve this issue.
+
+**Steps to Mitigate:**
+
+- Open Control Panel > Network and Internet > Internet Options
+
+- Goto Security tab and click on Trusted sites and Click the Sites button to bring up the sites
+
+- Add the portal url to the list of trusted sites and click on Add and reload the Edge browser;
+
+- NOTE: Add all our test and production URLs listed below so that this works both in test and prod
+
+	TEST: https://portal-east-int.microsoftgeneva.com/
+
+	https://portal-int.microsoftgeneva.com/
+
+	PROD: https://portal.microsoftgeneva.com/
+
+  https://portal-east.microsoftgeneva.com/ 
+  
+  Please note that we don't recommend use of https://portal-east.microsoftgeneva.com , though the team may sometimes guide users there.
+
+![InternetExplorerImage][InternetExplorerImage]
+
+
+### Cannot login into Jarvis/Jarvis auto-redirects to preview portal and gives an error  
+
+If you are unable to login into Jarvis with your machine, please try the steps below to Mitigate:  
+
+#### **Mitigation Steps:**
+
+- Please try to open Jarvis in Incognito/In Private mode of the browser or using a new browser
+- Clear your browser's cache.
+- To use Jarvis with *ME accounts, try using https://aka.ms/jarvis-dsts
+- Using PIN/Smart card, please check if you can open other links outside of Jarvis like [Tokendiagnostics](https://tokendiagnosticprod.azurewebsites.net) or [ICM](https://aka.ms/icm)
+- If you are still unable to login with [jarvis-dsts](https://aka.ms/jarvis-dsts) but able to login other sites then use https://aka.ms/microsoftgeneva-dsts which will redirect you to [Jarvis](https://portal.microsoftgeneva.com/)
+
+#### **SAW Machine**
+
+![SAW_Image_Error1][SAW_Image_Error1]
+
+OR
+
+![SAW_Image_Error2][SAW_Image_Error2]
+
+- If you are unable to login into Jarvis from SAW machine after following above mentioned [**Mitigation steps**](tshootAuth.md#mitigation-steps) then we request you to go to https://sasweb.microsoft.com/Member/AllSilos -> Click your silo and then Request URL Allowlist, add the below list: 
+**portal.microsoftgeneva.com** ; **portal-int.microsoftgeneva.com** ;**portal-east.microsoftgeneva.com** ; **portal-east-int.microsoftgeneva.com** ;.
+- If you are unable to open any links outside of Jarvis like [Tokendiagnostics](https://tokendiagnosticprod.azurewebsites.net) or [ICM](https://aka.ms/icm) then please reach out to SAW team
+-  If you are able to open other links like [Tokendiagnostics](https://tokendiagnosticprod.azurewebsites.net) or [ICM](https://aka.ms/icm) but Jarvis is not loading/loading very slow, please try below steps to unblock:  
+    1. Navigate to **Hyper-V Manager** in SAW machine
+    2. Click on **Virtual Switch Manager...** under *Actions* pane
+        
+        ![Hyper_V_SAW_VSManager][Hyper_V_SAW_VSManager] 
+
+    3. In the pop up window under *Virtual Switches*, check if there are any **Virtual Switches** other than ***Default Switch***. If yes, remove everything except ***Default Switch*** 
+    
+        ![Hyper_V_SAW_DefaultSwitch][Hyper_V_SAW_DefaultSwitch] 
+
+    4. Reboot the SAW machine
+
+- If you are still blocked then please try [Opt out of Preview Jarvis](tshootAuth.md#opt-out-of-preview-jarvis)
+
+#### **Jumpbox**
+
+- If you are unable to login into Jarvis from Jumpbox machine after following above mentioned [**Mitigation steps**](tshootAuth.md#mitigation-steps) then please raise a request for JB URL allowlisting, add the below list: 
+**portal.microsoftgeneva.com** ; **portal-int.microsoftgeneva.com** ;**portal-east.microsoftgeneva.com** ; **portal-east-int.microsoftgeneva.com** ;.  
+- If you are receiving "_Loading Jarvis_" message in Jumpboxes when you try to open Jarvis Homepage as shown in below image, 
+please raise a request with MS Proxy team to allowlist the following URLs: https://cdn-test.microsoftgeneva.com, https://cdn-int.microsoftgeneva.com, https://cdn-prod.microsoftgeneva.com .
+    
+    ![JBWhitelist][JBWhitelist]
+
+- If you are still blocked then please try [Opt out of Preview Jarvis](tshootAuth.md#opt-out-of-preview-jarvis)
+
+#### **Torus - 2FA Authentication**
+
+- If you are unable to login into Jarvis with your Torus account (2FA) after following above mentioned [**Mitigation steps**](tshootAuth.md#mitigation-steps) then try using https://aka.ms/jarvis-dsts or https://aka.ms/microsoftgeneva-dsts and check the **"Remember my selection"** box while login and authenticate with your YubiKey as shown below:
+
+	![TorusImage1][TorusImage1]
+
+	![TorusImage2][TorusImage2]
+
+- If you are still blocked then please try [Opt out of Preview Jarvis](tshootAuth.md#opt-out-of-preview-jarvis)
+  
+#### **Opt out of Preview Jarvis**
+- To opt out from Preview mode, click on Profile icon and **toggle off "Use Jarvis Preview"** by opening https://portal.microsoftgeneva.com/?nopreview=true or try opening Jarvis with non-SAW machine with corpnet access.
+
+	![TogglingOffPreviewmode][TogglingOffPreviewmode]
+
+- If the issue still persists, please contact [Geneva Support](https://aka.ms/genevasupport) by providing the list of all [**troubleshooting steps**](tshootAuth.md#mitigation-steps) performed and mentioning if its specific to SAW or JB etc. 
+
+### Unable to login Jarvis with SAW error 
+
+![SAWError][SAWError]
+
+See the message in the prior dialog before seeing this red message: 
+- Access to this destination is possible only from a Secure Access Workstation or the SAW device is not being recognized as SAW. Please visit https://aka.ms/saw403
+- If you are on a SAW, please follow up with the SAW team at https://aka.ms/saw403.
+- If you believe you do not need to have a SAW, follow up with your management.
+
+
+### The authentication pop-up goes away, but the "Authenticate to continue" dialog on the portal itself does not.
+
+Please avoid using IE, and try the following:
+
+ - Press F12 and on the "Network" tab ensure the "always refresh from server"  or "disable cache" option is checked. You may close the resulting window if the authentication window closes.
+ - Clear your browser's cache.
+ - To use Jarvis with AME, try using https://aka.ms/microsoftgeneva-dsts
+
+For Logs and Geneva Logs manageability UX Jarvis uses third party cookies to provided consistent authentication token. If your browser is blocking third party cookies then authentication dialog will not close even after authentication. You should allow third party cookies in the browser to make authentication work. Following are the steps to enable it in Chrome, Edge and Safari:  
+#### Chrome:
+Open "chrome://settings/content/cookies" in a tab in chrome. In this page there should be an option "Block third-party cookies". Make sure that it is turned off.  
+#### Edge:  
+Open "edge://settings/content/cookies?search=Cookies%20and%20site%20data" It should be a toggle, select Don't block cookies option in this.  
+#### Safari:  
+Open Preferences --> Privacy. Under 'Block cookies' select the option 'Never'.
+
+### I am presented with the authentication popup, but something else goes wrong
+
+In general, please first visit https://tokendiagnosticprod.azurewebsites.net, selecting MSIT-ADFS-Federation, and verify that you can successfully log in. If not, there may be something wrong with the access method you are using to authenticate; please ensure that you can access this site (escalating to helpdesk if necessary). If you can successfully authenticate to that site, please provide the output shown there when contacting the Geneva team for support.
+
+For other endpoints, please see [here](tshoot.md)
+
+### Error: AADSTS50020: User account '&lt;alias&gt;@ame.gbl' from identity provider 'https://sts.windows.net/33e01921-4d64-4f8c-a055-5bdaffd5e33d/' does not exist in tenant 'Microsoft'.
+
+![AMELoginError][AMELoginError]
+
+This error comes because your AME credentials are getting treated as Microsoft tenant and trying to search in Microsoft (corpnet) tenant. To avoid this issue if you are using Jarvis with AME, try using https://aka.ms/microsoftgeneva-dsts
+
+### You can't get there from here
+
+![CantGetThereFromHere][CantGetThereFromHere]
+
+You may see this message when authenticating in an Incognito/InPrivate window or from an unmanaged device. Use https://aka.ms/microsoftgeneva-dsts to sign in instead.
+
+### Unable to login/authenticate with Torus account in National clouds
+
+![Torus_NC][Torus_NC]
+
+Currently Torus accounts authentication in National clouds is **not supported** in Jarvis. Please use other accounts like Redmond/AME etc. as a work-around by https://aka.ms/microsoftgeneva-dsts. 
+
+### Unable to login using sc-alt accounts
+
+![SCALTError][SCALTError]
+
+Please use https://aka.ms/microsoftgeneva-dsts for login with sc-alt accounts or login with Microsoft account and click on Profile icon on the top right corner of Jarvis then select Switch Account and login with sc-alt account.
+
+### Principal '&lt;guid&gt;;&lt;guid&gt;' is not authorized to perform operation 'VersionShowCommand' on 'https://;&lt;cluster&gt;.kusto.windows.net:443/'. https://;&lt;cluster&gt;.kusto.windows.net/;fed=true
+
+![KustoAuthError][KustoAuthError]
+
+Please ensure your cluster name **does not include :443** - just use the name without the port, e.g., https://mykustocluster.kusto.windows.net
+
+### Unable to perform operation after JIT approval / *ME-JIT Security Groups are not appearing in tokendiagnostics/ output
+
+AME/PME/RME/GME ESG's (Elevated SG's) works only with AAD, and Geneva uses dSTS mode of authentication. Geneva/Jarvis doesn't support these elevated JIT Security Groups. 
+
+If your team has received an S360 alert (and the only option is to use an *ME SG), you can use a regular *ME based [security group](https://oneidentity). You need a SAW to continue. Go to **Groups**, **Create**, and then **Modify**.
+
+
+<!-- Images -->
+[ACSImage]: ../images/ACSImage.png
+[InternetExplorerImage]: ../images/InternetExplorerImage.png
+[SigninOption]: ../images/Sign_in_selection.png
+[AMELoginError]:  ../images/AMELoginError.png
+[SCALTError]: ../images/SCALTError.png
+[KustoAuthError]: ../images/KustoAuthError.png
+[SAW_Image_Error1]: ../images/SAW_Image_Error1.png
+[SAW_Image_Error2]: ../images/SAW_Image_Error2.png
+[TogglingOffPreviewmode]: ../images/TogglingOffPreviewmode.png
+[TorusImage1]: ../images/TorusImage1.png
+[TorusImage2]: ../images/TorusImage2.png
+[SAWError]: ../images/SAWError.png
+[CantGetThereFromHere]: ../images/CantGetThereFromHere.png
+[JBWhitelist]: ../images/JB_Whitelist.png
+[Hyper_V_SAW_VSManager]: ../images/Hyper_V_SAW_VSManager.png
+[Hyper_V_SAW_DefaultSwitch]: ../images/Hyper_V_SAW_DefaultSwitch.png
+[Torus_NC]: ../images/Torus_NC.png

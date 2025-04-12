@@ -1,0 +1,20 @@
+# Configuring Role Assignments for Immutable Logs
+
+## Context: Who does this apply to?
+To fulfill the JEDI Enterprise Promise for Immutable Logs a solution based on Geneva was implemented to identify in-scope event data as well mark storage containers containing such data immutable. To enable immutability, only storage containers in ARM-based storage accounts can be marked immutable if the correct role assignment has been applied to the resource group. This article will guide you to configure the correct role assignemnt for Geneva to ensure in-scope event types can be marked immutable. 
+
+## Prerequisites
+The steps to perform role assignment to enable Geneva access for marking storage containers immutable are listed below. You must perform these steps on the final subscription/RG that contains your Geneva related storage accounts. For example, if you are still in the process of migrating your storage accounts from RDFE to ARM, you must perform these steps **after** the migration on the new resource group post migration. You can follow the steps in [this article](./updatemoniker.md) to verify the correct resource group for your storage account.
+
+## Step 1: Navigate to the Subscription/RG containing your storage account
+**For each of your storage accounts** that is associated to Geneva - using the [Azure Portal](https://) - navigate to the resource group that contains the storage account. Click on **Add a role assignment**.
+
+![Role assignment - Step 1](../../images/roleassignmentstep1.jpg "Role assignment - Step 1")
+
+
+## Step 2: Perform the role assignment
+Specify **GenevaWarmPathStorageBlobContributor** as the role, and specify **GenevaWarmPathMultiTenantRM** as the service principal, as shown in the below screenshot. Click **Save**.
+
+![Role assignment - Step 2](../../images/roleassignmentstep2.jpg "Role assignment - Step 2")
+
+That’s it! With the above steps you have now created the role assignment to enable Geneva’s service principal to manage immutability for your storage account containers. Please ensure that you perform these steps for each Sub/RG that contains your Geneva-related storage accounts.

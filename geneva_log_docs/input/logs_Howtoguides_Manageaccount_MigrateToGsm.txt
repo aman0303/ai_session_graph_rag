@@ -1,0 +1,173 @@
+# Migrate to Geneva Storage Management (GSM)
+
+ [Geneva Control-Plane Service (GCS)](../../Concepts/WhatIsGCS.md) and [GSM](../../Concepts/WhatIsGsm.md) are enabled by default in new Geneva Logs accounts. To check whether GCS and/or GSM are enabled in your account, visit [this page](../Manageaccount/gsm_gcsenabled.md).
+
+## Prerequisites 
+GSM migration is performed on each configuration namespace in your Geneva Logs account. Review the following prerequisites before initiating the migration:
+
+* You must be an administrator of the Logs account to run the migration tool.
+* Your Logs account has to be [GCS](../../concepts/WhatIsGCS.md) enabled. Check if your account is [GCS enabled](./gsm_gcsenabled.md), and if it is not - first [migrate it to GCS](./MigrateToGCS.md).
+* You must provide at least one Azure subscription with proper [RBAC settings](./subscriptionpermissions.md). This subsscription has to be dedicated to Geneva. 
+* The latest deployed config (which will be used as a baseline for the migration) mustn't contain: 
+    * Central Derived Events
+    * External Events
+* The Logs account shouldn't have any associated AIMS configurations.
+* If you are using Moniker as a scoping condition in DGrep, or using MDAC to download data directly from a specific moniker, you will need to convert your data search/download operations to use region-based scoping conditions. 
+* [Event Publisher](../../../collect/references/windows/eventpublishing.md) is not supported with GSM. 
+* If your service runs outside of Azure (e.g. pilotfish/AP), you may need to [SNAT](https://stackoverflow.microsoft.com/questions/90687/the-operation-timed-out-errors-when-posting-to-eventhub) your EventHub/ServiceBus IP addresses. 
+    * If you can automatically SNAT your Azure VIPs, you can safely migrate to GSM
+    * If you indiviually configure SNAT Azure VIPs, you have to use the Geneva [Service Tags](https://docs.microsoft.com/en-us/azure/firewall/service-tags), and onboard to [Geneva Ingestion Gateway (GIG)](../../../collect/references/genevaingestiongateway.md) before migrating to GSM. 
+    * If you cannot SNAT, and you service has globally unique IPv4, you are blocked from migrating to GSM until GIG supports Hypernet Lite IPv4 (ETA - August 31st 2021 in Public cloud, TBD in national clouds).
+    * If you cannot SNAT, and your service has globally reused IPv4, please move to IPv6. You will be able to migrate to GSM when GIG supports Hypernet Lite IPv6 (ETA - August 31st 2021 in Public cloud, TBD in national clouds).
+* Do not use GSM if you require MA to push data to specific storage accounts.
+* If you are using Geneva Logs in the Azure Monitor Activity Logs (Event Service) pipeline then do not migrate your namespaces to GSM.
+
+## GSM migration tool
+The GSM migration tool can be downloaded from:
+
+- Use the Nuget reference link - [Package Details - Azure Artifacts](https://dev.azure.com/msazure/One/_artifacts/feed/Official/NuGet/GenevaWarmPathGsmMigration/overview)
+
+If you want to run the GSM migration tool in an escort session in National clouds, choose the appropriate GSMMigration folder under the following locations for respective National clouds. Copy the folder to desktop of the Jumpbox in escort session.
+
+* Mooncake: \\\\CAZ.GBL\Builds\branches\git_engsys_mda_mds_release\<Latest_Build>\retail-amd64\RDTools\GsmMigration
+* Fairfax: \\\\USOE.GBL\Public\Builds\branches\git_engsys_mda_mds_release\<Latest_Build>\retail-amd64\RDTools\GsmMigration
+
+### How to use the GSM migration tool
+The GSM migration tool has to be run for each configuration namespace, and it requires the following inputs:
+* [Logs endpoint name](../../Resources/endpoints.md).
+* Logs account name.
+* Logs config namespace (a namespace that is mentioned in a configuration. *Note that namespaces are case-sensitive)*.
+* Valid list of Azure subscriptions (comma separated). 
+>[!Note]  
+>You must set up the subscription for [Resource Provisioning](./subscriptionpermissions.md)
+  
+>[!Note]  
+>Provide Geneva with brand new subscriptions for the following reasons:
+>* To prevent regressions related to immutable logs, Geneva will apply deny assignments on all storage accounts and EventHubs in that subscription. By using a subsription dedicated to Geneva, you'll reduce over-privileged role assignments. 
+>* Azure subscriptions have quota limits on storage accounts and EventHub namespaces. By using an isolated subscription, you'll simplify subscription management and you can reduce the likelihood of running into quota related issues.
+
+### Validate your migration readiness
+First validate that your namespace is ready for migration by running the migration tool in validation mode, using the following command:
+
+```
+GsmMigration.exe Validate WarmPathEnvironment=<WarmPathEnvironment> WarmPathAccount=<WarmPathAccount> WarmPathNamespace=<WarmPathNamespace> SubscriptionIdList=<SubscriptionIdList comma separated>
+```
+The tool will run a collection of [validations](#validations-performed-by-gsm-migration-tool) against the namespace, and for each failed validation it will provide the necessary action that you need to perform to make the namespaces ready for migration.
+
+Once validation (or migration) is run, the tool generates a HTML report containing the details of validation actions performed along with next steps. The location of the HTML report will be emitted in the console output.
+
+### Perform the migration step
+Once the namespace is ready for migration (all the validations pass), you can migrate it to a GSM enabled namespace by running the following Migrate command:
+
+```
+GsmMigration.exe Migrate WarmPathEnvironment=<WarmPathEnvironment> WarmPathAccount=<WarmPathAccount> WarmPathNamespace=<WarmPathNamespace> SubscriptionIdList=<SubscriptionIdList comma separated>
+```
+
+>[!Note]  
+>As a part of migration, Geneva will provision new resources in the subscription you provided. This means that migration may take some time to finish depending on the number of resources that need to be provisioned.  
+>The Migration tool is re-entrant, so you can run the tool as many times as needed to complete the migration.
+  
+> [!IMPORTANT]
+> Your namespace migrated to GSM will not be considered as GSM enabled namespace for S360 KPI unless proper respective storage groups are present/created for that config. namespace.
+
+
+### Deploying your new GSM-enabled configuration
+
+* After the migration step completed successfully, the tool will create a new version of configuration under the namespace. That is, if the latest configuration you had under the namespace was: ```<Namespace>Ver<n>V0```, the tool will create a new configuration of version: ```<Namespace>Ver<n+1>V0```. 
+    * For example, if the latest deployed configId was ```<Namespace>Ver14v0```, tool will generate: ```<Namespace>Ver15v0```.  
+
+    The report will show the GSM enabled config like in below screenshot.
+
+    ![GSM-enabled configuration](../images/GsmEnabledConfig.bmp)
+
+* To deploy this configuration to your service, you'll need to use this latest configuration version in the [MA startup parameters](../../../collect/references/start.md):
+
+```
+set MONITORING_CONFIG_VERSION=<n+1>.0
+```
+* You can now flight the configuration changes in your canary scaleunit, and validate that your monitoring data is flowing as expected.
+* Once satisfied, repeat the steps for production deployments.
+
+### Delete legacy resources
+
+To complete GSM migration it's important to remove the non-GSM legacy resources. *Once the legacy resources are deleted, the data cannot be accessed*. As such, it is highly recommended to wait for 30 days (or the number of days dictated by your data retention policy) after GSM migration was complete before deleting the legacy resources, to allow the data to expire. Please follow the instructions outlined [in this document](./monikerdelete.md) to delete your legacy resources. 
+
+## Validations performed by GSM migration tool
+
+There are prerequities before Logs namespaces can be migrated to GSM. The GSM migration tool performs these validations before it actually tries the migration, and all failures found during validation must be addresed before proceeding further.
+
+### Check if the user is account admin
+This validation checks if the user who is running the migration tool is account admin for the account in scope. Since migration involves moving underlying resources and considered as previleged operation, account admin claim is required.
+
+__Action:__ Make sure you are a member of the MdsAccountAdmin_<WarmPathAccount> user role.  
+
+*You should be either part of "Security groups" associated with the Admin user role or part of the "Users" associated with Admin user role.*
+
+### Check if the account is GCS enabled
+This validation checks if the Logs account / Namespace is enabled for GCS mode. GCS mode is required for migrating to GSM. 
+
+__Action:__ Follow the steps described [here](MigrateToGCS.md) to enable GCS.
+
+### Check if there are more than one Kusto settings within a region 
+This validation checks to see if there are more than one Kusto(logAnalytics) settings specified per region. GSM supports only one Kusto setting per region per Storage Group/Account Moniker. 
+
+__Action:__ Update Kusto settings to be per region for the monikers referenced in the latest deployed config and try again.
+
+If your account has 10 monikers (3 in WestUs, 3 in EastUs, 4 in CentralUs) in a particular Storage Group, all the monikers in EastUs should have similar LogAnalytics Id and database.
+
+Similarly, all the monikers in WestUs, should have similar LogAnalytics Id an database.
+
+### Check if there are CDE in the config
+This validation checks to see if the latest deployed config (which will be used as the baseline for migration) contains any Central Derived Events(CDE's). As part of the migration, the target CDE moniker will be changed and hence, the CDE data after migration will be flowing into the new tables. 
+
+__Action:__ Remove any references to the CDEs in the latest deployed config and try again.
+
+Central derived events are deprecated except for billing scenarios. Please look [here](../../References/CentralAggregation/cde.md) for more details.
+
+### Check if there ExternalEvents in the config
+
+This validation checks if the config has any ExternalEvent references. ExternalEvents are deprecated and won't be supported for GSM enabled accounts.
+
+__Action:__ Remove any references to the ExternalEvents in the latest deployed config and try again.
+
+External events are not supported by Geneva anymore.
+
+### Validate RBAC and Quota for the subscription
+This validation checks the following conditions for the azure subscription(s) provided for migration:
+
+- The necessary RBAC settings are set
+- There is enough quota to provision Storage and EventHub accounts
+__Action:__ Refer to the Resource Provisioning Setup for more details for RBAC related failures. In case of quota issue, you can add additional subscriptions as part of the -SubscriptionIdList parameter (comma seperated list) 
+
+### Check if the Logs account has any AIMS config
+
+This validation checks if there are any AIMs configurations associated with the Logs account that is in scope for the migration. AIMs is a deprecated feature and will not be supported for GSM enabled accounts.
+
+__Action:__ This is not a hard failure (warning), and the migration will be allowed to continue. The ExpandTableName("....") function will be impacted after migration. References to Monikers in the StateMpa will not be affected (and will not be migrated as Geneva managed resource). If you still rely on AIMs based monitoring, please make sure to test the rules after migration. Go to [this page](../../FAQ/ConfigFAQ.md#4-how-can-i-delete-a-legacy-aims-configuration) to learn how to delete legacy AIMS configs. 
+
+### Check if the latest deployed config is V2 config
+
+This validation checks if the latest deployed config for the namespace is not V2 config. Please note that V1 configs are deprecated.
+
+__Action:__ Please move your config to V2 config. 
+
+### Check if the monikers referenced in config exists
+
+This validation checks if the monikers referenced in the config exists and are valid.
+
+__Action:__ Please remove the invalid monikers from the config file. 
+
+### Check if the Logs account/namespace is already migrated to GSM
+This validation checks if the account is already migrated to GSM, or if the namespace has already been migrated to GSM.
+
+__Action:__ There is no action required as the account/namespace has already been migrated to GSM.
+
+### Check if the input namespace is a valid Warm Path config namespace
+This validation checks to see whether the input warm path account does not contain the input config namespace.
+
+__Action:__ Please specify an existing config namespace and make sure there are config(s) deployed under the namespace.
+
+### Check if the configuration package has multiple account section defined
+This validation checks to see whether there are multiple "account" sections defined in the configuration package. 
+
+__Action:__ Please consolidate the account sections.

@@ -1,0 +1,54 @@
+---
+title: Extensibility SDK FAQ
+description: FAQ page for extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 09/26/2018
+---
+
+# Extensibility SDK FAQ
+Start here: [Extensibility SDK Overview](~/logs/references/extensibilitysdk/intro.md).
+
+## Where do I download the NuGet package?
+See [Using the Extensibility SDK](~/logs/references/extensibilitysdk/usage.md).
+
+## Where is the sample code?
+Samples are available here:
+
+- [Using the Extensibility SDK](~/logs/references/extensibilitysdk/usage.md)
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Samples](https://msazure.visualstudio.com/One/_git/GenevaLogs-Extensibility-SDK?path=/src/Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Samples)
+
+## What information do I need before I escalate?
+- Your Extensibility SDK parameters, including your Logs environment, account, event filters, and authentication credentials (certificate or managed identity).
+- Your Extensibility SDK telemetry, including your SDK Logs environment, account, and namespace.
+  For more information, see [Using the Extensibility SDK - TelemetryDetails](~/logs/references/extensibilitysdk/usage.md#telemetrydetails).
+
+  > [!WARNING]
+  > **We require that telemetry be collected and exported to Geneva Monitoring to entertain support requests.**
+
+## Is there a limit on the number of concurrent processors for an Event Hub?
+Yes, each Event Hub partition can have only one processor per consumer group at any given time.
+If an Event Hub partition has multiple processors per consumer group, unexpected errors may occur.
+
+To support additional consumers, you can add up to 20 consumer groups to an Event Hub.
+You must add consumer groups in Jarvis, not directly in Azure Portal.
+You are not charged for extra consumer groups.
+For more information, see [Getting Started - Step 2: Create an event hub consumer group](~/logs/references/extensibilitysdk/gettingstarted.md#step-2-create-an-event-hub-consumer-group).
+
+
+# Original Extensibility SDK FAQ
+
+> [!WARNING]
+> The original Extensibility SDK will be out of support when the .NET Standard version is generally available.
+
+## Where do I download the original NuGet package?
+The package is available from the ADO artifact feed: [Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension).
+
+## Where is the original sample code?
+The sample code is available in the [EngSys-MDA-Samples-ExtensibilitySDK Git repository on MSAzure](https://msazure.visualstudio.com/DefaultCollection/One/_git/EngSys-MDA-Samples-ExtensibilitySDK). We provide both OneBranch/CoreXT and standalone examples.
+
+## How can I validate my Geneva Logs config, ServiceBusAccountInfo, and XStoreAccountInfo are correct?
+The [Mds Streaming Diagnostics Tool](https://microsoft.sharepoint.com/teams/WAG/EngSys/Monitor/AmdWiki/Mds%20Streaming%20Diagnostics%20Tool.aspx) can be used to validate that you have provided all the necessary configuration information to MDS.

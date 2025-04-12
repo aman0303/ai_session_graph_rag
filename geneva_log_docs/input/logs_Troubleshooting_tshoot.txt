@@ -1,0 +1,184 @@
+## Troubleshooting Access
+
+### How to find Logs account owners (administrators)? 
+#### Unable to access Logs account or Query DGrep logs with unauthorized error
+
+If you are unable to access logs account/query logs the please follow the below Mitigation steps:  
+ 
+#### **Mitigation Steps:**  
+1. Initially please check if there is any issue with your browser cache/authentication by following the [troubleshooting authentication][TSAuth] documentation.  
+2. If you are still blocked, Navigate to the [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select the respective endpoint of your account trying to access.  
+3. Go to **Search** on the top right corner -> select _Namespace_ from the **Search By** dropdown   
+
+    ![LogsAccountSearch_1][LogsAccountSearch_1]
+
+4. Enter your Logs account/namespace regex and click on **Find** which will list you all the accounts based on the regex including Namespaces, _**Users**_ and **_AdminSG_** of the respective accounts.  
+
+    ![LogsAccountSearch_2][LogsAccountSearch_2]
+
+5. Check if you are part of **Users** of the account. If you are part of the Users list but still unable to access account/logs, please create an [incident][IcM] with us.  
+6. If you are not part of the Users, then check if your dSTS token lists one of the _AdminSG_ of the account. Please use the links below to get a list of dSTS SG's associated with your token.  
+
+    #### TokenDiagnostics links
+    - Test, Smoke: https://tokendiagnostictest.azurewebsites.net
+    - Diag Prod, FirstParty, Billing, External, Stage: https://tokendiagnosticprod.azurewebsites.net
+    - Fairfax: https://tokendiagnosticfairfax.azurewebsites.net
+    - Blackforest: https://tokendiagnosticblackforest.azurewebsites.net
+    - Mooncake: https://tokendiagnosticmooncake.azurewebsites.net  
+
+7. If your dSTS tokens(tokendiagnostics) lists one of the AdminSG but unable to access account/query logs, please create an [incident][IcM] with us.  
+8. If you are not part of **Users** or **AdminSG** then please reach out to one of the account admins to provide you the required access for logs account/query logs. See [here](tshoot.md#editing-account-settings-and-admin-operations) on how to manage account settings and admin operations.
+
+### Editing Account Settings and Admin operations
+
+To edit account settings, change or add certificates and manage your GSM resources, you need admin permissions on your Geneva Logs account. To find if you have access, please follow [these](tshoot.md#mitigation-steps) steps from #3, By searching in **Search** in Logs account or Navigate to Jarvis -> Account -> Logs Account Settings -> User Roles -> *MdsAccountAdmin_&lt;AccountName&gt;* User Role -> Security Groups section. Make sure you find at least one of the Security Groups, which is listed in your [tokendiagnostics output][TokenDiagnostics], is present in this MDSAccountAdmin user role.  
+
+![MDS Account Admin Role][MdsAccountAdminRoleImage]
+
+### Adding User as an explicit admin for an account  
+
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account 
+2. Go to **Account** 
+3. Click on **Edit** button
+4. Click on **+** icon and add the alias in **Domain\Alias** form you want to provide access
+5. Click on **Update Settings**
+
+    ![AddingAdmin][AddingAdmin]
+
+> [!NOTE]  
+> You can add only **10** User aliases as an account admins for a logs account  
+
+For compliance reasons, every user alias must be in the form of **Domain\Alias**. If you see an "Red exclamation mark" in _Account_ section, it means you need to update your admin aliases in the required format (Domain\Alias). 
+
+![AdminAliasWarning][AdminAliasWarning]
+
+To update, click on the **_Edit_** option update your existing user aliases with the domain\ like "Redmond\Alias" or "AME\Alias" and click on **Update Settings**.
+
+![UpdateAdminAlias][UpdateAdminAlias]  
+
+> [!TIP]  
+> All User Roles inclusive MDSAccountAdmin with Users must contain domain\alias form.
+
+
+### Adding Security Group to an UserRole in an account  
+
+1.  Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account 
+2. Go to **User Roles** 
+3. Go to User Role you want to add Security Group (SG) -> **Security Groups**
+    
+    ![UpdateSG_1][UpdateSG_1]
+
+4. Add SG in **Add Security Groups** section and check the dSTS checkbox and then click on **Add**
+
+    ![UpdateSG_2][UpdateSG_2]
+
+> [!IMPORTANT]  
+> Points to remember while adding a SG to the user role:  
+> 1. Security Group domain must be provided while adding  
+> 2. Security Group must be in Redmond domain with **domain-local scope** for corpnet SG's and non corpnet SG's like AME/PME can also be added
+> 3. Security Groups that are added to User Roles must be onboarded to dSTS. See [here][AccessControl] for instructions on how to do this. If after adding the Security Group you are still unable to access your logs due to the same permission check to make sure that your Security Group membership is reflected in your dSTS security token. You can inspect the contents of your token by visiting [TokenDiagnostics][TokenDiagnostics]. 
+> 4. If your token does not contain the Security Group, you should contact [dSTS Support][dSTSSupport] for support.  
+> Please see [this][SG] docs. for more info. on Security Groups
+
+> [!TIP]  
+> If you want to provide admin access to a SG, then update SG in *MdsAccountAdmin_&lt;AccountName&gt;* User Role  
+
+If you don't find your security group, visit [idweb/][idweb] and create a Redmond local domain security group (**not Universal**). Or you can use [MyAccess][MyAccess] security groups. Get an existing admin in your account to add you as part of this group.  
+
+FOR *ME based access and Security groups, please use https://aka.ms/jarvis-dsts or https://aka.ms/microsoftgeneva-dsts portal link and log on with your *ME credentials. Use //oneidentity to verify that you are part of the listed *ME based Security Groups.
+
+> [!NOTE]  
+> After following the above [troubleshooting](tshoot.md#mitigation-steps) steps, if you are still blocked because account doesn't contain any active admins or deprecated Security Groups resulted in orphan account then please create an [incident][IcM] with us by providing your [Servicetree](https://aka.ms/servicetree) and its admin details to regain access to your account.  
+
+#### Logs Permission Checker  
+
+Logs Permission Checker is a tool used to verify the access on Event/Runner/Configuration. To use the tool, navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select your **Endpoint** -> **Tools & References** section as shown below and click **Do I have Permissions on ...** link. 
+
+![Permissions Checker][PermissionsCheckerImage]
+
+Please enter the name of the event/runner/configuration under _Search Pattern_ in the form of regex **^NamespaceEventname.*** to avoid timeout error or to retrieve the fast results of that specific event and click **Check**. 
+
+![Permissions Checker][PermissionsCheckerImage2]
+
+Once the search completes, you can click on the **Access Details** link against the raw resource (event/runner/config.) names and look through the user roles that all have access to the resource. Note that the user role that starts with "MdsAccountAdmin_" is the user role that has administrator access to your Logs account. Members of this user role can grant access to other user roles, by either adding you explicitly to an user role in the list or by adding a Security Group that you and others with similar access needs are part of. Your account administrator can use the **User Roles** section of this page to [manage role memberships](tshoot.md#editing-account-settings-and-admin-operations). Alternatively, you can also add yourself to any existing Security Group that is already associated with one of the User Roles.
+
+### I get a "User has access to none of the specified tables. Contact your account owner to get access." error. What should I do?
+
+1. Initially you need to check if there is any cache stored in your browser resulting this error. Please click on **click here to clear your cached credentials.** link to clear the cache as shown in below image.
+
+    ![AuthError][AuthError]
+
+2. If you are still receiving this error, please follow these [troubleshooting steps](tshoot.md#mitigation-steps) to determine the owners of your Logs account to provide you the access on the account.
+3. To determine the permissions on a specific event/runner/configuration, please use [Logs Permission Checker](tshoot.md#logs-permission-checker)
+4. Check if there are any [**Exclusive Read**](../howtoguides/compliance/sensitive.md) permissions set on the Event(s)/Namespace.
+5. Check if the event you are querying in DGrep is actually present/configured in the Logs configuration file on which Monitoring Agent is running.
+6. If you are still blocked, then please create an [incident][IcM] with list of troubleshooting steps performed.
+
+### Unable to Manage User roles
+When you are trying to manage your user roles like adding/removing a certificate or user/SG and receive below error
+> Exception:Bad request made to MDS,MdsMessage:Microsoft.Cis.Monitoring.Mds.MdsAccount.MdsAccountException: **_Failed to validate claim with error:No namespace is owned that is prefix to regex ^YourNamespace.*_**  
+
+This error means that "_YourNamespace_" namespace has some orphan claims and those need to be removed. To do this:   
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select your **Endpoint** & **Account**
+2. Go to **User Roles** 
+3. Go to **Claims** in all User roles
+4. Search for the **"_YourNamespace.*_"** claim and select and delete the claims from all **Kind** 
+
+> [!NOTE]  
+> Only users having privilaged/admin permissions can perform above mentioned operations.  
+
+### Unable to Delete Namespace (Remove Agent claim)
+When you are trying to delete namespace and receive below error or you want to delete Agent claims please follow these below steps:
+> Request Id:&lt;&lt;GUID&gt;&gt;, Exception: **Cannot remove namespace &lt;&lt;YourNamespace&gt;&gt; because it is require for claim Kind = Agent, Resource = ^YourNamespace.*, Right = ExecuteInherited from = in user role &lt;YourAccount&gt;_MaCommunication**
+
+This error means that "_YourNamespace_" namespace has Agent claim and it needs to be removed. To do this:   
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select your **Endpoint** & **Account**
+2. Go to **User Roles** 
+3. Go to **Claims** in all (if multiple) User roles
+4. Search for the **"_YourNamespace.*_"** claim under **Agent kind** then select and delete it  
+
+> [!NOTE]  
+> Only users having privilaged/admin permissions can perform above mentioned operations. 
+
+
+### Is there a troubleshooting tool available to validate the streaming events in the local configuration file or look at the streaming events in a configuration stored in Geneva Logs?
+
+__From the UI__
+
+The Geneva Manageability UX is the best troubleshooting tool for your needs. Please go to [Manageability UX][ManageabilityUX]
+
+From there you can authenticate with your Endpoint and select your Logs account, then you will see something similar to the image below:
+
+![Log Configurations][LogConfigurationsImage]
+
+Select the Configuration in which your event is specified, and in the Configuration builder UX that launches, navigate to "What to collect" tab, and "Event Streaming" section. 
+
+![Event Streaming settings][StreamingImage]  
+
+<!-- Reference links -->
+
+[ManageabilityUX]: https://portal.microsoftgeneva.com/account/logs/configurations  "Manage Logs Settings"
+[AccessControl]: ../Howtoguides/Manageaccount/access.md "Controlling access to your Logs"
+[TokenDiagnostics]: tshoot.md#tokendiagnostics-links "Token diagnostics tool"
+[dSTSSupport]: mailto://dstshot@microsoft.com "dSTS support email"
+[SG]: ../howtoguides/manageconfig/securitygroups.md "Security Groups"
+[TSAuth]: ./tshootAuth.md "Troubleshooting Authentication"
+[LogsAccount]: https://portal.microsoftgeneva.com/account/logs "Logs Account"
+[IcM]: https://aka.ms/Geneva/teams "Finding right team for creating IcM"
+[idweb]: https://idweb.microsoft.com/identitymanagement/default.aspx "Idweb/"
+[MyAccess]: https://myaccess/identityiq/home.jsf "MyAccess"
+
+<!-- Images -->
+[MdsAccountAdminRoleImage]: ../images/MdsAccountAdminRole.png
+[LogConfigurationsImage]: ../images/Configurations.png
+[StreamingImage]: ../images/Streaming.png
+[PermissionsCheckerImage]: ../images/PermissionsChecker.png
+[PermissionsCheckerImage2]: ../images/PermissionsChecker2.png
+[AuthError]: ../images/AuthError.png
+[LogsAccountSearch_1]: ../images/LogsAccountSearch_1.png
+[LogsAccountSearch_2]: ../images/LogsAccountSearch_2.png
+[AddingAdmin]: ../images/AddingAdmin.png
+[AdminAliasWarning]: ../images/AdminAliasWarning.png
+[UpdateAdminAlias]: ../images/UpdateAdminAlias.png
+[UpdateSG_1]: ../images/UpdateSG_1.png
+[UpdateSG_2]: ../images/UpdateSG_2.png

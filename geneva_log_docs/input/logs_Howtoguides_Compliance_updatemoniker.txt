@@ -1,0 +1,150 @@
+# Updating Legacy Moniker page with Subscription Id
+
+Geneva needs to ensure Storage account containers are immutable for JEDI compliance.
+
+We need the Azure Subscription and Resource group information for new/existing Storage account association. You are required to provide either new or updated **ARM** managed Storage accounts.
+Classic storage accounts are invalid.
+
+For example, see below on where to update these in Geneva and fetching values from the portal. This is applicable only for non GSM based Monikers. 
+
+**Learn how to provide Geneva access to your [Subscription][subscription].**
+
+
+![Legacy Storage Account][LegacyStorageAccount]
+
+![Azure Portal View][PortalImage]
+
+## To set a moniker via CLI
+
+From a PowerShell prompt, run the following commands: 
+
+ 
+```powershell
+    Import-Module .\GenevaWarmPathClient.psm1 
+
+    $environment = "<WarmPathEnvironment>"
+    $mdsAccount = "<Account name>"
+    $monikerName = "<Moniker Name>"
+
+    # refer to [this page](~/logs/Howtoguides/powershell.md) for details on other methods for creating a credential
+    # Using cert
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.CertificateCredential("1272457D65E7EB013519683A4B070338A2C2977D", "My", "LocalMachine")
+
+    Set-WarmPathContext -Credential $credential -WarmPathEnvironment $environment -WarmPathAccountName $mdsAccount
+
+    $moniker = Get-WarmPathMoniker -WarmPathEnvironment $environment -WarmPathAccountName $mdsAccount -Credential $credential -Moniker $monikerName
+    $moniker.StorageAccount
+
+    $subscriptionId = "<Subscription Id>"
+    $resourceGroup = "<ResourceGroup Name>"
+    $storageAccountName = "<Storage account Name>"
+    $storageKey = "<Access Keys Not Encrypted>";
+    $storageKey = Get-WarmPathEncryptedText -WarmPathEnvironment $environment -WarmPathAccountName $mdsAccount -PlainText $storageKey
+    $storageSuffix = "core.windows.net"
+
+    $storageAccountObject = New-WarmPathStorageAccountObject -SubscriptionId $subscriptionId -ResourceGroup $resourceGroup -StorageNamespace $storageAccountName -EncryptedKey $storageKey -BlobUri "https://blob.$($storageSuffix)" -QueueUri "https://queue.$($storageSuffix)" -TableUri "https://table.$($storageSuffix)" 
+                                                          
+    $region = "<Region Name>"  #examples: eastus   westus2
+    
+    $config = New-WarmPathMonikerObject -Moniker $monikerName -Region $region -StorageAccount $storageAccountObject -EventHubAccount $moniker.EventHubAccount
+    try 
+ -- openCurlyBracket -- 
+
+        Set-WarmPathMoniker -WarmPathEnvironment $environment -WarmPathAccountName $mdsAccount -Credential $credential -Configuration $config -Moniker $config.Moniker
+    
+ -- closeCurlyBracket -- 
+
+    catch
+    
+ -- openCurlyBracket -- 
+
+        $e = $_.Exception
+    
+ -- closeCurlyBracket -- 
+
+
+```
+
+For Mds.exe (legacy), run the following commands to update a Storage Account
+
+```powershell
+    $endpoint = "<MdsEndpoint>"
+    $mdsAccount = "<Account name>"
+    $monikerName = "<Existing Moniker Name>"
+
+    mds config $endpoint -command:listonemetaobject -objectId:$monikerName -kind:storageaccount -mdsaccount:$mdsAccount
+
+    # Create a new file called: storage.xml
+    <?xml version="1.0" encoding="utf-8"?>
+    <MdsConfig>
+      <XstoreAccountInfos>
+        <XstoreAccountInfo name="<Existing Moniker Name>"
+          usePathStyleUris="false"
+          accountName="<Storage Account Name>"
+          azureSubscriptionId="<Subscription Id>"
+          azureResourceGroup="<Resource Group>"
+          accountSharedKey="<Encrypted Key or Non Encrytpted Key>"
+          tableUri="https://table.core.windows.net"
+          queueUri="https://queue.core.windows.net"
+          blobUri="https://blob.core.windows.net"
+          location="<Location>"
+        />
+      </XstoreAccountInfos>
+    </MdsConfig>
+
+    # Add storage accounts (sample command for diag prod)
+    mds config http://prod.diagnostics.monitoring.core.windows.net -command:addstorageaccounts -configFile:storage.xml -mdsaccount:<Account Name>
+
+
+```
+## Reference Links
+[Mds Endpoints][endpoints]
+
+[Access to Subscription][subscription]
+
+[Mds.exe download](https://dev.azure.com/msblox/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_packaging?_a=package&feed=AzureGenevaMonitoring&view=overview&package=MDS-Tools&protocolType=NuGet)
+
+## Troubleshooting
+
+- Microsoft.Cis.Monitoring.Mds.mdscommon.ConfigParserException: Exception when parsing configuration: Error: The 'azureSubscriptionId' attribute is not declared. line: 6 column: 7
+   Error: The 'azureResourceGroup' attribute is not declared. line: 7 column: 7
+
+    This error means the underlying service is getting updated. You cannot save the Azure Subscription Id / Resource Group yet. If you are creating a New Moniker, there are two options:
+     - Use Provision Resources option with access to your Subscription. This will create a default Storage Account/Event Hub that Geneva can manage.
+     - Use tooling to provision resources till the service is updated. Please note this will be backfilled soon. Please use a ARM based storage account. See sample [Mds.exe][https://dev.azure.com/msblox/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_packaging?_a=package&feed=AzureGenevaMonitoring&view=overview&package=MDS-Tools&protocolType=NuGet] below or use the Powershell Cmdlets from above
+
+ ```
+Create storage.xml
+<?xml version="1.0" encoding="utf-8"?>
+<MdsConfig>
+  <XstoreAccountInfos>
+    <XstoreAccountInfo name="<Moniker Name>"
+      usePathStyleUris="false"
+      accountName="<Storage Account Name>"
+      accountSharedKey="<Encrypted Key>"
+      tableUri="https://table.core.windows.net"
+      queueUri="https://queue.core.windows.net"
+      blobUri="https://blob.core.windows.net"
+      location="<Location>"
+    />
+  </XstoreAccountInfos>
+</MdsConfig>
+
+Add storage accounts (diag prod)
+mds config http://prod.diagnostics.monitoring.core.windows.net -command:addstorageaccounts -configFile:storage.xml -mdsaccount:<YourAccountName>
+
+ ```
+
+
+<!-- Image links -->
+[LegacyMonikerView]: ../../images/LegacyMonikerView.png
+[LegacyStorageAccount]: ../../images/legacystorageaccount.png
+[PortalImage]: ../../images/portalimage.png
+
+<!-- Reference links -->
+
+[DocsPage]: ~/logs/Howtoguides/powershell.md "Managing Logs account through PowerShell"
+[Nuget.org]: https://www.nuget.org/downloads "Nuget Link"
+[references]: ~/logs/Howtoguides/powershell.md#references "References"
+[endpoints]: ../../Resources/endpoints.md "Endpoints"
+[subscription]: ../Manageaccount/subscriptionpermissions.md "Access to subscription"

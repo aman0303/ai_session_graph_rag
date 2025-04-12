@@ -1,0 +1,5 @@
+# Authorization
+
+### Is there any criteria for certificates used for authorization in MDS Mont diag service?
+
+The Ev2 extension requires a certificate that is issued by Microsoft. If the account already exists, MDS checks that the certificate is authorized to work on this account. If the certificate isn't there, it will be added.

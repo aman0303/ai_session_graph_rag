@@ -1,0 +1,308 @@
+
+# Join and var clauses
+
+
+The following are examples of join and var clauses. The example assumes that ActivityId is a field in both the events that are joined together.
+
+You can find more samples in[ this test MA configuration file](https://msazure.visualstudio.com/DefaultCollection/One/_git/EngSys-MDA-CloudAgent?path=%2Fsrc%2Fconfig%2F2.0%2Finit%2Ftest%2FMaJoinTest2.xml&amp;version=GBmaster&amp;_a=contents).
+
+
+The join clause matches together records in two events that have the same field values specified using the equals keyword. You can match multiple field values by comma separating the fields names, but both lists of field names on either side of the equals keyword must be the same length. The records derived from the table following the join keyword are the inner records. The outer records are the ones that come from executing the query on the source event. You can only have one join clause in a query.
+
+The var clause executes a nested query and saves the resultant collection of records for later use. You reference the result of a nested query by using a from clause. You can only have one from clause in a query and it must be the first clause. You cannot have a from or join clause in a nested query. You can have multiple nested queries, however.
+
+The inner table specified either directly in the join or via the var clause must be of the same store type as the outer table. In these examples the source events are "local". Instead of the "equals" keyword you can also use "contains". You read it as field-outer contains field-inner.
+
+In the first example, the DebugAuditEvent1 event contains the records that have a matching ActivityId in the audit and debug events. The inner and outer records are queried within the same time range. The resultant fields consist of the unique field names (field names that are not in both source events) plus the  
+TIMESTAMP from the DiagnosticAuditEvent field. If both records have fields with matching names, you can disambiguate them and put them in the result by prefixing them with either "inner" or "outer".
+
+Note that if the inner collection of records is very large the query can be inefficient to run. To remedy this we recommend that you cut down the number of inner records before making the match as shown in the next example.
+
+          &lt;DerivedEvent source="DebugEtwEvent"
+                        eventName="DebugAuditEvent1"
+                        storeType="CentralBond"
+                        duration="PT5M"&gt;
+            &lt;Query&gt;
+              &lt;![CDATA[
+              join DiagnosticAuditEvent on ActivityId equals ActivityId let AuditTs=inner.TIMESTAMP
+            ]]&gt;
+            &lt;/Query&gt;
+          &lt;/DerivedEvent&gt;
+    
+          &lt;!--
+            You can improve the efficiency of this query by grouping the inner events by the ActivityId,
+            so that you only have one inner record per unique ActivityId.
+            The fields in the result of this query will match the fields of the matched out events (i.e. DebugEtwEvent).
+            You can still do this even if you do care about the inner fields, by adding the ones you care about back
+            using let after the groupby (i.e. let MyAuditField=Last(MyAuditField)). Alternatively you could also shrink
+            the inner collection using the where clause.
+          --&gt;
+    
+          &lt;DerivedEvent source="DebugEtwEvent"
+                        eventName="DebugAuditEvent2"
+                        duration="PT5M"&gt;
+            &lt;Query&gt;
+              &lt;![CDATA[
+              var x = from DiagnosticAuditEvent groupby ActivityId ;
+              join x on ActivityId equals ActivityId
+            ]]&gt;
+            &lt;/Query&gt;
+          &lt;/DerivedEvent&gt;
+
+The following is an example of how you can use the storeType Binary feature in a pub/sub type of scenario. This is a specialized feature where data is uploaded in blob format and the path to each blob uploaded is queued  to the specified notification queue. For most scenarios we recommend using our storeType="CentralBond" formats.
+
+The Geneva formats for MA executed derived events are Local and CentralBond. If you derived event is centrally run (i.e. run in the Geneva Logs service) we do not support emitting data in CentralBond format yet, so you have to use Central; the input data coming from MA should be CentralBond, however.
+
+The message format of the queued message is the following if the blob type is binary ("MdsBlobCsv" is substituted  if the type is CSV): <Ms><M><D>QueueName</D><T>UTC Time</T><Cs><C>MdsBlobBinary:ContainerName/IdentityPath/.tmf or .csv file</C></Cs></M></Ms>"
+
+
+
+    
+         &lt;DerivedEvent source="ComputeHourUsageEvent"
+                        eventName="ComputeHourUsageData"
+                        storeType="CentralBond"
+                        duration="PT5M"&gt;
+            &lt;PostTaskActions&gt;
+              &lt;NotificationQueueAction queueName="my-simple-queue1" queueType="Address" /&gt;
+            &lt;/PostTaskActions&gt;
+            &lt;Query&gt;&lt;/Query&gt;         # This empty query just uploads all of the data.
+          &lt;/DerivedEvent&gt;
+
+
+# Use query variable to build two different types of grouping in one derived event
+
+
+The following is an example of how you can use query variables to build two different types of grouping in one derived event. In this case all the input rows come from the derived event source. You could also use from clauses in your nested queries to union together data from multiple tables.
+
+You can find more samples in[ this test MA configuration file](https://msazure.visualstudio.com/DefaultCollection/One/_git/EngSys-MDA-CloudAgent?path=%2Fsrc%2Fconfig%2F2.0%2Finit%2Ftest%2FMaJoinTest2.xml&amp;version=GBmaster&amp;_a=contents).
+
+    
+        <DerivedEvent source="QuantileEtwEvent"
+                        priority="High"
+                        deadline="PT7M"
+                        duration="PT5M"
+                        storeType="CentralBond
+                        eventName="MetricsFiveMinuteRoleInstance" >
+            <Query>
+              <![CDATA[
+            var MetricsBase1 =
+                let Blob = "Blob"
+                let Table = "Table"
+                let Queue = "Queue"
+                let IsBlobRole = (Role == "Nephos.Blob")
+                let IsTableRole = (Role == "Nephos.Table")
+                let IsQueueRole = (Role == "Nephos.Queue")
+                let IsAccountRole = (Role == "Nephos.Account")
+                let IsFailure =
+                   (Operation == "PreOperationFailure" ||
+                    Operation == "IPThrottlingFailure")
+                let IsBlobSummary =
+                  (Operation == "ServiceManagerPutBlob" ||
+                  Operation == "ServiceManagerCopyBlob" ||
+                  (IsBlobRole &amp;&amp; IsFailure))
+                let IsTableSummary =
+                  (Operation == "CreateTable" ||
+                  Operation == "Batch" ||
+                  (IsTableRole &amp;&amp; IsFailure))
+                let IsQueueSummary =
+                    (Operation == "GetMessage" ||
+                    (IsQueueRole &amp;&amp; IsFailure))
+                let IsAccountSummary =
+                    (Operation == "CreateAccount" ||
+                     (IsAccountRole &amp;&amp; IsFailure))
+                let OperationClass =
+                  (IsBlobSummary ? "Blob Summary" :
+                  (IsTableSummary ? "Table Summary" :
+                  (IsQueueSummary ? "Queue Summary" :
+                  (IsAccountSummary ? "Account Summary" : ""))))
+                where OperationClass != ""
+                groupby OperationClass,Result
+                let TotalCount=Count()
+                let TotalDuration=Sum(1.0*DurationInMilliseconds)
+                let TotalSize=Sum(1.0*DataSizeInBytes)
+                let TotalProcessingTime=Sum(1.0*ProcessingTimeInMilliseconds) ;
+    
+            var MetricsBase2 =
+                let IsBlobPut =
+                    (Operation == "ServiceManagerPutBlob" ||
+                    Operation == "ServiceManagerPutPage" )
+                let IsBlobGet =
+                    (Operation == "ServiceManagerGetBlob" ||
+                    Operation == "ServiceManagerGetPageRangeList" )
+                let IsTableCud =
+                  (Operation == "CreateTable" ||
+                  Operation == "Batch")
+                let IsTableQuery =
+                  (Operation == "GetTableRow" ||
+                   Operation == "GetTableRows")
+                let IsQueueCud =
+                  (Operation == "GetMessage" ||
+                  Operation == "DeleteQueue")
+                let OperationClass =
+                  (IsBlobPut ? "Blob Put" :
+                  (IsBlobGet ? "Blob Get" :
+                  (IsTableCud ? "Table CUD" :
+                  (IsTableQuery ? "Table Query" :
+                  (IsQueueCud ? "Queue CUD" : "")))))
+                where OperationClass != ""
+                groupby OperationClass,Result
+                let TotalCount=Count()
+                let TotalDuration=Sum(1.0*DurationInMilliseconds)
+                let TotalSize=Sum(1.0*DataSizeInBytes)
+                let TotalProcessingTime=Sum(1.0*ProcessingTimeInMilliseconds) ;
+    
+            from MetricsBase1,MetricsBase2
+    
+            let IsSuccess = 0
+            let IsUnexpectedFailure = 0
+            let IsExpectedFailure = 0
+            if (Result == 0 || Result == 4 || Result == 9 ||
+                Result == 100 || Result == 104 || Result == 109 )
+            
+ -- openCurlyBracket -- 
+
+               IsSuccess = 1
+            
+ -- closeCurlyBracket -- 
+
+            else if (Result == 1 || Result == 7 || Result == 11 ||
+                     Result == 101 || Result == 107 || Result == 111 )
+            
+ -- openCurlyBracket -- 
+
+               IsUnexpectedFailure = 1
+            
+ -- closeCurlyBracket -- 
+
+            else if (Result == 5 || Result == 6 || Result == 8 || Result == 10 || Result == 12 ||
+                     Result == 105 || Result == 106 || Result == 108 || Result == 110 || Result == 112 )
+            
+ -- openCurlyBracket -- 
+
+               IsExpectedFailure = 1
+            
+ -- closeCurlyBracket -- 
+
+            groupby Tenant, Role, RoleInstance,OperationClass
+            let TotalCount=Sum(TotalCount)
+            let TotalDuration=Sum(TotalDuration)
+            let TotalSize=Sum(TotalSize)
+            let TotalProcessingTime=Sum(TotalProcessingTime)
+            let SuccessCount=Sum(IsSuccess * TotalCount)
+            let SuccessDuration=Sum(IsSuccess * TotalDuration)
+            let SuccessSize=Sum(IsSuccess * TotalSize)
+            let SuccessProcessingTime=Sum(IsSuccess * TotalProcessingTime)
+            let UnexpectedFailureCount=Sum(IsUnexpectedFailure * TotalCount)
+            let UnexpectedFailureDuration=Sum(IsUnexpectedFailure * TotalDuration)
+            let UnexpectedFailureSize=Sum(IsUnexpectedFailure * TotalSize)
+            let UnexpectedFailureProcessingTime=Sum(IsUnexpectedFailure * TotalProcessingTime)
+            let ExpectedFailureCount=Sum(IsExpectedFailure * TotalCount)
+            let ExpectedFailureDuration=Sum(IsExpectedFailure * TotalDuration)
+            let ExpectedFailureSize=Sum(IsExpectedFailure * TotalSize)
+            let ExpectedFailureProcessingTime=Sum(IsExpectedFailure * TotalProcessingTime)
+            ]]>
+            </Query>
+          </DerivedEvent>
+
+The following sample shows how to pull data from three separate source event tables and push the result to one combined table. Within each VAR clause you can also add other query clauses, like *groupby*. You can also place query clauses after the *from x, y, z*statement.
+    
+    <DerivedEvent source="DataSetEvent1"
+              duration="PT5M" storeType="CentralBond"
+              eventName="CombinedDataSet" >
+       <Query>
+         <![CDATA[
+            VAR x = from DataSetEvent2 ; VAR y = from DataSetEvent3; VAR z = ; from x, y, z
+         ]]>
+       </Query>
+    </DerivedEvent>
+
+Also, [see stackoverflow](https://stackoverflow.microsoft.com/questions/62137/the-var-sample-lacks-explanatory-details) for more detailed information about how to use VAR and how it works.
+
+
+# Sourceless derived event 
+```
+          <DerivedEvent source="ComputeHourUsageEvent"
+                        eventName="ComputeStreamedData"
+                        storeType="CentralBond"
+                        duration="PT300S">
+            <PostTaskActions>
+              <NotificationQueueAction queueName="my-simple-queue1" queueType="Address" />
+            </PostTaskActions>
+            <Query></Query>         # This empty query just uploads all of the data.
+          </DerivedEvent>
+```
+
+noMdsGc: optional - Turns off retention based garbage collection for the destination table.  This is false by default and is typically used with partition keys that use FakeTimeStampTicksString().
+
+
+## PartitionKey Override
+
+Note that if you override the derived partition an row key, the data will not be searchable within the Geneva/MDS system (i.e. it is not compatible with MDS data access clients or UI). Also, note that partition and row keys are not used in the CentralBond format, since that is a blob format.
+
+The let clauses for overriding the partition and row keys must be at the start of the query.
+
+```    
+          <DerivedEvent duration="PT15M"
+              overwriteDestTable = "true"
+              whereToRun = "Local"
+              retryTimeout="PT0M"
+              noMdsGc="true"
+              eventName="MAStatusReportTable">
+            <Query>
+              <![CDATA[
+                let PartitionKey=FakeTimeStampTicksString()
+                let RowKey=GetEnvironmentVariable("MA_HEARTBEAT_IDENTITY")
+                let HeartbeatIdentity = GetEnvironmentVariable("MA_HEARTBEAT_IDENTITY")
+                let ConfigFileMD5 = GetEnvironmentVariable("MA_CONFIGFILE_MD5")
+                let TargetConfigFileMD5 = GetEnvironmentVariable("MA_CONFIGFILE_MD5")
+                let LastUpdateTime = EndOfQueryInterval()
+                let Context = GetEnvironmentVariable("DEFAULT_MA_ACCOUNT_NAME")
+              ]]>
+            </Query>
+          </DerivedEvent>
+```
+
+The following is an example of how you can use the external derived events feature. This feature is only available for centrally run derived events. Each source table matched by the external source regex is queried and processed separately. Three new attributes were added to derived events to support this feature:
+
+
+- externalSource: Specifies a regex for the external table name. For example, for the external tables MdsIisLogWebSiteOneVer2v0 and MdsIisLogWebSiteTwoVer2v0  you can use the following regex: MdsIisLogWebSite.\*
+- externalSourceNumVersions: optional.   0 means do an exact match on the source, which should include the version suffix; 1 means latest version only; 2 means second latest version only, etc.
+- queryDelay: recommended - specifies how long to delay running the event derived from the external tables. When setting this attribute you need to make sure that the query delay value is large enough to allow for all of the source data to be populated in the source table.
+- For example, if this task runs every 5 minutes and the source task runs every 5 minutes, then the PT20M query delay means that the task that runs for the data between 1:00 PM and 1:05 PM starts at 1:20 PM.
+
+```    
+          <DerivedEvent externalSource="MdsIisLogWebSite.*"
+                        externalSourceNumVersions="1"
+                        queryDelay="PT20M"
+                        duration="PT5M"
+                        eventName="DerivedFromExtIis" >
+            <Query></Query>         # An empty query just means copy all of the data to the event.
+          </DerivedEvent>
+    
+          <!-- External Derived Events
+          The following is an example of how you can derive from an external derived event.
+          When you have another derived event with "DerivedFromExtIis" as the source you need to craft deadline attibute.
+          -->
+          <DerivedEvent source="DerivedFromExtIis"
+                        eventName="DerivedFromDerivedEvent"
+                        deadline="PT25M"
+                        duration="PT5M" >
+            <Query>
+              <![CDATA[
+            where (sc_status == 404)
+            select cs_User_Agent_, sc_status, sc_substatus, c_ip, cs_uri_stem, sc_win32_status, Tenant, Role, RoleInstance
+            ]]>
+            </Query>
+          </DerivedEvent>
+        </DerivedEvents>
+```
+
+
+
+
+
+
+
+
+
+

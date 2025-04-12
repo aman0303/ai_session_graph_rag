@@ -1,0 +1,151 @@
+# The categorize operator
+This operator categorizes strings by similarity and creates a pattern that highlights the common parts of each category.
+
+## Syntax
+*T* `| categorize` *Expression* `into` *ColumnName*
+
+## Arguments 
+- *T*: The input table
+- *Expression*: is a mandatory string expression. 
+- *ColumnName*: is a mandatory name of the new column which will contain the categories
+
+## Returns
+A copy of the input table with an appended new column containing the categories.
+
+> [!NOTE]
+> This operator is only supported in client queries.
+
+
+## Example
+```javascript
+source
+| categorize Message into Category
+```
+
+## Simple query result
+![Simple Categorize Query Example](../images/categorize_query_example.png)
+
+## Implementation details
+This operator groups the input strings into categories such that strings within a category are similar. Each category is then represented by a new string containing the common terms of all messages within the category, as well as wildcards (*) indicating where the input strings differ.
+
+### Algorithm design
+- Preprocess strings by removing numbers and infrequent terms
+- Group similar strings. Two strings are considered similar if their longest common subsequence is longer than a certain threshold.
+- Place small groups into a special category to reduce noise. This category, which we call the *outliers*, is represented by a single wildcard (*).
+
+### Input strings example:
+
+> Starting gateway service.
+> <br>
+> Starting backend service.
+> <br>
+> Request took 109 ms to complete.
+> <br>
+> Request took 87 ms to complete.
+> <br>
+> Backend service found too many error in accounts: foo, bar. Exception: file not found in directory.
+> <br>
+> Backend service found too many error in accounts: xyz. Exception: file not found in directory.
+> <br>
+> ...
+> <br>
+
+#### Preprocess strings
+During the preprocessing step, numbers and infrequent terms are removed and replaced by wildcards. An identifier is considered to be frequent if appears in at least 1% of the input messages. This number, called the *support threshold*, might become configurable in future releases.
+
+The following example shows frequent terms in **bold**.
+
+> **Starting** gateway **service.**
+> <br>
+> **Starting** backend **service.**
+> <br>
+> **Request took** 109 **ms to complete.**
+> <br>
+> **Request took** 87 **ms to complete.**
+> <br>
+> **Backend service found too many error in accounts: foo, bar. Exception: file not found in directory.**
+> <br>
+> **Backend service found too many error in accounts: xyz. Exception: file not found in directory.**
+> <br>
+> ...
+> <br>
+
+The numbers and infrequent terms are replaced with wildcards and contiguous wildcards are coalesced. 
+> Starting * service.
+> <br>
+> Starting * service.
+> <br>
+> Request took * ms to complete.
+> <br>
+> Request took * ms to complete.
+> <br>
+> Backend service found too many error in accounts: foo, bar. Exception: file not found in directory.
+> <br>
+> Backend service found too many error in accounts: xyz. Exception: file not found in directory.
+> <br>
+> ...
+> <br>
+
+#### Groups similar strings
+The degree of similarity between two strings is determined by how large their longest common subsequence (LCS) is when compared to the longest of them.
+```javascript
+LCS(P1, P2) / Max(length(P1), length(P2)) >= similarity_threshold
+```
+The *similarity threshold* determines how much commonality there needs to be between strings in the same category. Our implementation uses a similarity threshold of 85%.
+
+For example, when comparing the following two tokenized strings:
+
+|Backend|service|found|too|many|error|in|accounts|:|foo|,|bar|.|Exception|:|file|not|found|in|directory|.|
+|-------|-------|-----|---|----|-----|--|--------|-|---|-|---|-|---------|-|----|---|-----|--|---------|-|
+
+|Backend|service|found|too|many|error|in|accounts|:|xyz|.|Exception|:|file|not|found|in|directory|.|
+|-------|-------|-----|---|----|-----|--|--------|-|---|-|---------|-|----|---|-----|--|---------|-|
+
+
+We find the following LCS:
+
+|Backend|service|found|too|many|error|in|accounts|:|.|Exception|:|file|not|found|in|directory|.|
+|-------|-------|-----|---|----|-----|--|--------|-|-|---------|-|----|---|-----|--|---------|-|
+
+Which meets the similarity threshold:
+```javascript
+LCS(P1, P2) / Max(length(P1), length(P2)) == 18 / Max(21, 19) = 85.7%
+```
+
+So these input strings are placed in the same category:
+> Backend service found too many error in accounts: *. Exception: file not found in directory.
+> <br>
+
+#### Place small groups into the outliers category to reduce noise
+Categories containing less han 1% of the input strings are grouped into a special category called *outliers*. This category is represented as a single wildcard (*).
+
+## Additional Examples
+
+### Display categories by frequency
+This example uses the *summarize* operator to display distinct categories along with the number of messages in each category.
+
+```javascript
+source
+| categorize Message into Category
+| summarize count() by Category
+```
+
+### Recursive Categorization
+The *outliers* category usually contains a variety of infrequent events. The categorize operator can be recursively applied to the *outliers* category to get more insights on the infrequent events. In the following example, the *where* operator is used to filter the messages that belong to the *outliers* category. Only these messages are then categorized again. 
+
+```javascript
+source
+| categorize Message into Category
+| where Category == "*"
+| categorize Message into Category
+| summarize count() by Category
+```
+
+### Log Message Preprocessing
+It is possible to preprocess the input messages before categorizing. The following example shows how the *substring* function can be used to limit the length of the messages to be categorized. In this case, the input to the categorize operator will be only the first 100 characters of each message. 
+
+```javascript
+source
+| categorize substring(Message, 0, 100) into Category
+| summarize count() by Category
+```

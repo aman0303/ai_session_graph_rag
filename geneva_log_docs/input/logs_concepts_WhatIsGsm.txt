@@ -1,0 +1,117 @@
+# What is GSM?
+
+Geneva Automatic Storage Management (GSM) feature enables the underlying provisioning and management of Azure resources, such as storage and event hub namespaces on behalf of the customers. The days when you needed to painstakingly manage your storage accounts and event hub namespaces for scale out purposes, or service buildout in new regions, are now over.
+
+GSM provides the following capabilities:
+
+* A simplified onboarding & management experience
+* Hands-free resource provisioning and management including:
+  * Automatic resource provisioning when expanding to new regions
+  * Automatic scale-out as your monitoring data volume/flow increases (V2)
+* Health monitoring and reporting of the Azure subscriptions registered with Geneva
+* Automatic access key management
+
+GSM is currently available for newly created Logs accounts in all clouds. Migration of existing accounts to GSM, which can be done through a migration tool, and it is available in all clouds.
+
+Whether you're a newly onboarding customer or migrating your existing account, the following is true:
+
+* When a Geneva managed resource becomes unhealthy, an ICM alert will be raised and routed to Geneva Infra team for which necessary mitigation action will be performed by the Geneva Infra team for the resources in scope.
+  * Geneva team will engage you to take proper action, if the mitigation cannot be performed by Geneva Infra team.
+  * A few examples are:
+    * Not enough capacity in the Azure Subscription (that are registered with Geneva) to create additional storage / EH accounts.
+    * Geneva ACLs are removed from the Azure Subscription.
+
+>[!NOTE]
+> The following operations are not allowed for the GSM enabled Accounts:
+>
+> * Adding / Updating/ Deleting a moniker
+> * Adding mapping monikers in the config – Config upload will fail in the validation phase
+> * Resource Monikers will not be visible for the user in the Manage/Resources page
+
+## GSM managed monikers
+
+Geneva Logs collects diagnostics, audit, and security logs. For each logs account, GSM creates three types of monikers - one for each log type. The GSM moniker name is constructed from the namespace, the type of logs it collects, and the region in which the moniker is deployed. Storage groups created by GSM follow a smiliar naming convention; each storage group name is built from the namespace and the type of logs it collects. Names of storage accounts and EventHubs created by GSM will always start with the prefix "gsm" and end with the suffix "xt" for storage accounts and "eh" for EventHubs. For example, here are the monikers, storage groups, storage accounts, and EventHubs for the namespace GSMdocs:
+
+![GSMMonikerNames](./images/GSMMonikerNames.jpg)
+
+>[!Note]
+>Storage accounts for Audit and Security logs are immutable.
+
+## Onboarding to Geneva Logs with GSM
+
+Users onboarding new Geneva Logs accounts are required to enable GSM. If you have an existing logs account and you want to know how to migrate it to GSM, go to [Migrate to GSM](../Howtoguides/Manageaccount/MigrateToGsm.md).
+
+The onboarding wizard requires two GSM related inputs: an Azure subscription and a Service region where your service is deployed to.
+
+1. **Azure subscription**: You should provide Geneva with a brand new subscription for the following:
+    1. To prevent regressions related to immutable logs, Geneva will apply deny assignments on all storage accounts and EventHubs in that subscription. By using a subscription dedicated to Geneva, you'll reduce over-privileged role assignments.
+    2. Azure subscriptions have quota limits on storage accounts and event hub namespaces. By using an isolated subscription, you can reduce the likelihood of running into quota related issues with the subscription.
+    3. Once registered with Geneva, unregistering a subscription will require deleting and recreating all artifacts (storage groups, shards (monikers), configurations) that have a reference to the subscription. So make sure that the subscription you register with Geneva is not something you would want to [unregister](../howtoguides/manageaccount/migrategsmtonewsub.md) later on.
+    4. Every subscription you register with Geneva will need a one-time setup to permit Geneva to manage Azure resources on your behalf. This setup allows Geneva RW access to monitoring resources (storage accounts and event hubs). Providing Geneva with a dedicated subscription will eliminate security/compliance concerns regarding Geneva having access to your non-monitoring resources.
+
+>[!NOTE]
+> GSM creates Zone-redundant storage (ZRS) storage accounts by default, but will also work with Locally-redundant storage (LRS) and Geo-redundant storage (GRS) storage accounts. You can choose your preferred storage replication type for your Geneva Logs account by following [these steps](../Howtoguides/Manageaccount/EnableAZ.md).
+
+2. **Service region**: You'll be required to provide at least one Azure region during onboarding. You can start with any Azure region where you have your service deployed to, and where you will be trying out GSM in. After this initial bootstrap, Geneva automatically detects expansions to new regions (say, when you deploy your service to a new region and start collecting monitoring data) and provision the required resources behind the scenes. See the [Scale out](#how-does-gsm-detect-a-new-region-that-i-am-expanding-my-service-to) subsection for more details.
+
+## How does GSM detect a new region that I am expanding my service to?
+
+If you want to scale out (deploy) your service to a new Azure region, you don't need to worry about preprovisioning and/or registering the required resources manually. For GSM enabled accounts, start your monitoring agent with the new region in the GCS parameters.
+
+````
+set MONITORING_GCS_REGION=<new region ARM name>
+````
+
+![GSM scale out](./images/GsmScaleOut.png)
+
+* For GSM enabled accounts, provisioning of storage accounts and event hubs in the new region will be handled by Geneva Infrastructure when the Monitoring agent from the newly deployed region is trying to get the SAS tokens for the new region.
+* There will be an initial delay of up to 3-5 mins to provision the necessary storage accounts and event hubs for the new regions and picked up by Monitoring agent.
+* The Monitoring Agent will retry with an exponential back off until the new resources are provisioned and SAS tokens for them are obtained.
+* Once the resources are provisioned and SAS key obtained, monitoring agent will start to push data to the new resources.
+While the monitoring data will start getting recorded in the newly provisioned storage account in about 3-5 minutes, it may take up to 15 minutes or more for the data to be queriable in DGrep.
+
+## How does GSM detect that I need more resources within a region?
+
+GSM creates one storage shard (storage account + Event Hub account) when it scales out to a new region. If this storage shard is not enough to handle the volume of monitoring data generated in that region, a new storage shard may be required to avoid data loss. This section explains how GSM determines if an expansion is required in a region based on metrics collected for the storage account.
+
+GSM gathers following storage metrics for each storage account:
+
+* **TotalRequests** : The requests made to a storage service. This includes success and failed requests.
+* **BlobThrottlingErrorPercentage**: The percentage of requests getting throttled by blob service.
+* **BlobThrottlingError**: The requests getting throttled by the blob service.
+* **TotalThrottlingError**: The requests getting throttled by the (blob + table + queue + file) service.
+* **StorageAvailability**: The availability of the storage service (in percentage). Availability is calculated by taking the TotalBillableRequests and dividing it by the number of applicable requests, including those that produced unexpected errors.
+
+>[!NOTE]
+> All unexpected errors result in reduced availability of the storage service.
+
+Using these metrics GSM creates the [Storage health dashboard](https://portal.microsoftgeneva.com/dashboard/GSMHealthMonitoring/HealthMetrics-Resource/HealthMetrics). You can use this dashboard to view the health of the storage accounts. (Replace the Logs account name in the dashboard with your account name).
+
+The following logic is used by GSM to monitor the health of the storage accounts.
+
+* GSM gathers the **BlobThrottlingErrorPercentage** for last 24 hours.
+* GSM divides the timeseries into 8 buckets of 3 hours. It checks whether there was an increasing trend in throttling percentage in each of the buckets.
+* GSM checks whether there was a continuous throttling of more than 5% for the entire 24 hours.
+
+![Storage throttling](./images/StorageThrottling.png)
+
+If GSM deems the storage accounts unhealthy, it will automatically expand in that region by provisioning a new storage shard.
+
+In addition to Storage Accounts, GSM also monitors metrics on the Event Hub in the Storage Shard:
+
+* **EHINMSGS** : Total incoming messages for a namespace
+* **IncomingMessages** : Incoming Messages for Microsoft.EventHub
+* **OutgoingMessages** : Outgoing Messages for Microsoft.EventHub
+* **ThrottledRequests** : Throttled Requests for Microsoft.EventHub
+* **SVRBSY** : Total server busy errors for a namespace
+* **EventReceived_IdleTimeMillis**  - Eventhub Event Received per minute
+
+Using these metrics, GSM creates the [Event Hub health dashboard](https://portal.microsoftgeneva.com/s/B805C0D8?globalStartTime=1661374365057&globalEndTime=1661385165057&pinGlobalTimeRange=true).  You can use this dashboard to view the health of specific Event Hubs. (Replace the Logs account name in the dashboard with your account name).
+
+GSM uses the following thresholds to monitor the health of the event hubs:
+
+In the last 24 hours, if any of these metrics exceed the given threshold, an additional storage shard (Storage account + Event Hub pair) will be allocated for the affected storage group in the same region.  A maximum of one expansion per storage group per region per 24 hours will be performed.
+
+EHINMSGS / IncomingMessages / OutgoingMessages : 3.6M events per minute
+ThrottledRequests / SVRBSY : 5 instances per minute
+EventReceived_IdleTimeMillis : 80,000 ms per minute

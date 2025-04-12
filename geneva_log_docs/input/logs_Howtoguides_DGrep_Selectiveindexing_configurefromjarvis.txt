@@ -1,0 +1,54 @@
+# Configure Selective Indexing from Jarvis UI
+
+
+
+In this tutorial, you will learn how to enable selective indexing by interacting with Jarvis UI.
+
+## Prerequisites
+
+We require customers to provide their own Kusto clusters to host the index event. Therefore, before enabling selective indexing, you should go through the following steps:
+
+1. Create a Kusto cluster and enable [ingestion from Geneva](../../../../connectors/Geneva%20to%20Kusto/overview.md). DGrep is not connected to GDS, new customers should still follow the GDS path for Kusto ingestion and on top of that complete the prerequisites step of the legacy path.
+1. If the kusto cluster's URL is https://clusterName.**region**.kusto.windows.net, go to [Jarvis > Actions > AzureLogAnalyticsControlPlane > DGrep > AddKustoClusterUrlOverride](https://portal.microsoftgeneva.com/748E392A?genevatraceguid=80ced77c-3b3f-4d4b-8db2-bbd32bc6cfb5), enter your kusto Cluster's URL in *Kusto URL Override* field. The update might take a few minutes. For any issue, please open ticket to [DGrep](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=qD3J3Q).
+1. Authorize DGrep to read from your Kusto database. This can be done by running the following command in your cluster:
+   ```javascript
+   .add database <database name> viewers ('dstsapp=dgrep.prod.pipeline.msftcloudes.com')
+   ```
+
+## Step-by-Step
+
+### 1. Add Index
+
+From the DGrep UI, select the Event and click on the Add Index button. 
+
+![Add Index to Event.](../../images/dgrep_ConfigureSI_1.png "Add Index to Event.")
+
+### 2. Select field(s)
+
+* Select the field(s) from the Event, to be Indexed. 
+* Click "Evaluate" to get an estimate of the effectiveness of the index, based on how sparsely the selected field values are distributed.
+* Click "Continue" to proceed further.
+
+![Select fields to Index.](../../images/dgrep_ConfigureSI_2.png "Select fields to Index.")
+
+### 3. Generate Configuration
+
+Review your column selection(s) and click "Generate Configuration" button
+
+![Generate Configuration.](../../images/dgrep_ConfigureSI_3.png "Generate Configuration.")
+
+### 4. Save Configuration
+
+Save the configuration by clicking on the "Save" button on the top right corner
+
+![Save Configuration.](../../images/dgrep_ConfigureSI_4.png "Save Configuration.")
+
+### 5. Deploy Configuration
+
+Deploy the new configuration. This can be done either through GCS, or by deploying the configuration package with your service.
+
+### 6. Start using the Index
+
+Within about 10 minutes after the configuration change is saved, DGrep UI will show the indexed fields in the scoping conditions section. The index will be used only when the query specifies a scoping condition in one of the indexed fields.
+
+![Use Index.](../../images/dgrep_ConfigureSI_5.png "Use Index.")

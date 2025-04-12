@@ -1,0 +1,105 @@
+# Restricted Access to Production Geneva Logs
+
+## Why is this important
+
+Recent security efforts require the isolation of Microsoft tenants/environments, including the lockdown of Azure production resources and data to be accessible by production accounts only. Geneva Monitoring collects more than 950PB/day of service logs that are accessible to corp accounts who have default membership in the **REDMOND\Azure_All_PSV** corp security group, or accounts authorized via Geneva user roles.
+
+Having access to production Geneva logs via corp accounts is a security vulnerability because these logs may contain sensitive and business critical information. To address this vulnerability, Geneva Monitoring is restricting access to Geneva Logs to authorized accounts only (i.e. *ME/Torus or direct members of a Geneva user role).
+
+## Who is impacted
+
+This change will impact the following:
+
+- Users who query Geneva Logs through the Jarvis portal or Logs clients (DGrep/DGrep SDK) via a corp account
+- Services who export Geneva data to Kusto/Cosmos using Geneva Integration Services (GDS, Uploaders) via a corp account/application
+
+
+## Timeline
+
+We will rollout restricted access to production Geneva Logs over the next few waves.
+
+### SFI Wave 4
+
+In SFI Wave 4, default access to all Geneva logs via the Redmond/Azure_All_PSV security group will be deprecated.  Users who authenticate to Geneva through this SG will need to obtain direct access to a logs account. Please coordinate with a Geneva account owner/admin to maintain access to logs.
+
+
+### SFI Wave 5+
+
+In SFI Wave 5 and beyond, we will work on a solution to ensure authorized users have access to Geneva Logs through a secure manner. Further guidance for safely accessing telemetry is pending, and will be shared via this wiki once finalized.
+
+## How to resolve the issue 
+
+### Geneva Admins
+
+We are encouraging Geneva Admins to use this opportunity to review the who has access to your logs, and remove any outdated users, certificates, and security groups.
+
+#### Review your Geneva Logs account user roles
+
+1. Log into the Jarvis Portal with your production account (*ME/Torus)
+2. Navigate to Logs Account Settings -> User Roles
+3. Select the appropriate Logs Endpoint and Logs Account to view all user roles.
+4. Select "View" under the "Users" column to view all users within the role.
+
+![View Users](../images/GenevaCorpLockdown1.png)
+
+5. Review the list of users for the selected role. Click the checkbox for all outdated accounts and/or users who no longer need access. Select "Delete" to remove access. 
+
+![Update Users](../images/GenevaCorpLockdown2.png)
+
+More information on managing user roles can be found on the [Geneva Docs - Manage User Roles](https://eng.ms/docs/products/geneva/logs/howtoguides/manageaccount/access) wiki.
+
+### Geneva Users
+
+Effective March 6, 2025, we will update the Jarvis UI interface to alert users accessing Geneva Logs through the **Redmond/Azure_All_PSV** security group. Users will receive the following notification and will need to contact the logs account owner/administrator to resolve their access permissions. 
+
+![DGrep Error Message](../images/GenevaCorpLockdown_DgrepExp.jpg)
+
+To resolve this, users should connect with a Geneva account admin to request access to the appropriate Geneva account. Although not required *yet*, it is strongly recommended that you use your *ME or Torus production account to access logs. Information on  *ME account setup is available at [MFA Account Creation](https://aka.ms/amecard). 
+
+### Service Admins
+
+If your service owns a Geneva account with an outdated administrator list (i.e. admins which have left the company and/or are no longer on your service), please follow the steps below:
+
+1. [Submit an IcM](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354) on the Geneva Logs Infra Support team to gain access to the Geneva Account.
+2. Follow the steps provided in the "Geneva Admins" section above to review your accounts and update as required.
+
+Please note: Although the Geneva Logs Support team will enable access for the user, the user account maintenance must be carried out by the Geneva Account admin.
+
+## FAQ
+
+### How do I know if I'm authenticating via Redmond/Azure_All_PSV?
+
+All users who authenticate to Geneva Logs via Redmond/Azure_All_PSV will see a popup message in the Jarvis UI indicating that you are a member of this SG and need to take action. Please contact the admin/owner of the Geneva account to obtain direct access to Geneva logs account. 
+
+### How does this affect sending my Geneva log data to downstream data stores (Kusto, Cosmos, etc)?
+
+All Geneva Integrations and configuration changes (i.e. how/where you export Geneva data) require a production account. Instructions on how to create an account are available at [MFA Account Creation](https://aka.ms/amecard).
+
+If you have uploaded Geneva Logs to Kusto, please be advised that the Kusto Cluster Hardening effort will impact how/where you export your Geneva data. More information can be found at [Kusto Security Hardening wiki](https://kusto.azurewebsites.net/docs/kusto/faq/frosty-speedbump.html).
+
+### I'm a Service Admin and I received an S360 Action Item, but I don't have access to my Geneva Logs MDS account
+
+You will need to [submit an ICM](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354) to the Geneva Logs Infra Support team to gain access to the MDS account. Additional information is available in the "Service Admins" section above.
+
+### Will users require JIT access to view logs?
+
+At present, JIT is not required for access to logs in a production environment. In the future Geneva Account owners will have the ability to require JIT on a per-namespace basis. Additional information and instructions will be provided when that feature is available.
+
+### Can I view my Fairfax logs using a Torus account?
+
+We are aware of a nuance which does not allow Fairfax logs to be viewed using a Torus account. Users are advised to obtain a *ME card/credentials to maintain access. Information on *ME account setup is available at [MFA Account Creation](https://aka.ms/amecard).
+
+### Will I need a SAW to view Geneva Logs?
+
+Further guidance of safely accessing telemetry data is coming. We will update this wiki as soon as additional information is available.
+
+### How is this related to the Kusto Security Hardening effort?
+
+Although similar in nature, this effort is separate from the Kusto Security Hardening effort. Customers needing guidance on how to tag their Kusto clusters which store Geneva Logs should visit the [Kusto Security Hardening wiki](https://kusto.azurewebsites.net/docs/kusto/faq/frosty-speedbump.html).
+
+
+## Get help and support
+
+If you have questions, please attend the Geneva Monitoring office hours
+
+- [Geneva Monitoring Office Hours - Thursday at 9AM PST and 2 PM PST](https://teams.microsoft.com/l/channel/19%3Aac95169b5f744409944749123f597c0e%40thread.skype/Logs%20Infrastructure%20and%20Management?groupId=5658f840-c680-4882-93be-7cc69578f94e&tenantId=)

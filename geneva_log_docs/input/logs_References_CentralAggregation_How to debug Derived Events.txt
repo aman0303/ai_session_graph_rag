@@ -1,0 +1,136 @@
+
+# How to Debug Derived Events?
+
+## Local or MA Run Derived Events
+
+
+See this [help page for testing MA locally](https://portal.microsoftgeneva.com/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=2ef7d9af-9fe3-4c95-ae0e-7b8c42c1d839) run derived events. The rest of this document refers to testing derived events run in the Geneva central service.
+
+
+## Central Derived Events (Only available on [Billing Endpoint](https://jarvis.dc.ad.msft.net/?page=documents&section=1363da01-b6ed-43d4-970e-f89b011d591f&id=d18a0cdb-eb0e-485b-b1bb-cbb6069d352b))
+
+
+The DerivedEventTest.exe utility enables you to test derived event definitions on your development machine. The tool validates your derived event by querying the source table data and executing the derived event locally.  It outputs brief execution result on console and writes detailed debugging logs in DerivedEventTest.log.  DerivedEventTest.exe only debugs central derived event, it will fail if the derived event is local, a derived event is deemed local if the data of the source table exists locally on MA, if the source data exists locally and centrally the derived event is default to local derived event, you can add whereToRun="Central" so that the derived event can be debugged, however remove whereToRun="Central" when deploying the config to Geneva Logs.
+
+
+
+To run and debug a derived event locally you can [run MA on your development box](https://portal.microsoftgeneva.com/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=893a1992-dd44-4a0e-9be2-e9c894028180).
+
+
+
+**Usage**
+
+
+
+DerivedEventTest.exe  
+        -MdsEndPoint: <mds endpoint>  
+        -ConfigFile: <mds config 2.0 file that defines the derived event, if external source is used,  
+                     also add -ExternalConfigFiles parameter>  
+        -SourceTable: <source table name: this table must have been deployed to mds, it should be full name: [Namespace][EventName][MonikerSuffix]Ver[n]v0>  
+        -DestTable: <dest table name: the task will run in memory, dest table does not have to be deployed to mds, it should be full name: [Namespace][EventName][MonikerSuffix]Ver[n]v0>  
+        -StartTime: <start time of the task, in format: 2014-07-14T00:00:00.0Z>  
+        -EndTime: <end time of the task, in format 2014-07-14T00:00:00.0Z. StartTime and EndTime should cover  
+                  one or multiple derived event intervals>  
+        -OutputCSV: <Optional: csv file to save result entities, default is Result.csv, result entities  
+                    will not be saved in azure storage>  
+        -CertName: <Optional: cert name>  
+        -CertStore: <Optional: cert store>, default value is My, if you follow default wiazrd to install cert then this should be default.  
+        -StoreLocation: <Optional: cert store location>, default value is CurrentUser, if you follow default wiazrd to install cert then this should be default.  
+        -CacheSourceData: <Optional: flag indicates whether to cache source data on local drive so that when the  
+                 same task with same start time and end time is executed again, the data will be reused.  
+                 Note that if there is join in the query, data from the nested table will not be cached>  
+        -ExternalConfigFiles: <Optional: if derived event uses external source, point to external config file,  
+                 split mulitple files by ,>
+
+
+
+>[!Tip]  
+>One common problem people run into is getting the source and destination table names right. The tool also supports an option to find out the correct table names:
+
+
+
+Run the command 'DerivedEventTest.exe -GetTableNamesForEvent:<derived-event-name> -configFile:<path-to-config-file>' to get the exact source and destination table name pairs. You can then pass them to the command.
+
+
+
+**Example**
+
+
+
+    
+    DerivedEventTest.exe -starttime:2015-03-03T00:00:00.0Z -endtime:2015-03-03T01:00:00.0Z -configFile:MdsVer12v0\MdsVer12v0.xml -sourcetable:MdsBackEndScheduledTasksQosEventEtwBlobASEVer12v0 -desttable:MdsBackEndScheduledTasksQosOneHourDelayedTaskTableUSCVer12v0 -mdsendPoint:https://test1.diagnostics.monitoring.core.windows.net/ -certName:&quot;CN=MDS Test Encryption Certificate&quot; -CacheSourceData
+
+
+
+You can obtain the mds-tools from [msblox feeds](https://msblox.visualstudio.com/DefaultCollection/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_packaging?feed=AzureGenevaMonitoring&_a=package&package=705af331-9b66-4d65-bb1e-aa709da9a0eb)
+
+
+
+**FAQ:**
+
+
+
+*How is the [MonikerSuffix] determined?*
+
+
+
+This only applies if you have defined mapping monikers in the <Account> section of your config in order to divide your data between XStore accounts. When mapping monikers are used, your centrally derived event will run separate queries to process data from each of your storage accounts. The derived event will then write each set of results to your default storage account. Separate Geneva Logs tables are created for each storage account inserting a [MonikerSuffix] in your table name.
+
+
+
+<Account moniker="MyMonikerGroup" isDefault="true">
+
+
+
+<Mapping moniker="MyMonikerGroupUSWest" isDefault="true" />
+
+
+
+<Mapping moniker="MyMonikerGroupUSEast" />
+
+
+
+<Mapping moniker="MyMonikerGroupUSCentral" />
+
+
+
+</Account>
+
+
+
+**MDS-Tools 34.0.25.1 is currently referencing Microsoft.WindowsAzure.Storage 4.3.0.0 but its shipping with version 6.2.0.0**
+
+
+
+This causes DerivedEventTest.exe to hang in some scenarios and in DerivedEventTest.log you may see:
+
+
+
+DerivedEventTest.exe Information: 0 : TS=2016-06-29T00:28:19.6055923Z SrcFile=x:\bt\727603\repo\src\mds\mdsstorageclient\CentralBondBlobReader.cs SrcLine=323 Method=<StartBlobEnumeration>b\_\_b Pid=33968 Tid=13 ActivityId=c3f84796-983a-456f-8006-8e3a44ee87ea String="Error occurred while enumerating blobs System.IO.FileLoadException: Could not load file or assembly 'Microsoft.WindowsAzure.Storage, Version=4.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35' or one of its dependencies. The located assembly's manifest definition does not match the assembly reference. (Exception from HRESULT: 0x80131040)  
+File name: 'Microsoft.WindowsAzure.Storage, Version=4.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35'  
+   at Microsoft.Cis.Monitoring.Mds.MdsStorageClient.BlobDownloadMgr.<DownloadThread>d\_\_1.MoveNext()  
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start[TStateMachine](TStateMachine& stateMachine)  
+   at Microsoft.Cis.Monitoring.Mds.MdsStorageClient.BlobDownloadMgr.DownloadThread()  
+   at Microsoft.Cis.Monitoring.Mds.MdsStorageClient.BlobDownloadMgr.Start(Int32 maxParallelDownloads, Boolean useMemoryPool, TimeSpan bufferExpiry, TimeSpan cleaningPeriod) in x:\bt\727603\repo\src\mds\mdsstorageclient\BlobDownloadManager.cs:line 90  
+   at Microsoft.Cis.Monitoring.Mds.MdsStorageClient.CentralBondBlobQueryMgr.get\_BlobDownloadMgr() in x:\bt\727603\repo\src\mds\mdsstorageclient\CentralBondBlobReader.cs:line 694  
+   at Microsoft.Cis.Monitoring.Mds.MdsStorageClient.CentralBondBlobReader.<>c\_\_DisplayClassc.<StartBlobEnumeration>b\_\_b() in x:\bt\727603\repo\src\mds\mdsstorageclient\CentralBondBlobReader.cs:line 323
+
+
+
+
+
+
+
+The workaround for this is to use assembly redirection and edit DerivedEventTest.exe.config and add:
+
+
+
+<dependentAssembly>  
+        <assemblyIdentity name="Microsoft.WindowsAzure.Storage" publicKeyToken="31bf3856ad364e35" culture="neutral" />  
+        <bindingRedirect oldVersion="4.3.0.0" newVersion="6.2.0.0" />  
+      </dependentAssembly>
+
+
+
+
+

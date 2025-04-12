@@ -1,0 +1,391 @@
+
+
+# How to migrate to GCS?
+
+This article discusses the required changes to your Geneva Logs account and to the way you launch the Monitoring Agents in order to enable GCS end-to-end. 
+
+## Service side changes
+
+> [!Note]
+> For GSM enabled accounts, GCS is automatically enabled. No further action is required to enable GCS. Please skip to [Using the Command line](#using-the-command-line) section.
+
+Follow the below steps in order to setup your Geneva Logs account to operate in GCS mode. You can enable GCS mode on your account either through the manageability UX, or through command line. 
+
+### Before you start
+- You need either:
+    - a certificate (CER) with corresponding private key (PFX file) that will be used for the communications 
+    - a dSMS managed or key vault managed cert that will be used for the communications
+- If you don't already have a namespace, you will need to add one on Namespaces tab for your endpoint / account
+- If you don't already have a configuration, you will need to create one for your endpoint / account
+
+### Using the UX (recommended)
+#### Enable GCS
+- Go to **Manage** page, choose **Geneva Logs**, and select the **Account** tab as shown below.
+- Choose the endpoint and account you wish to enable GCS on.
+- Click **Select MA Communciation Certificate** and 
+    - locate the public key .cer file that will be used to encrypt GCS communication. Then click **Enable GCS**.  
+    - provide the managed cert information. Then click **Enable GCS**.  
+- For additional certificates, you can add them on the **User Roles** tab or use the command line (below)
+
+    ![Enable GCS](../images/EnableGCSNew.png)
+
+ 
+#### Using the command line
+- Get latest [Mds-Tools](https://dev.azure.com/msblox/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_packaging?_a=package&feed=AzureGenevaMonitoring&view=overview&package=MDS-Tools&protocolType=NuGet), Version  40.1.0.23 or later 
+- Enable GCS mode on your Geneva Logs account. Doing this tells the central service to generate minor versions for the every configuration update you do.  Even after enabling the GCS mode on your Geneva Logs account, all the existing scenarios of Geneva Logs should work like as they are today.
+
+````
+mds.exe account <Geneva Logs endpoint> -command:enabledisablegcs -mdsaccount:<YourWarmPathAccount> -enablegcs:true
+
+Example: mds.exe account https://test1.diagnostics.monitoring.core.windows.net -mdsaccount:MyAccount -command:enabledisablegcs -enablegcs:true
+````
+
+- Create a user role and configure the user role to enable the authorization of Agent communication with GCS
+- Create the MA Communication Role that MA uses to communicate with GCS (you only need to do this once per account unless you want finer-grained permissions)
+
+````
+mds.exe account <Geneva Logs endpoint> -mdsaccount:<YourWarmPathAccount> -command:adduserrole -userrolename:MaCommunication -mode:ReadOnly -namespace:<YourWarmPathNamespace>
+
+​Example: ​mds.exe account https://test1.diagnostics.monitoring.core.windows.net -mdsaccount:MyAccount -command:adduserrole -userrolename:MaCommunication -mode:ReadOnly -namespace:MyNamespace
+````
+
+- ​​Add the certificate to the user role which will be used by Agent to authenticate and authorize to GCS
+
+````
+mds.exe account <Geneva Logs endpoint> -mdsaccount:<YourWarmPathAccount>  -command:addcert -userrolename:MaCommunication -thumbprint:<CertificateThumbprint> -issuer:<Certificate issuer name>
+
+Example: mds.exe account https://test1.diagnostics.monitoring.core.windows.net -mdsaccount:MyAccount -command:addcert -userrolename:MaCommunication -thumbprint:EDEE367C075CB2BF89ACCF4E74C0840FD789C7B4 -issuer:CN=MaCommunicationCert -description:"MA Communication Role for GCS mode (PPE)"
+````
+
+- Add Agent claim to the user role (you can add multiple namespaces to the MA Communication Role, just execute the command for each namespace)
+
+````
+mds.exe account <Geneva Logs endpoint>  -mdsaccount:<YourWarmPathAccount> -command:addclaim -userrolename:MaCommunication -claimkind:Agent -claimresource:"^<YourNamespace>.*" -claimright:Execute
+
+​Example: mds.exe account https://test1.diagnostics.monitoring.core.windows.net -mdsaccount:MyAccount -command:addclaim -userrolename:MaCommunication -claimkind:Agent -claimresource:"^YourNamespace.*" -claimright:Execute
+````
+
+Now you have succesfully enabled GCS mode for your account and prepared it to receive calls from MA. Continue on to MA side changes to understand how to configure your MA instances to start using GCS. 
+
+> [!NOTE]
+> Make sure &lt;YourNamespace> is just your namespace and not a configuration ID.
+
+## Agent side changes
+
+After you have finished onboarding steps on service side, you can start deploying your MA instances, configured to use the GCS service.
+
+Using GCS requires no changes to your MA configuration file. All of the information MA needs to use the service is passed to it through either MonAgentHost.exe or MonAgentLauncher.exe arguments.
+
+### Supported Agent Versions
+You should redeploy your full MA to the latest version to use GCS for the first time (i.e. migrating from full keys or autokey).
+
+### Linux Agent User (mdsd)
+The instructions below are for configuring the Windows MA. See [this](~/getting_started/environments/linuxvm.md) help page for more details on how to configure the Linux MA (mdsd).
+
+### Migration from AutoKey or Storage Keys
+When you use GCS, you no longer directly provide MA with storage key or AutoKey bootstrap SAS keys in your deployment. In your pre-migration MA environment, you passed MA a connection string via the -XstoreAccounts option to MonAgentHost.exe or the MONITORING_XSTORE_ACCOUNTS environment variable or the Azure Configuration variable MonitoringXStoreAccounts to MonAgentLauncher.exe. After migrating you no longer pass MA connection strings via these parameters. Instead, you provide MA with the information described in this document.
+
+In addition, you no longer have to specify autoKey="true" in your account section of your configuration file. You should still specify this, however, until all of your MA instances are fully migrated to GCS, so that both MA's locally configured with auto-key connection strings and GCS info will function properly. You can on-board to GCS and use autoKey simultaneously in different MA instances.
+
+As discussed, Geneva takes over responsibility for properly managing your account information.
+
+See the [Tips and tricks](#tips-and-tricks) section below for more information on migration to GCS for older namespace and configurations.
+
+### Connection and Service Identities
+- __Connection information__ - This includes the GCS endpoint name and the certificate thumbprint and store, so that MA can communicate with GCS and authenticate with the private key certificate installed on the system. The possible endpoints you can use are the following.
+    - gcs.ppe.monitoring.core.windows.net (formerly ppe.warmpath.msftcloudes.com) (If the Geneva environment where your configs exist is - Test, Stage)
+    - gcs.prod.monitoring.core.windows.net (formerly prod.warmpath.msftcloudes.com) (If the Geneva environment where your configs exist is - DiagnosticsProd, FirstPartyProd, BillingProd, ExternalProd)
+    - mooncake.warmpath.chinacloudapi.cn  (If the Geneva environment where your configs exist is -  CaMoonCake)
+    - gcs.monitoring.core.usgovcloudapi.net (formerly fairfax.warmpath.usgovcloudapi.net) (If the Geneva environment where your configs exist is -  CaFairFax)
+    - gcs.monitoring.core.eaglex.ic.gov (USNat)
+    - gcs.monitoring.core.microsoft.scloud (USSec)
+
+>[!NOTE] 
+> Providing MA with the endpoint is optional and not recommended. MA automatically determines the endpoint from the service identity environment. For national clouds you need to specify the endpoint using MONITORING_GCS_ENDPOINT environment variable or GcsEndpoint Azure configuration setting, if you are using a MA version below 37.2.
+
+- DSMS
+    - See [here][dSMSCerts] for information on using dSMS managed certificates with Geneva. You can then configure MA as shown in the following sections to use DSMS on the node hosting MA.
+- Azure Key Vault
+    - ​Now you can use Keyvault managed certificate in Geneva Logs by configuring the GCS as [described here][AKVCerts] and changing the -connectionInfo argument of MA launch script. MA requires the SAN of the AKV certificate which you intend to use. Using the SAN MA would lookup the certificate in LOCAL_MACHINE\MY and MY stores and upon successful retrieval would use it to authenticate with GCS.
+
+- __Service identity__ - This includes the Geneva environment, account, and configuration namespace information. It also, includes the region that MA is running in. The possible environments include the following and map to the different Geneva service environments we maintain and you onboard to using the management UI and API's.
+    - Test
+    - Stage
+    - DiagnosticsProd
+    - FirstPartyProd
+    - BillingProd
+    - ExternalProd
+    - CaMoonCake
+    - CaBlackForest
+    - CaFairFax
+    - USNat
+    - USSec
+
+- __Configuration Version__ - The configuration version you specify is the version that MA will request and download from the GCS service and use to collect data. In Geneva versions are immutable, so MA will continue to use the version you specify even if you create new versions in our central Geneva/Jarvis service. If you use Agent Explorer to dynamically update your config version, then MA uses whatever version is greatest; either the version specified on your node when you start MA or the version you updated too.
+    - Please see the [Configuration Deployment] section to know more on how to get the configuration version.
+    - Specifying the config version is optional, *but highly recommended*. Instead of using the -configVersion option, you can use the connection and service identity parameters to enable GCS based storage key management, but still pass MA your deployed configuration file with the -configFile option. More information later in this help page.
+    - See the [safe deployment practices](MigrateToGCS.md#safe-deployment-practices-sdp) section in this document for information on what happens if you specify a version that does not exist.
+    - See stackoverflow for much more information on versioning.
+
+### Safe Deployment Practices (SDP)
+
+By default if you give MA a configuration version that is not deployed in GCS, MA will use the latest version (i.e. &lt;major>.&lt;minor>) of the configuration in your namespace, instead. If the MONITORING_GCS_EXACT_VERSION option (listed below) is specified as true, then MA won't start if it cannot download the specified config version if it does not exist. MA may continue to use an older locally cached configuration until it can download a new configuration.
+
+If you do not specify a version of an existing GCS/Jarvis deployed configuration and do not turn on exact version matching, saving a configuration update to Jarvis will propagate out to your service and not follow required safe deployment practices (SDP). If you save a bad configuration file to Jarvis, you may disable monitoring from your service.
+
+Always use a deployed a version of your Geneva configuration file, so that you can ensure that any version update goes through SDP and you can validate in your canary and test stages of deployment that your new monitoring configuration is active and producing the results you want.
+
+If you specify a deployed version number of a configuration file with your agent startup parameters and a bad configuration is saved in Jarvis, then your MA's aren't updated, since saving a configuration in Jarvis creates a new minor version. The old minor version your current MA's use are left unchanged.
+
+You can monitor what configuration your MA's are using via our [telemetry](../../../collect/manage/agentdata.md) or [agent explorer](../../../collect/troubleshoot/agentexplorer.md).
+
+### MA Parameters
+
+You can launch MA with either MonAgentLauncher.exe or MonAgentHost.exe, depending on your scenario and individual requirements. 
+Be sure to reference [the documentation][MALaunch] for each of those executables for usage details and required parameters.
+
+#### [MonAgentHost.exe][MonAgentHost]
+There are three new arguments associated with using GCS.
+
+- -connectionInfo [&lt;EndPoint>#]&lt;ThumbPrint>#&lt;CertStore>
+    - &lt;EndPoint> - The GCS endpoint you are using. This parameter is optional and only needed if the endpoint you need is newly supported since the version of MA you are using was released. We recommend not specifying an endpoint.
+    - &lt;ThumbPrint> - Certificate thumbprint for the certificate you are using to authenticate MA with the GCS service.
+    - &lt;CertStore> - The certificate store you placed your certificate. E.g. MY or LOCAL_MACHINE\MY, etc...
+    - See this for more information on certificates: https://stackoverflow.microsoft.com/questions/6766/cert-not-in-store-to-decrypt-data 
+
+- -connectionInfo [&lt;EndPoint>#]AuthDsmsUrl#&lt;DsmsPath>   (MonAgentHost Version >= 40.3)
+
+- -connectionInfo [&lt;EndPoint>#]&lt;DsmsPath>   (MonAgentHost Version < 40.3)
+    - As an alternative to specifying the thumbprint and certificate store, you can use this form of the connectionInfo option to use your DSMS certificate URI. A DSMS path should always start with a "/".
+
+- -connectionInfo [&lt;EndPoint>#]AuthKeyVault#&lt;CertificateSAN>   (MonAgentHost Version >= 41.1.1.0)
+    - ​Now you can use Keyvault managed certificate with MA by providing the SAN of the certificate. MA will locate the certificate and will try to use it when communicating with GCS. Refer this for service side changes.
+
+- -connectionInfo [&lt;EndPoint>#]AuthAPPki  (MonAgentHost Version >= 41)
+    - ​Now MA can lookup APPKI certificate when running in AP environment and use it to communicate with the GCS. Service side changes are coming soon.
+
+- -serviceIdentity &lt;Environment>#&lt;GenevaAccount>#&lt;NameSpace>#&lt;region>
+    - &lt;Environment> - One of the Geneva service environments listed in the previous section.
+    - &lt;GenevaAccount> - The Geneva account your namespace and user role live in.
+    - &lt;Namespace> - Your MA configuration namespace attribute value.
+    - &lt;region> - The region GCS should use when it determines which storage account credentials it should return to MA.
+
+- -configVersion &lt;MajorVersionNumber>.&lt;MinorVersionNumber>
+    - MajorVersionNumber - This the the version number that is there in the configuration today which is defined by the eventVersion attribute in the configuration XML
+    - MinorVersionNumber - Every configuration update would generate a new minor version number, to know the latest minor version number use the mds.exe config -command:listone command or go to your account in Jarvis management.
+    - Optional (see the Configuration Version description above for details)
+
+- -agentVersion &lt;major>.&lt;minor>.&lt;rev> (Note: this feature is available if you deploy an agent version >= 39.0)
+Optional option that tells MA to use a particular MA version from the Geneva agent store. MA will update to this version before it starts. See section on [Agent Self Update](#agent-self-update) below.
+
+- -gcsExactVer "true"|"false"
+See description under the launcher environment options below. Optional and the default is false.
+
+##### Examples
+In this example, MA uses GCS to both get the storage account information for the configuration with namespace TelcoA and major version 2, and the actual version 2.3 of the TelcoA configuration.
+
+````
+MonAgentHost.exe -connectionInfo 17c8af775d86f224f2046cf73c582320d7b6bd2a#MY-serviceIdentity Test#MsTelco#TelcoA#westus -localpath c:\directory\mastuff -configVersion 2.3
+
+MonAgentHost.exe -connectionInfo "/MyDsmsCert/Path" -serviceIdentity Test#MsTelco#TelcoA#westus -localpath c:\directory\mastuff -configVersion 2.3
+````
+
+If you are running MA version MonAgentHost greater or equal to 40.3, you can use our new method of specifying an alternative authorization ID, where the type is explicitely specified.
+
+````
+MonAgentHost.exe -connectionInfo "AuthDsmsUrl#/mydsmscert/path" -serviceIdentity Test#MsTelco#TelcoA#westus -localpath c:\directory\mastuff -configVersion 2.3
+````
+
+While we very strongly recommend you use GCS to manage both the storage and configuration information, you can use the -configFile option to pass MA the configuration file directly. It is not legal to specify both the config file and the config version to MA.
+
+With MA version 41.1.1 or above you can use Azure Key Vault certificate with MA by passing certificate SAN for the Auth ID and AuthKeyVault for Auth type.
+
+````
+MonAgentHost.exe -connectionInfo "AuthKeyVault#TestCert100.geneva.keyvault.warmpathfecanary.cloudapp.net" -serviceIdentity Test#MsTelco#TelcoA#westus -localpath c:\directory\mastuff -configVersion 2.3
+````
+
+With MA version 41 or above you can use AutoPilot APPKI authentication with MA by only specifying Auth type as AuthAPPki.
+
+````
+MonAgentHost.exe -connectionInfo "AuthAPPki" -serviceIdentity Test#MsTelco#TelcoA#westus -localpath c:\directory\mastuff -configVersion 2.3
+````
+
+#### [MonAgentLauncher.exe][MonAgentLauncher]
+As documented in the MonAgentLauncher help page, you can start the launcher using the -UseEnv parameter to have it get arguments from environment variables or you can leave that parameter off so that the launcher gets arguments from ACS or CSCFG configuration.
+
+##### Environment Options (-useenv)
+The definitions of these environment variables match what is described in the -connectioninfo and -serviceIdentity arguments above.
+
+- MONITORING_GCS_ENVIRONMENT
+- MONITORING_GCS_ACCOUNT
+- MONITORING_GCS_NAMESPACE
+- MONITORING_GCS_REGION
+    - ​You can specify the Azure Region in which your service or application is hosted.  If your service or application is not hosted on azure, specify the nearest Azure Region to your service or application location. Based on the region value passed the storage account from that region is used to upload the data. If a storage account is not registered for that region then storage account from nearest region is used.
+    - In MA version 42.4 and higher the region is parametrizable (i.e. set MONITORING_GCS_REGION=%RegionVar%).
+
+> [!NOTE]  
+> Ensure that there aren't any typos in the region to minimize the chances of your monitoring data getting written across regions. 
+
+- MONITORING_GCS_THUMBPRINT
+
+- MONITORING_GCS_CERTSTORE
+    - Specifying these first seven variables puts MA in GCS mode. If you also supply storage account information using the MONITORING_XSTORE_ACCOUNTS variable, then the xstore accounts variable is ignored, unless you use the MONITORING_USE_GENEVA_CONFIG_SERVICE variable.
+
+- MONITORING_GCS_AUTH_ID_TYPE    (MonAgentLauncher Version >= 40.3)
+- MONITORING_GCS_AUTH_ID
+    - Use these two variable to specify an authorization method other than direct thumbprint and cert store.
+    - Refer the MonAgentHost documentation above for more details.
+    - The current support authorization ID types: AuthDsmsUrl, AuthKeyVault and AuthAPPki
+        - AuthDsmsUrl - Specify a DSMS path starting with the "/" character and is case sensitive and typically all lowercase.
+        - AuthKeyVault - Specify the SAN of the certificate (v41.1.1+)
+        - AuthAPPki - Keep it empty (v41.1.1+), AP PKI does not need any ID
+
+- MONITORING_CONFIG_VERSION - See [here](~/getting_started/environments/windowsiaasbaremetal.md) for details on how to get the configuration version. 
+- MONITORING_AGENT_VERSION - See section on agent self update.
+
+- MONITORING_USE_GENEVA_CONFIG_SERVICE - This optional variable can be used if you want to specify both the GCS related variables and the explicit xstore account and config file variables. If set to true, then it ignores the explicit variables, which is also the default, and if set to false it ignores the GCS related variables.
+
+- MONITORING_GCS_EXACT_VERSION - Specify whether you want MA to use a fall back mechanism if the specified config version does not exist for a particular namespace. The default if false if not specified.
+    - By default, if you give MA a configuration version for a namespace that is not deployed in GCS, MA will use the latest version (i.e. &lt;major>.&lt;minor>) of the configuration in that namespace, instead. If this option is specified as true, then MA won't start if it cannot download the specified config. MA may continue to use an older already cached GCS configuration until it can download the new configuration, however.
+    - If you do not specify an exact version of an existing GCS/Jarvis deployed configuration with your agent startup parameters, your service is not using [safe deployment practices](MigrateToGCS.md#safe-deployment-practices-sdp).
+ 
+- MONITORING_GCS_DSMSURL  (MonAgentLauncher Version &lt; 40.3, but still support in later MA versions for backward compat)
+    - Use this instead of specifying the thumbprint and certificate store. If you specify all three environment variables, MA uses the hardcoded thumbprint/certstore. A DSMS path should always start with a "/" and is case sensitive and typically all lowercase.
+
+##### ACS Settings (if you do not specify -useenv)
+
+These Azure configuration settings can also be used and match the description of the environment variables above.
+
+- GcsEnvironment
+- GcsGenevaAccount
+- GcsNamespace
+- GcsRegion
+- GcsThumbprint
+- GcsCertStore
+- GcsAuthIdType    (MonAgentLauncher Version >= 40.3)
+- GcsAuthId            (MonAgentLauncher Version >= 40.3)
+- GenevaConfigVersion - same as MONITORING_CONFIG_VERSION
+- GenevaAgentVersion - same as MONITORING_AGENT_VERSION
+- UseGenevaConfigService - same as MONITORING_USE_GENEVA_CONFIG_SERVICE
+- GcsExactVersion - same as MONITORING_GCS_EXACT_VERSION
+- GcsDsmsUrl - same as MONITORING_GCS_DSMSURL
+
+This example is similar to the first MonAgentHost example above. Substitute real values in the example below.
+
+````
+set MONITORING_GCS_ENVIRONMENT=Test
+set MONITORING_GCS_ACCOUNT=MsTelco
+set MONITORING_GCS_NAMESPACE=TelcoA
+set MONITORING_GCS_REGION=westus
+set MONITORING_GCS_THUMBPRINT=55555588888884f2046cf73c58ffffff6bd2aa
+set MONITORING_GCS_CERTSTORE=MY
+set MONITORING_CONFIG_VERSION=A.B
+set MONITORING_AGENT_VERSION=X.Y.Z
+
+MonAgentLauncher.exe -useenv
+````
+
+Alternatively to using the thumbprint and certstore, you can use DSMS (this path is case sensitive and typically all lowercase).
+
+````
+set MONITORING_GCS_AUTH_ID=/mydsmscert/path
+
+set MONITORING_GCS_AUTH_ID_TYPE=AuthDsmsUrl
+````
+
+Or you can use Azure Key Vault certificate.
+
+````
+set MONITORING_GCS_AUTH_ID=TestCert100.geneva.keyvault.warmpathfecanary.cloudapp.net
+
+set MONITORING_GCS_AUTH_ID_TYPE=AuthKeyVault
+````
+
+Or you can use AutoPilot APPKI in AP environment. Make sure you don't define MONITORING_GCS_AUTH_ID when you want to use APPKI.
+
+````
+set MONITORING_GCS_AUTH_ID_TYPE=AuthAPPki
+````
+
+### Agent Self Update
+
+Option to tell MA to use a particular version from the Geneva agent store. MA will update to this version before it starts. If it cannot update, it continues to use the version you deployed with or last updated to. We recommend using this as a more convenient way to update to a particular version of MA without always redeploying all of the agent files as part of you own packaging and deployment mechanism.
+
+The agent self-update parameters for the different ways to configure MA startup, MONITORING_AGENT_VERSION, GenevaAgentVersion, and -agentVersion are described in the preview sections of this document.
+
+You cannot self-update to a MA version less than the version of MA you manually deployed to your system; MA will just stick with the deployed version.
+
+The self-update and Agent Explorer based update features cache copies of MA in your local resource directory. If you use this feature, please follow our disk quota recommendations found at [this linked help page][MADiskSpace] to avoid data loss caused by insufficient disk quota.
+
+### Deploying your Own Configuration File
+
+As mentioned in the first section, we recommend that you use GCS to manage both your account information and your MA configuration file. There is an option to use GCS to manage account information, but continue to deploy your own configuration file to your nodes. The downside is that the configuration file you provide MA, might not be exactly in sync with the configuration file you deployed to the Geneva service resulting in possible loss of data. [Here](../../../collect/references/agent/MonAgentLauncher.md#command-line-reference) is a summary of how to use configuration files from your own systems, but see the MonAgentHost and MonAgentLauncher agent documentation for full details.
+
+#### MonAgentHost.exe Usage
+
+Instead of using the -configVersion option described above, use the -configFile option to pass MA the path to your configuration on your system.
+
+#### MonAgentLauncher.exe Usage
+
+Do not set the GenevaConfigVersion setting or the MONITORING_CONFIG_VERSION environment variable in your runtime or environment. Instead use the MonitoringInitConfig runtime setting, or if you use the -useenv option, use the MONITORING_INIT_CONFIG environment variable to pass in your configuration path.
+
+## Tips and tricks
+
+If you are enabling GCS and using the new config authoring in Jarvis, review the onboarding steps in this section to ensure you understand the new concepts. You do not need to create a new configuration and namespace, but we suggest you start fresh by going through the following steps.
+
+Follow these instructions, if you onboarded to Geneva prior to 2017.
+
+- Deploy the latest version of MA
+    - Make sure you are not trying to enable GCS with an older version of MA. We suggest when you migrate, deploy the latest version to your service rather than doing an update with Agent Explorer.
+    - Learn more to find the latest MA.
+- Increment the major version of your configuration.
+    - The MAs still deployed will use the previous version, and will not be effected by anything you do in your migration. If you first onboarded to MA at version 36 or later you may be able to skip doing the increment.
+
+````
+Example:
+
+<MonitoringManagement version="1.0" namespace="TEST" eventVersion="8" timestamp="2011-05-12T20:08:38.0823856Z">
+
+TO
+
+<MonitoringManagement version="1.0" namespace="TEST" eventVersion="9" timestamp="2017-09-12T20:08:38.0823856Z">
+````
+
+- Delete all of the import files from Jarvis that aren't yours and start fresh.
+    - Use the AgentStandardEvents.xml file from the most current MA version. We suggest you update this import in your service side configuration periodically, since sometimes it does change with a new release of MA. If you use MDS-TOOLS (mds.exe), get the latest version.
+        - When viewed in the latest version of MA, your older imports that were attached to your configuration are now obsolete and empty.
+        - NOTE: If you look at your imports and they already only include AgentStandardEvents.xml plus the new AzSecPack import files, you may be able to skip this step. If you first onboarded to Geneva/MA before 2017, it is likely that what you have deployed is out of date and needs to be refreshed. One hint that you may be very out of date, is if you see files like MonitoringEws*.xml and SecurityStandardEvents*.xml files among your imports.
+- After you've deleted all of the older standard import files and uploaded the newest AgentStandardEvents.xml file (or AgentStandardEventsMin.xml if you are using that), then under "What To Collect" --> "Security Monitoring" in your Jarvis configuration authoring, you can get the latest AzSecPack imports.
+    - If you aren't using AzSecPack, then you don't need to enable security monitoring and do the previous step, beyond making sure your agent standard events are up to date.
+    - UI Screen shot example. In this example, only the customer root config, AimsVer3v0.xml, and AgentStandardEvents.xml should remain after the cleanup, and AgentStandardEvents.xml should be updated to the version that comes with the latest MA release. There is no AzSecPack in this example.
+
+    ![Configuration Imports](../images/ConfigImportsNew.png)
+
+- You can make sure your azsecpack config imports are up to date by going to the What To Collect tab and select the security tab under that. You can then click on the upgrade button if it shows you are not using the latest imports. If you do not do this, you probably won't see Asm heartabeat events.
+- Save the new configuration to deploy.
+- Make sure when you set the environment variables you use to start the agent, you take the &lt;major>.&lt;minor> version of the configuration you just saved and set the MONITORING_CONFIG_VERSION variable to that number (i.e. set MONITORING_CONFIG_VERSION=8.0).
+
+If you're a long time MDS/Geneva customer, there is a good chance the configuration imports you have running in the service were uploaded long time ago, from an old version of the Geneva Logs tools or the MA standard location under the MA file in the MA release. These are out of date and at best will add to the CPU and memory load to MA and at worst prevent your configuration from deploying properly or AzSecPack from working properly.
+
+With GCS, MA is running configs deployed to the Geneva service, so what you see in Jarvis is what MA will run. Pre-GCS, you were using the import files deployed with your MA on your node instances. This means that pre-GCS you were running the correct and most up to date versions of the agent standard import files. Post-GCS, without the steps above, you will revert back to possibly obsolete versions of these files.
+
+## Flighting GCS
+
+One of the frequently asked question about using GCS is how do I switch my MAs to start operating in GCS mode gradually? An account in GCS mode is fully compatible with the former way of managing configurations and storage resources. You can safely enable GCS mode on your account on the service side and then switch over your MA instances to start using GCS progressively. Follow these steps when you are ready to flight GCS mode in production:
+
+1. Enable GCS mode on your account by making the service-side changes 
+2. On the canary scale unit where you want to switch MAs to start using the GCS mode, upgrade MA to >= v36.1.2
+3. Understand the MA launch settings and then follow either step a or b as appropriate:
+    - If you are using MonAgentHost.exe to launch MA use the new GCS command line switches
+    - If you are using MonAgentLauncher.exe to launch MA, set the new GCS environment variable or ACS settings in addition to your existing env variables/settings and set MONITORING_USE_GENEVA_CONFIG_SERVICE variable or UseGenevaConfigService setting to true
+4. Test the monitoring data flow from your canary scale unit to ensure that it is working fine
+5. Roll out the change to the rest of the scale units 
+
+<!-- Reference links -->
+[dSMSCerts]: ../../../collect/authentication/dsms.md "dSMS managed certificates"
+[AKVCerts]: ../../../collect/authentication/keyvault.md "Azure KeyVault managed certificates"
+[MADiskSpace]: ../../../collect/references/agent/Local.md#your disk space needs are more than you think "MA disk space needs"
+[MALaunch]:../../../collect/references/start.md "MonAgentLauncher and MonAgentHost launching"
+[MonAgentLauncher]:../../../collect/references/agent/MonAgentLauncher.md#command line reference "MonAgentLauncher command-line reference"
+[MonAgentHost]:../../../collect/references/agent/MonAgentHost.md#command line reference "MonAgentHost command-line reference"
+[Configuration Deployment]:~/logs/manage/configmanagement.md#pushing configuration changes to your service

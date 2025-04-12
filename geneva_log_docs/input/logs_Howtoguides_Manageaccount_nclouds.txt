@@ -1,0 +1,69 @@
+# Managing Geneva Logs accounts in National Clouds
+
+Some Geneva Logs onboarding and account mamangement operations can be performed through Jarvis, while other operations are privileged and require support of the nCloud operators. This document outlines which operations are non-privileged and which aren't.
+
+## Operations that can be performed from Jarvis (Elevated, Non-privileged)
+
+These can be done similar to public clouds either via the command line or the UX.
+
+- Create a Geneva Logs account
+- Register and Delete a Namespace prefix
+- Manage User Roles in your account except for a couple of exceptions (see below)
+- Provision storage account and event hub namespaces, and register them with Geneva Logs
+- Enable GCS on a Logs Account
+- Create and modify agent/config update plans
+- Creating/updating/deleting Logs to Metrics (LTM) operations
+
+## Operations that need to be performed through nCloud operators (Elevated, Privileged)
+
+Onboarding and management operations in National Clouds are privileged, and have to be performed through the respective National Cloud operations team for compliance reasons. The operations are either performed in escort sessions or through RDTask work items created in the respective national cloud TFS repositories. Here are some examples of privileged operations:
+
+- Deploy and Delete configuration files
+- Manual creation and registeration of new storage accounts and event hubs (Resource management)
+- Delete storage accounts/event hubs (Resource management)
+- Addition or deletion of ExclusiveRead/ExclusiveWrite claims on User Roles
+- All edit operations on User Roles that contain ExclusiveRead/ExclusiveWrite claims 
+- Addition or deletion of AgentUpdate claims on User Roles
+- Start, Stop, Retry config uration and agent update
+- GSM Migration
+- Configuration of Geneva Logs to Kusto connector
+
+### How to perform privileged operations in National Clouds
+
+[!include[RD_Task_Links](../../RDTaskLinks.md)]
+
+## Existing Accounts versus New Accounts
+
+When you create **new** Geneva Logs accounts in National Clouds you'll have admin permissions to perform all of the non-privileged operations automatically.
+To manage **existing** Geneva Logs accounts in National Clouds using Jarvis, you'll need to complete a one-time prerequisite step to associate your team's security group to the "MdsAccountAdmin_
+ -- openCurlyBracket -- 
+your-account-name
+ -- closeCurlyBracket -- 
+" User Role in your account. This is a privileged operation that needs to be performed through nCloud operators as described in [this section](#how-to-perform-privileged-operations-in-national-clouds).
+
+> [!Note]
+>Your team's security group must be onboarded to dSTS for dSTS authentication to work. You can onboard a security group to dSTS either through Jarvis, as shown in the image below, or use dSCM self service portal. Go to <https://aka.ms/dscm> OR <https://dscm.core.windows.net/> and enter the security group in the “Release Security Groups” option.
+
+![dSTSOnboarding][dSTSOnboardingImage]
+
+## Managing configuration in a National Cloud
+
+Saving (Deploying) or Deleting Geneva Logs configurations in National Clouds is a priviliged operation, and needs to be performed through the respective nCloud operators as [described previously](#how-to-perform-privileged-operations-in-national-clouds). Once you've edited the configuration, download the xml file so you can attach it to the RDTask. If you have multiple xml files that are required for updating the configuration, you can compress all files in a zip file, and attach the zip file to the RDTask.
+
+## Bootstrapped National Clouds (Bleu, Delos, GovSG)
+
+Until at least mid-2025, Geneva Monitoring in the new national clouds (Bleu, Delos, and GovSG) will be running in bootstrap mode. This means that, though you will create your Logs accounts in the Bleu, Delos, or GovSG environments, all of your data will be stored in the public cloud. This means that the subscription(s) that you use for your Logs accounts while in bootstrap mode will be in the public cloud (AME/Torus tenants).
+
+That said, in order to avoid issues when we deploy in-cloud, all managed certificates should have SANs that match the destination cloud. For instance, use sovcloud-core.fr for Bleu, sovcloud-core.de for Delos, and sovcloud-core.sg for GovSG. This will ensure that the certificates are valid when we deploy in-cloud.
+
+## Troubleshooting Errors in National Cloud
+
+### Receiving "Unauthorized for verb 'Patch' and path '/api/management/v1/Endpooint/AccountName/Operation/&lt;&lt;guid&gt;&gt;
+
+![NationalCloudUnauthorizedError][NationalCloudUnauthorizedError]
+
+If you receive this error message when you are performing a configuration update or resource management operation, this requires nCloud operator permissions. Please proceed with an escort session or create a RD Task. For a list of all the Elevated/Privileged operations, refer the section above.
+
+<!-- Image links -->
+[dSTSOnboardingImage]: ../images/SecurityGroup.jpg
+[NationalCloudUnauthorizedError]: ./../images/NationalCloudUnauthorizedError.png

@@ -1,0 +1,14 @@
+# Client Query
+
+When using Log Search (DGrep) **client query** is executed in a centralized fashion on the results of the [server query](serverquery.md).
+Because the rows are in memory, executing a client query is very fast and should be used for interactively analyze logs.
+
+As an example, you're investigating a live site on a particular service.
+
+- First you'd search for all the errors in the service in the **[server query](serverquery.md)**:
+
+![image.png](../images/dgrep_FilterInput.PNG)
+
+- Then interactively search/filter through the results in the **client query**:
+
+![image.png](../images/dgrep_ClientQuery.PNG)

@@ -1,0 +1,20 @@
+# Manage Geneva Logs using Ev2
+The Geneva Logs Ev2 extension allows you to manage your Geneva Logs account and configuration as part of a zero-touch deployment using EV2.  If new to Geneva Logs or Ev2, it is highly recommended that you become familiar with basic concepts of each.  
+
+>[!IMPORTANT]
+> Download a [working example for the Geneva Logs Ev2 extension](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample).  
+
+**Learn more about:**
+- [Geneva Logs](../../intro.md) 
+- [Ev2](https://aka.ms/EV2)   
+
+
+Follow these steps to complete initial set up and validation of your Ev2 based Geneva Logs deployment:  
+
+1. [Configure environment prerequisites](../EV2/setup/prereq.md)
+2. [Manage the Geneva Logs Namespace configuration](../EV2/setup/createconfigs.md)
+
+## Samples
+Download a [working example for the Geneva Logs Ev2 extension](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample). 
+
+**Note:** Ev2 is not supported for non-GSM accounts.

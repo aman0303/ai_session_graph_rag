@@ -1,0 +1,198 @@
+# Schrems II support for DGrep
+
+## Intro
+
+As most of you are aware, in May 2021 Microsoft made a commitment to process and store commercial data from the European Union in the EU by December 2022.
+
+More details may be found in Brad Smith’s blog – [Answering Europe’s call: storing and processing EU data in the EU](https://blogs.microsoft.com/eupolicy/2021/05/06/eu-data-boundary/).
+
+To meet the specifications and requirements in the new Schrems II standard the DGgrep and Geneva logs services have implemented changes needed to ensure the storage and processing of in scope data within the EU.
+
+### Prerequisites
+
+This document assumes that the reader has basic knowledge of Schrems II regulations and terminology.
+
+For additional background, terminology and references please read this document: [this document](https://microsoft.sharepoint.com/:w:/t/GenevaTelemetryServices/ESOdmvYbAVBMih2l5KHLP6QBGeMIg6YfEJ2kxub9qTY5Vw)
+
+## The promise
+
+At high level, DGrep will scrub all data tagged as ‘in scope’ data for all queries and callers who execute queries from outside of the EUDB.
+To access in scope data – users will have to use pre-approved, secured VDI machines and access the [Jarvis EU endpoint](https://portal-eu.microsoftgeneva.com/logs/dgrep) or send requests directly to the DGrep EU endpoint https://dgrepv2-frontend-westeurope-prod.trafficmanager.net.
+
+Queries executed from outside of the EUDB approved VDI machines will produce results, however, every filed that is tagged as in scope data will be scrubbed and replaced with ‘scrubbed’ values.
+
+This will be similar to current PII experiences in systems like Elixir or ICM.
+
+## Enable GSM (Geneva Storage Management) on your logs namespaces
+
+To make sure your Geneva logs are stored in the appropriate GEO, we require users of Geneva logs to enable [GSM](../../concepts/WhatIsGsm.md) on their logs namespaces.
+
+GSM will ensure that the data is stored in the appropriate GEO and will also support smart failover so data doesn’t ‘leak’ to non approved geographies.
+
+To ensure Schrems II complaince for Geneva Logs data follow these steps:
+
+1. [Enable GSM](../Manageaccount/MigrateToGsm.md) on your logs namespaces.
+2. Update your logs configuration to choose the [Geo Isolated moniker failover option](../Manageaccount/FailoverMonikers.md). 
+
+## Tagging your data
+
+Much like GDPR, Schrems II requires the data to be tagged as ‘in scope’ so the system knows what fields to protect and scrub and what fields are ‘safe’ to show outside of the EUDB.
+
+Luckily, the Schrems II and GDPR tags align completely, so we have opted for using your existing GDPR tags for Schrems II.
+
+To learn how to tag your data please refer to this document:  [document](https://eng.ms/docs/products/geneva/logs/howtoguides/compliance/gdpr).
+
+For additional question about tagging please contact gdprask@microsoft.com and not the DGgrep team.
+
+> [!NOTE]
+> Synchronization between DGrep and Data Grid tags mostly takes a few hours, and can even take a few days. Don't expect to see the scrubbing immediately after tags where updated.
+
+> [!NOTE]
+> Schrems II tags are identical to GDPR tags, this means that your GDPR tags will also work for Schrems II, if your data is tagged, no additional work is needed on your end.
+
+> [!NOTE]
+> If you are seeing an untagged column being scrubbed please verify both in [Data Grid](https://datagrid.microsoft.com/CatalogManager/DataDiscovery) and in [Data Catalog](https://datastudio.msftcloudes.com/#/entities) that your column is not tagged as in-scope.
+
+### Opt-in policy
+
+The base assumption of Schrems II is identical to GDPR. This means the system will not protect data that is not tagged appropriately.
+
+It is recommended that if your data is not tagged at all, that you consider running a script that tags all data as in scope and then undergo a process of ‘clearing’ data.
+
+## DGrep internal changes
+
+To support Schrems II DGrep will introduce the following changes:
+
+1. DGrep deploys and manages an EUDB endpoint to manage and run all EUDB queries. 
+2. DGrep integrates with Data studio to obtain tagging data.  
+3. DGrep has created a scrubbing mechanism that will scrub data tagged as ‘in scope’ and queried outside of the EUDB. 
+
+## Query experience and scrubbed data
+
+### Running a query from within the EUDB
+
+The EUDB for this case is defined as specific VDI machines cleared for EUDB data and managed by Global.
+
+More about VDI machines may be found in this article: Getting your EUDB data using VDI.
+
+When querying from within the EUDB, the full data from the query is presented. Since the data is processed and stored within the EUDB, no limitations apply on this data, your DGrep experience will remain unchanged while using the VDI machines.
+
+### Running a query outside the EUDB
+
+In this case, the ‘outside of EUDB’ definition refers to every machine and caller that is not the specific VDI machines cleared for EUDB.
+
+> [!NOTE]
+> The actual physical location of the caller is not applicable for the EUDB definition at this point. 
+
+### Query contains in-scope data
+
+If a query contains data that is tagged as ‘in scope’ and is executed outside of the EUDB, the data tagged as in scope will be scrubbed and replaced by a string.
+
+> [!NOTE]
+> DGrep supports queries spanning multiple regions, in this case only the ‘in scope’ data will be scrubbed. This means the result set may contain uncurbed data and scrubbed data. 
+> For example, let’s assume the filed ‘name’ is tagged as in scope data and the query runs on EUDB data and US data. The result table will be:
+> <!-- markdownlint-disable MD013 -->
+
+| Name |
+
+---------
+
+| Tom Jones |
+| Marry J. Blige |
+| Scrubbed |
+| Scrubbed |
+| Elton John |
+
+<!-- markdownlint-disable MD013 -->
+
+It is important to be cognizant of this change as client side/subsequent queries may show undesirable results – for example running a dcount function in DGrep UI will produce an inaccurate result.
+
+Note the scrubbed data in this data set:
+
+![scrubbed image](../images/dgrepSchremsScrubbed.PNG)
+
+We have added UI indications to highlight the fact the data was scrubbed:
+
+![scrubbed image Indication](../images/dgrepSchremsScrubbedIndication.PNG)
+
+For DGrep SDK, indication for scrubbing can be received programmatically:
+
+![scrubbed image Indication SDK](../images/dgrepSchremsScrubbedIndicationSDK.PNG)
+
+### Query doesn’t contain in-scope data
+
+If the query doesn’t contain any data tagged as ‘in scope’, the query will execute and return a full set of result.
+
+## Getting your EUDB data using VDI
+
+In case the actual in scope data is needed to complete the task, DGrep will allow access to a full result set of ‘in scope’ EUDB data through centrally managed, specifically assigned VDI machines.
+
+If your DGrep queries do not require SAW access then go to the vDesktop EUDB URL: [Azure Virtual Desktop (AVD)](https://microsoft.sharepoint.com/sites/Security_Tools_Services/SitePages/WindowsVirtualDesktop/Windows-Virtual-Desktop.aspx#what-is-wvd)
+
+If the queries require elevated access then using SAW and the JIT flow you will be redirected to the EUDB flow.
+
+Once connected using SAW and JIT DGRep URL will automatically direct you to the right URL.
+
+## Adjacent apps and integrations  
+
+DGrep and DGrep APIs are used in several adjacent apps and integrations like:
+
+1. GHS
+2. Incident automation
+3. ICM
+4. Other proprietary integrations
+
+Please note that **all the integrations** are impacted by the forementioned changes.
+
+It is recommended to test your integrations and queries and make sure scrubbing doesn’t impact critical tasks.
+
+Note: querying the full data is only available through VDI, API is not supported.
+The reason for this is that API produces a data set that is no longer controlled by the system. This means that if the data leaves DGrep boundaries it is no longer controlled by DGrep and we can’t ensure Schrems II compliance.
+
+## Testing Schrems II for DGrep 
+
+Before the team rolls out our PROD solution that will impact all systems, we encourage users and groups to test Schrems II for DGrep using our DGrep-INT environment.
+
+You may use our DGrep-INT UI experience in [Logs | Jarvis-Int (microsoftgeneva.com)](https://jarvis-int-west.microsoftgeneva.com/logs/dgrep) and our DGRep-INT endpoint in http://dgrepv2-frontend-ppe.trafficmanager.net to fully test DGrep with Schrems II support.
+
+Please note, the DGRep-int instance uses the same tags as the PROD instance so you don’t have to double tag or invest in additional work.
+
+## Providing feedback and reporting issues 
+
+No implementation is perfect, if you found a bug or have feedback please use this link to submit it: https://msazure.visualstudio.com/One/_workitems/create/Bug?templateId=8bf3325d-08ff-4705-a7b1-9cd5c9c6e921&ownerId=cd34c3fb-8eb5-426a-a6ea-a29fb070f381
+
+For bugs: please provide a full repro of the bug so we can troubleshoot easily.
+
+For feedbacks please include as much data as possible so we can address the feedback.
+
+## Submitting an exception request 
+
+In some cases, you may want to exclude your data set from Schrems II.
+
+These cases are handled using dedicated exception processes.
+
+Please follow these links to initiate your exception process:
+
+  1. For M365 – follow this link: https://microsoft.sharepoint-df.com/teams/EuInEuFC/SitePages/M365-EUPI-Exception-Process.aspx 
+  2. For Global (Azure) – follow this link: https://microsoft.sharepoint.com/teams/CAIEUDataBoundary/SitePages/EUPI-Exception-Assessment-Guidelines.aspx#how-to-request-an-eupi-exception  
+
+## Expected timeline
+
+As we gear up for the release, expect the following timeline.
+
+> Note: Schrems II support is in active development, therefore timeline is subjected to change.
+
+### Phase 1 – soft launch – 7/10/2023. Dates are subject to delays based on requests from Trusted Platform Group.
+
+DGRep will support Schrems II, queries will be scrubbed in main DGrep experience.
+Users will be able to access full data (unscrubbed) in DGrep EU instance without the need of VDI access.
+
+### Phase 2 – full Schrems II compliance – 8/19/2024 (scream test), Enforcement begins - 8/21/2024
+
+The enforcement for Schrems II compliance begins on August 21, 2024. We invite all customers to participate in a **scream test scheduled for August 19, lasting from 11 AM to 2 PM UTC**. This is an opportunity to experience the changes firsthand.
+
+DGrep will support Schrems II, queries will be scrubbed in all DGrep experiences.
+Users will be able to access full data (unscrubbed) only through designated VDI machines.
+
+*Note (below dates are not updated, please view the above dates)*
+![Schrems timeline diagram](../images/SchremsStages.PNG)

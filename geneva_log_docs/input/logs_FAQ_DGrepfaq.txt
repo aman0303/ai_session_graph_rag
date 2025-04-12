@@ -1,0 +1,95 @@
+# FAQ
+
+
+## What types of events show up in DGrep?
+Events configured with type CentralBond or those that have streaming annotations will be searchable via DGrep.
+
+## How long are events searchable in DGrep?
+Events will be searchable as long as their retention period specifies. This can be configured for the whole account using [**defaultRetentionInDays**](../../collect/references/windows/events.md#attributes) or per event type using the [**retentionInDays**](../../collect/references/windows/events.md#attributes-1) attribute on the event source.
+
+## Why is my namespace/event/column still appearing in DGrep even after I removed it?
+DGrep list of namespaces, events and columns is built on hinting of data that was ingested. To remove these hints, use the "Clear namespace/event hints" dialog, which can be opened from the Settings tab.
+
+![clear hints image](../images/dgrep_ClearHints.png)
+
+You will need access to the namespace to be able to remove hints from it.
+
+## Cosmos/Kusto show duplicate records whereas there is no duplication in DGrep
+If MA sends multiple event hub notifications for a blob (due to retries, or misconfigurations), data will be duplicated in Cosmos and Kusto. DGrep has no dependency on event hub notifications -- it searches the storage account directly.  Hence, there will be no duplicates in DGrep data for this situation.
+
+## I see duplicate results after using the `summarize` or `groupby` operators. Why?
+DGrep is a distributed service and runs your *server* query on mulitiple machines. Therefore, `summarize` and `groupby` expressions are scoped to a single BLOB. To get expeced results, add your `summarize` or `groupby` expression to the *client* query as well. The client query runs on a single node and operates across all the data. There is an example of how to do this [here](../concepts/serverquery.md#distributed-nature).
+
+## How do I share a link to a DGrep query?
+Click on the "Link" tab in the left pane:
+
+![link dialog image](../images/dgrep_Link.png)
+
+## How to create parameterized link for DGrep? How can I programmatically create it?
+
+You can use DGrep parameters to generate a link to a query.
+For example for this link:
+```
+https://portal.microsoftgeneva.com/?page=logs&be=DGrep&time=04/13/2015 11:35Z&offset=-30&offsetUnit=Mins&UTC=true&ep=Test&ns=Aims&en=LogEvent&ver=3v0&su=MdsBvt1,MdsBvt2&role=Aims&roleInstance=Aims_IN_0, Aims_IN_1&conditions=[["Tenant","%3D%3D","a"],["ActivityId","contains any of","a,b,c"]]
+```
+
+fields are:
+* ep: Endpoint,
+* ns: namespace,
+* en: eventname,
+* ver: table version,
+* su: Scaleunit [obsolete (use scopingConditions) ] ,
+* role: Scaleunit [obsolete (use scopingConditions)],
+* roleInstance: Scaleunit [obsolete (use scopingConditions)],
+* conditions: Search conditions (Condition names are Case sensitive)
+
+You can easily figure out other params in this link and craft your own.
+
+* The 'time' arg should specify timezone otherwise it will be considered client's timezone. (Either use Z(UTC) or the standard "-hh:mm" timezone format).
+* The 'offset' and 'offsetUnits' parameters specify the range around the given 'time'; valid 'offsetUnits' are "Mins", "Hours", and "Days", with `offset` being the quantity of those to use.
+* The 'UTC' arg is used to display/convert the provided time into either user's local time or UTC.
+* Parameterized link also supports aggregates, here is the example(Count by Role and Count by Level):
+```
+https://portal.microsoftgeneva.com/?page=logs&be=DGrep&offset=-2&offsetUnit=Hours&UTC=false&ep=Test&ns=Aims&en=LogEvent&ver=3v0&su=MdsBvt1,MdsBvt2&role=Aims&roleInstance=Aims_IN_0,%20Aims_IN_1&aggregates=["Count by Role", "Count by Level"]&aggregatesVisible=true
+```
+* You can also use the "dateFrom" and "dateTo" parameters like following:
+    ```dateFrom=<YourTime>&dateTo=<YourTime>```
+    > [!NOTE]
+    > If you are using dateFrom and dateTo then don't use time, offset and offsetunits in parameters
+
+    > [!NOTE]
+    > (dateFrom and dateTo fields always changes time to UTC, so it is advised to use offset, offsetUnit and time params for local times)
+
+* You can have the search be relative to now by omitting the time parameter and just using offset and offsetunits
+* You can also use the dateFrom and dateTo parameters like following
+* You can also use scopingConditions , Like: scopingConditions=[["DataCenter","PROD-BY-001"],["OtherIdentityColumn","Value"]]
+    > [!NOTE]
+    > Monikers and EventVersions are special scoping conditions. Please use "__Moniker__" and "__EventVersion__" for name in URL.
+* For server query you can use parameter: serverQuery
+## How to troubleshoot Missing Data in DGrep?
+
+Click [here](~/collect/troubleshoot/windowsmissingdata.md) to troubleshoot MA not collecting or uploading data to view in Jarvis DGrep.
+
+## List of DGrep Endpoints
+
+|<span style="color:RGB(0,0,0)"> Warm path environments (a.k.a MDS Endpoints)  </span> | <span style="color:RGB(0,0,0)"> DGrep endpoint </span>              |
+|--------------------------------------------------------------------------------------|-----------------------------------------------|
+|https://test2.diagnostics.monitoring.core.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                             |                        
+|https://test1.diagnostics.monitoring.core.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                              |
+|https://stage.diagnostics.monitoring.core.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                              | 
+|https://production.diagnostics.monitoring.core.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                              |
+|https://production.runners.monitoring.core.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                              |
+|https://production.billing.monitoring.core.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                              |
+|https://firstparty.monitoring.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                                                              |
+|https://monitoring.windows.net/ | https://dgrepv2-frontend-prod.trafficmanager.net                                                                                             |
+|https://mds.windowsphone-int.com/ | https://dgrepv2-frontend-prod.trafficmanager.net                                                                                             |
+|https://mds.windowsphone.com/ | https://dgrepv2-frontend-prod.trafficmanager.net                                                                                             |
+|https://monitoring.core.chinacloudapi.cn/ | https://dgrepv2-frontend-prod.trafficmanager.cn                                                                  |
+|https://monitoring.core.usgovcloudapi.net/ | https://dgrepv2-frontend-prod.usgovtrafficmanager.net                                                      |
+|https://monitoring.core.cloudapi.de/ | https://dgrepv2-frontend-prod.azuretrafficmanager.de                                                              
+
+
+
+
+
+

@@ -1,0 +1,29 @@
+# Geneva Logs to Geneva Metrics connector
+Geneva Logs to Geneva Metrics connector, or simply put LogsToMetrics connector, is a Geneva service that extracts metrics from logs (in a 'streaming' fashion similarly to how Geneva backend services ingest the logs) and publishes these metrics to [Geneva Metrics](../../../metrics/overview.md) (aka MDM).
+
+# When to use Logs To Metrics?
+The most efficient way of publishing metrics to Geneva Metrics is directly from the running service (either directly via [IFx APIs](../../../collect/instrument/ifx/ifx.md) or [OpenTelemetry](../../../collect/instrument/otel-overview.md), or less efficiently with [local derived events](../../../collect/advanced/derivedintro.md). That said, we recognize that there are emergency scenarios where updating service code or configuration to publish metrics can take a while. The LogsToMetrics connector will assist in generating metrics in the interim and allow you to address any monitoring gaps quickly.
+
+Please consider the following factors before enabling this feature:
+* Since LogsToMetrics works on data from the Geneva Logs, the ingestion latency is higher than emitting metrics directly to Geneva Metrics.
+* The LogsToMetrics service has usage quotas, which are detailed in the [Limits and Quotas](./quota.md) section.
+
+Due to these restrictions, we recommend using this feature prudently and only when direct submission from your service nodes is not possible.
+
+# How does it work?
+Metrics are extracted from logs by running queries on the logs.
+
+The queries are written in MQL or KQL and need to adhere to the following conventions:
+* There should be exactly one column of type `DateTime`.  This column is interpreted as the metric time. 
+* All columns that start with `m_` and have non-negative numeric values are interpreted as metrics.  There should be at least one such column.  The metric name is the name of the column with `m_` stripped out.  For example, if you wish to publish a metric with name `MyMetric` and a value of `7`, your query should yield `m_MyMetric = 7`.
+* All columns that start with `d_` and are of type string are interpreted as dimensions. 
+* The data type of the column is important.  In particular, using MQL, `d_MyDimenion = iif(Foo.contains("bar"), "1", "0")` will be interpreted as a dimension whereas `d_MyDimenion = iif(Foo.contains("bar"), 1, 0)` will not. There can be 0 or more such columns.
+* You can have multiple such queries for a given event.
+* Data deemed to be "old" (age > 20 minutes) is not sent to Geneva Metrics. The age of the metric is defined as `DateTime.UtcNow – metricTime`, where `metricTime` is the column defined in the first bullet point above. Similarly, any data that has a timestamp in the future will be dropped as well.
+
+It is important to keep in mind that the queries are executed on each blob that is uploaded by the MA independently. This means that the rules simply apply filtering & projection transforms on the blobs and leaves actual grouping (i.e., aggregations) to Geneva Metrics.
+
+# How to use it?
+You need to create a **conversion rule** for each log event for which you want to extract metric data.
+A **conversion rule** is the unit of configuration in LogsToMetrics. It essentially describes a mapping between Geneva Logs and Geneva Metrics. This mapping is described by means of a MQL query with the conventions mentioned above.
+Each **conversion rule** [is created from the Jarvis UI](./gettingstarted.md) and it is stored in the same Geneva Logs Namespace where the Logs are extracted from.

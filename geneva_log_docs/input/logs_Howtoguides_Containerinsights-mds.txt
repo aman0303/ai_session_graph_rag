@@ -1,0 +1,82 @@
+# Container Insights - Geneva Logs Integration
+
+## Overview:
+
+<a href="https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-overview" target="_blank">Container Insights</a> is designed to monitor the performance of container workloads deployed in Azure. It delivers a comprehensive monitoring experience to understand the performance and health of Kubernetes clusters and container workloads. Container Insights can now be integrated with Geneva Logs and this enables the ingestion of the Container Std 
+ -- openCurlyBracket -- 
+out; err
+ -- closeCurlyBracket -- 
+ logs to Geneva Logs Account.
+
+
+Here is a quick walkthrough on how to integrate Container Insights with Geneva Logs account:
+
+<iframe src="https://microsoft.sharepoint.com/teams/WAG/EngSys/Monitor/_layouts/15/embed.aspx?UniqueId=814c3c62-a98b-4879-b078-eead1620313f&embed=%7B%22ust%22%3Atrue%2C%22hv%22%3A%22CopyEmbedCode%22%7D&referrer=OneUpFileViewer&referrerScenario=EmbedDialog.Create" width="640" height="360" frameborder="0" scrolling="no" allowfullscreen title="Container Insights-Geneva Logs Integration.wmv"></iframe>
+
+
+## Geneva Logs Account Configuration:
+
+To start sending Container logs through Container Insights to Geneva, you will need to configure your Geneva logs account for Container Insights. Configuration is slightly different for Linux and for Windows container Logs. Please follow the below steps:
+
+### For Linux Containers:
+
+1. Navigate to the logs settings page of your Geneva logs account in the <a href="https://portal.microsoftgeneva.com/account/logs/configurations" target="_blank">Jarvis Portal</a> > Account > Logs Account Settings. If you do not have a logs account, create one <a href="https://portal.microsoftgeneva.com/account/onboard/createAccount" target="_blank">here</a>.
+2. Then create a new namespace in your logs account by clicking on **Namespace** tab and create a new namespace for Linux Container Logs.
+
+> [!NOTE]
+> It is strongly recommended to select the option **add Namespace** to the **MA Communication Role**. It is also recommended that a new separate Geneva Logs namespace be used for the Container Logs so as to avoid interfering the Geneva Config of the existing Geneva MA agent.
+
+  ![MetricsAccount](./images/ci-mds-1.png)
+
+3. Once the namespace is created, select the **User Roles** tab.
+4. Select the "View/Add" option under **Claims** within the **_MaCommunication** Role.
+
+  ![MetricsAccount](./images/ci-mds-2.png)
+
+5. Click on "Agent" option and add the Execute option for the namespace you just created. For example, if the namespace is "ContainerLogs", it will show up as ^ContainerLogs* in the table. Select Execute in the drop-down for "Right" field.
+
+  ![MetricsAccount](./images/ci-mds-3.png)
+
+6. Go to **Resources** tab in the Logs settings page and make a note of the name of storage group for the namespace that you just created. This is the moniker name that you will need in the next step. If you do not see a storage group for your newly created namespace, you can create one in the same page with the option "Add new storage group".
+7. Download [this xml file](https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/Documentation/Internal/ContainerLogV2-Linux.xml) and do not forget to update the values for **namespace, account, moniker & identity values** based on your Geneva Logs account
+
+    - Both account and moniker should have the same value of storage group name (i.e., moniker).
+    - If you don’t have Account Moniker, you can create one by creating storage group from Resources tab of Geneva Logs Account.
+
+8. Upload this updated configuration to your Geneva Logs Account by clicking on **Configurations** and then selecting **New Configuration**.
+
+### For Windows Containers:
+
+1. Set up a Logs Account <a href="https://portal.microsoftgeneva.com/account/onboard/createAccount" target="_blank">here</a>, if you already do not have one. Or, navigate to the logs settings page of your Geneva logs account in the <a href="https://portal.microsoftgeneva.com/account/logs/configurations" target="_blank">Jarvis Portal</a> > Account > Logs Account Settings.
+2. Create another namespace in your Logs account by clicking on **Namespace** tab and create a new namespace for Windows Container Logs.
+
+> [!NOTE]
+> It is strongly recommended to select the option **add Namespace** to the **MA Communication Role**.
+
+3. Select Logs Endpoint & Account Name, then select User Roles.
+4. Select the View/Add under **Claims** option within the "*_MaCommunication" Role.
+5. Click on Agent option and add the Execute option for the namespace. For example, if the namespace is WinContainerLogs, it will show up as ^WinContainerLogs.*. in the table. Select Execute in the drop-down for "Right" field.
+6. Go to **Resources** tab in the Logs settings page and make a note of the name of storage group for the namespace that you just created. This is the moniker name that you will need in the next step. If you do not see a storage group for your newly created namespace, you can create one in the same page with the option **Add new storage group**.
+7. Download [this xml file](https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/Documentation/Internal/ContainerLogV2-Windows.xml) and update **namespace, account, moniker & identity values** based on your Geneva logs account.
+
+    - Both account and moniker should have the same value of storage group name (i.e., moniker).
+    - If you don’t have Account Moniker, you can create one by creating storage group from Resources tab of Geneva Logs Account.
+
+8. Upload this updated configuration to your Geneva Logs Account by clicking on **Configurations** and then selecting **New Configuration**.
+
+## Enable Container Insights:
+
+Enable AKS Monitoring addon to your AKS cluster if you haven’t enabled it already. You can do this through Azure cli.
+
+  ```
+    az account set -s  <AKS cluster Azure Subscription Id>
+    az aks enable-addons -a monitoring -g <AKS ClusterResourceGroup> -n <AKS ClusterName>
+  ```
+
+For additional configurations, refer to this documentation: <a href="https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-enable-aks?tabs=azure-cli" target="_blank">https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-enable-aks?tabs=azure-cli</a>
+
+
+## Next steps:
+
+Now that you have configured your Geneva logs account and Container insights, you can proceed to setup [Container Insights](./Containerinsights-mds-setup.md). 
+

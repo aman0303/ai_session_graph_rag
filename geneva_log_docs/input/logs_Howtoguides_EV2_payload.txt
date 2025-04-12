@@ -1,0 +1,102 @@
+# ConfigureLogsAccount
+
+> [!NOTE]
+> Full documentation is available [here](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample%2FRolloutParameters%2F2020-06-01%2FGeneva.Extension.RolloutParameters.json)
+
+## Input Parameters 
+
+|     Name                                  |     Required            |     Value                                                                                 |  Support in Version
+|-----------------------------------        |-------------------------|-----------------------------------------------------------------------------------------  |-----------------------
+|     mdsEnvironment                        |     Yes                 |     The MDS environment you wish to target                                                | All Versions
+|     accountName                           |     Yes                 |     Your account name.                                                                    | All Versions
+|     metricsAccountName                    |     No                  |     MDM account name                                                                      | All Versions
+|     contactEmail                          |     For new accounts    |     Contact email for your account                                                        | All Versions
+|     administratorAliases                  |     For new accounts    |     For version 2016-01-01, semicolon delimited list of admin aliases; For version 2020-06-01, Json String array of admin aliases.                                             | All Versions
+|     administratorSecurityGroup            |     For new accounts    |     Security group for account admin                                                      | All Versions
+|     namespaceName                         |     No                  |     Geneva namespace to register or update                                                | 2016-01-01
+|     namespaceNames                        |     No                  |     Json String array of namespaceNames                                                   | 2020-06-01 and later
+|     subscriptionIds                       |     For new accounts    |     For version 2016-01-01, semicolon-delimited list of Azure Subscription IDs; For version 2020-06-01, Json String array of Azure Subscription IDs                                    | All Versions
+|     defaultAzureRegion                    |     For new accounts    |     The default region to use for provisioning new GSM resources. Defaults to westus in public cloud. Need to mention explicitly other than public cloud.                                   | All Versions
+|   [defaultStorageReplicationType](#setting-storage-replication-type)   |   No  |   Valid values are Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS, Standard_GZRS  |   2020-06-01 and later
+|   [defaultStorageReplicationTypes](#setting-storage-replication-type)   |   No   |  Array of multiple values. Valid values are Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS, Standard_GZRS | 2020-06-01 and later
+|     serviceTreeId                         |     Yes                  |     Service Tree GUID for your service.       | All Versions
+|     dsmsCertificate                       |     No                  |     DSMS certificate for configuring the MACommunication User Role. For version 2016-01-01, 2 part semicolon seperated string containing SAN name and DSMS path; For version 2020-06-01, Json Object of elements with key of san, dsmsPath                        | All Versions
+|     keyVaultCertificate                   |     No                  |     Key Vault certificate for configuring the MACommunication User Role. For version 2016-01-01, 3 part semicolon seperated string containing root thumbprint, SAN name and Description; For version 2020-06-01, Json Object of elements with key of rootCertificateThumbprint, san and description                   | All Versions
+|     [namespaceConfig](#config-upload-options)                       |     No                  |     Config package zip file containing a configuration to upload.                         | All Versions
+|    [namespaceConfigMainFile](#config-upload-options)    |   No  |   Specifies the configuration main file, if provided instead of config package zip file |   2020-06-01 and later
+|   [namespaceConfigImportZip](#config-upload-options)    |   No  |   Specifies the zip import files, if provided instead of config package zip file  |   2020-06-01 and later
+|   [namespaceConfigImportFile```<number>```](#config-upload-options)   |   No  |   Explicitly specify each import file, if provided not in zip format  | 2020-06-01 and later
+|     storageGroups                         |     No                  |     Define custom storage groups instead of using the default storage groups, and setup Kusto streaming   | 2020-06-01 and later    
+|   [regionBasedKustoSettings](#region-based-kusto-setting)    |   Yes  |   Define the Kusto instance to be used in each region. Part of custom storage groups definition |   2020-06-01 and later
+|   [regionBasedKustoSettingsMode](#region-based-kusto-setting)    |   No  |  Choose to append or reset the Kusto region list to the existing payload. If the parameter is not preset, it defaults to RESET. Part of custom storage groups definition    |  2020-06-01 and later 
+|   userRoles   |   No  |   Define custom user roles in addition to the user roles created by default (MaCommunication and MdsAccountAdmin roles)  |   2020-06-01 and later
+
+### Setting storage replication type
+All storage accounts used by Geneva Logs to collect monitoring data are Zone Redundant Storage (ZRS) by default. However, you can choose to provision Locally Redundant Storage (LRS) or Geo-Redundant Storage (GRS) storage accounts. [Learn more about storage redundancy](https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy). 
+
+$defaultStorageReplicationType is an optional parameter. When not specified, the default value is Standard_ZRS. Other values that be can set are Standard_GRS, Standard_LRS, Standard_RAGRS, Standard_GZRS, Standard_RAGZRS.
+If $defaultStorageReplicationType is set to ZRS, but ZRS is not available in the region, GSM will default to provisioning GRS storage accounts. If GRS is not available, GSM will default to provisioning LRS storage accounts. [Learn about availability zones support in Geneva Logs](../Manageaccount/EnableAZ.md). 
+
+If you want to specify multiple types, you can use the "defaultStorageReplicationTypes" setting, which accepts an array of values. For example: 
+
+```
+"defaultStorageReplicationTypes" : 
+ -- openCurlyBracket -- 
+ "value": ["Standard_ZRS","Standard_LRS"] 
+ -- closeCurlyBracket -- 
+
+```
+
+### Config upload options
+A configuration package has two main parts - the main config file ("main.xml"), and the import files. You have a few options to upload the configuration package via the Ev2 extension:
+1. Save the import files into a zip file, and then save the import folder with main.xml into a ConfigPackage.zip file. You then use the parameter *namespaceConfig* to upload the config package.
+2. Save the import files into a zip file, and provide main.xml separately. You then use the parameter *namespaceConfigImportZip* to upload the import zip file, and the parameter *namespaceConfigMainFile* to upload main.xml. 
+3. Reference all the files - import files and main.xml separately. You then use the parameter *namespaceConfigImportFile```<number>```* to upload each import file, and the parameter *namespaceConfigMainFile* to upload main.xml.
+
+If the same file is passed through using different means, the following precedence is used to override one over the other:  
+- Main file: namespaceConfig -> namespaceConfigMainFile
+- Import files: namespaceConfig -> namespaceConfigImportZip -> namespaceConfigImportFile```<number>```
+
+See [sample files](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/ConfigUpload/Geneva.Extension.RolloutParameters.CreateNamespaceAndPublishConfig.json&version=GBmaster&line=46&lineEnd=72&lineStartColumn=9&lineEndColumn=114&lineStyle=plain&_a=contents) for more details.
+
+### Region based Kusto setting
+As part of setting your Logs Ev2 extension to send logs to Kusto, you are required to specify the regions of your Kusto clusters. When you deploy to new regions, you can choose to **append** the new regions to the list that is already defined in your payload, or you can choose to **reset** the existing list with a new list of regions. The default behavior is **reset**. See example [here](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=/docs/EV2Extension/ServiceGroupRootSample/RolloutParameters/2020-06-01/Geneva.Extension.RolloutParameters.CustomStorageGroups.json&version=GBmaster&line=126&lineEnd=132&lineStartColumn=15&lineEndColumn=18&lineStyle=plain&_a=contents).
+
+## Output Parameters
+
+Learn more about [Output Chaining](https://ev2docs.azure.net/features/parameterization/inputoutput.html).
+
+### Minor config version number
+The following output from the Ev2 extension provides the minor version number of newly updated namespace configurations:
+
+```
+
+ -- openCurlyBracket -- 
+
+    "name": "ProvisionGenevaAccount",
+    "type": "ConfigureLogsAccount",
+    "state": "succeeded",
+    "error": null,
+    "message": "OK",
+    "outputs": 
+ -- openCurlyBracket -- 
+
+        "configDetails": 
+ -- openCurlyBracket -- 
+
+            "configVersion": "1.0"
+        
+ -- closeCurlyBracket -- 
+
+    
+ -- closeCurlyBracket -- 
+
+
+ -- closeCurlyBracket -- 
+
+```
+
+
+### Quick Sample
+
+Here's a [quick sample](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample%2FRolloutParameters%2F2020-06-01%2FGeneva.Extension.RolloutParameters.json).

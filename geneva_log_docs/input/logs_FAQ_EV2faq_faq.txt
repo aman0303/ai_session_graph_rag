@@ -1,0 +1,61 @@
+# FAQ
+
+### Is managed certificates supported? 
+
+Yes. [Managed certificates](../../Howtoguides/EV2/setup/auth.md) are supported. 
+
+### Is Kusto streaming supported? 
+
+Yes. See [Kusto Streaming](../../../connectors/Geneva%20to%20Kusto/overview.md) to learn how to set it up. 
+
+### Is generic User Role configuration supported? 
+
+No. We are aware of the ask and it's on our backlog for completion.
+
+### Are non-GSM accounts supported?
+
+No. The Geneva Logs EV2 extension was developed to address air gapped environments and automated buildouts. As such, GSM is the only supported technology when using the extension because it doesn’t require explicit moniker configuration. We are investigating ways to ease the transition for those not using GSM who are impacted by the deprecation of the GenevaRP extension.
+
+### When will SN+I be supported?
+
+SN+I is currently supported. [Learn more](~/collect/authentication/keyvault.md)
+
+### Are Geneva logs namespace accounts case sensitive?
+
+Even though the namespace name has uppercase letters in RolloutParameters 
+
+```
+"namespaceName": 
+ -- openCurlyBracket -- 
+ "Value": "AIBTestOneNS" 
+ -- closeCurlyBracket -- 
+,
+- use the lowercase namespace name in `main.xml`:
+<… namespace="aibtestonens" …>
+Instead of
+<… namespace="AIBTestOne" …>
+```
+The comparison between the namespace name and storage group name is performed [here](https://msazure.visualstudio.com/One/_git/EngSys-MDA-MDS?path=%2Fsrc%2Fmds%2Fmdsconfigparser%2FConfigParser2.cs&version=GBmaster&line=1551&lineEnd=1552&lineStartColumn=1&lineEndColumn=1&lineStyle=plain).
+
+```
+if (!_account.moniker.StartsWith(_accountGroup.moniker) ||
+            _account.moniker.Length <= _accountGroup.moniker.Length)
+                CollectOrThrow(
+                    ConfigDefectType.Generic,
+                    new MdsException("account mapping moniker (
+ -- openCurlyBracket -- 
+0
+ -- closeCurlyBracket -- 
+) must start with 
+ -- openCurlyBracket -- 
+1
+ -- closeCurlyBracket -- 
+ and the data center portion cannot be empty",
+                    _account.moniker, _accountGroup.moniker));
+```
+### I want to invoke multiple keyvaults. Is this currently supported? 
+
+No. Currently, you have to invoke Ev2 multiple times if you want to invoke multiple keyvaults. 
+
+### How to contact Geneva Logs EV2 extension support
+Please contact [Geneva Support](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=K2O3nB) if this issue persists.

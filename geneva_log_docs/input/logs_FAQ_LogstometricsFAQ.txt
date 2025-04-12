@@ -1,0 +1,26 @@
+# FAQ
+
+## How can I get help?
+
+Click the [Contact Us](https://aka.ms/genevasupport) button in Jarvis, select the *Pipeline* area and follow the instructions.
+
+## Can I write conversion rules against logs in national/sovereign clouds?
+
+Yes. Just make sure to select   the correct **Endpoint** ("CA Fairfax", "CA Mooncake" or "CA BlackForest") when you are in the [Logs To metrics](https://portal.microsoftgeneva.com/manage/connectors/logs-to-metrics) page.
+
+## I am getting permission/access issue while creating new LogsToMetrics conversions rule.
+
+We recommend 2 ways to fix the issue.
+1. Make sure you are using *ME or Torus account, and that *ME/Torus account were added to the Geneva Logs account.
+2. Specifically for **Torus** - make sure the MDM account was updated with the correct alias - they have **<alias>_DEBUG** naming convention which is different than CORP that only has <alias> naming.
+
+## Can I list/add/modify/delete a conversion rule programmatically?
+
+No. At this point this can only be done through the Jarvis UI.
+
+## How to turn on percentile for Logs To Metrics?
+
+Please refer to the steps described [here](../../metrics/percentiletutorial/percentiletutorial.md).
+
+## How do I get access to the LogsToMetrics connector in Jarvis?
+Please refer to prerequisites described [here](https://eng.ms/docs/products/geneva/logs/howtoguides/logs2metrics/gettingstarted#Prerequisites).

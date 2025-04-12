@@ -1,0 +1,8 @@
+# Overview 
+
+
+DGrep is a highly parallelized brute force log search engine.
+Results are returned in real-time so you can use DGrep interactively to query your logs. 
+DGrep is automatically enabled for free on any Geneva Logs stream.
+
+See this [presentation](https://microsoft.sharepoint.com/teams/WAG/EngSys/Monitor/Videos/Forms/Video/videoplayerpage.aspx?ID=191&FolderCTID=0x0120D520A808005B8A2B191188E441829CE8107D7F26EA&List=00a33424-0f8e-47ac-8cfe-6b7957f01311&RootFolder=%2Fteams%2FWAG%2FEngSys%2FMonitor%2FVideos%2FDGrep%20-%20Reading%20Logs%20and%20Making%20Charts%2FAdditional%20Content&RecSrc=%2Fteams%2FWAG%2FEngSys%2FMonitor%2FVideos%2FDGrep%20-%20Reading%20Logs%20and%20Making%20Charts) for an overview of the capabilities.

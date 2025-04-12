@@ -1,0 +1,22 @@
+
+# How to delete broken/stale Central Derived Events
+
+The steps below provide guidance on how you can safely delete CDEs via Jarvis. You should have received an email from Geneva Monitoring about stale/broken CDEs.
+
+1.	Navigate to [Account > Logs Account Settings > Configurations](https://portal.microsoftgeneva.com/account/logs/configurations)
+2.	Select *Diagnostics PROD* as the endpoint and the Geneva Logs account name where your CDEs reside
+3.	Find the corresponding namespaces and click on the config file versions that you see listed in the *Possible Stale* and *Broken CDEs* tables on the dashboard (shared in the email). For example, if the table lists Ver1v0 , click on the Version 1.*v0 config link.
+###  
+
+![image1](../images/DeleteCDE_Steps1to3.png "Steps 1-3")  
+###  
+
+4.	Refer to the *RawEvent* column of the *Possible Stale* and *Broken CDEs* tables to find CDEs that should be removed from the config.
+5.	For each identified config file as below:  
+	a.	Navigate to 'What to collect' > 'Derived Events'  
+	b.	Click on the delete icon (trash can) for that event (See below)	
+6.	Validate and save the config.  
+###  
+
+![image2](../images/DeleteCDE_Steps5to6.png "Steps 5-6")
+

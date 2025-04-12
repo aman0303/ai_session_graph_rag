@@ -1,0 +1,189 @@
+
+# Derived Events Query Language
+
+
+Derived events support the use of the following clauses. You can link together any number of these clauses, except for the block clause (if-else) and join. The block clause must follow a series of let clauses that start the query. You can only have one join per query.  
+
+```
+<LetClause>  
+<BlockClause>  
+<WhereClause>  
+<GroupClause>  
+<SelectClause>  
+<JoinClause>  
+```
+  
+The LINQ clauses are used to pipe data from one clause to another. The initial data comes from a stream of source events, which have an initial set of fields. You add to those fields let clauses. If you have no clauses in your query the input fields are just copied to the output fields. For example if your event fields are a, b, c, and you have one let clauses defined as "let d=a+b". Your output fields now include a, b, c, and d.  
+  
+The groupby and select clauses are used to restrict fields. For example, if your event fields are a, b, c, and you have the following query. The result is the fields a, b, and d, where field c is not included.  
+  
+groupby a, b  
+let d=sum(c)  
+  
+In this example with the same input you are also removing c from the output, but there is no  
+grouping of similar values of a and b, so the number of output rows are the same as the number  
+of input rows.  
+  
+select a, b  
+let d=a+b  
+  
+The where clause can be used to filter out rows from the output either before or after you  
+restrict the field columns with select or groupby.
+
+
+
+**if-else clauses**  
+  
+Statement block variable assignments have the same semantics as a let clause assignment. A variable  
+in a statement block must first be declared in a let clause. For example if your input is  
+a=1, b=2, c=3 and you have the following query with one if-else statement block your output is  
+a=1,b=2,c=3,k=10. All if-else statement blocks must be contiguous (i.e. you cannot place a let between  
+two if statements) and they must occur before any select or groupby clauses. Only let clauses can be defined before your contiguous if-else blocks.
+
+
+
+One important thing to note about if-else clauses is that fields assigned within the if-else clauses are not resolved to the new values until after the if-else blocks. This means if you assign a field within a if-else clause and use in in a subsequent if clause, the field still retains its pre-assigned value at that point. In this example, the *k* variable is the initialized value of *a*until after the if-else.  
+  
+let k = a  
+if (b == 2)  
+
+ -- openCurlyBracket -- 
+  
+k = 10;  
+
+ -- closeCurlyBracket -- 
+  
+else  
+
+ -- openCurlyBracket -- 
+  
+k = 20;  
+
+ -- closeCurlyBracket -- 
+
+
+
+
+**TimeStamp**  
+The time stamp is always the first field of a row and set to the start time of the query.  
+If groupby is not used a field representing the time stamp from the original source event  
+is added as a field named PreciseTimeStamp.  
+You can also access the original input row's time stamp by using the field keyword, TIMESTAMP, in  
+your query.
+
+
+## Identity Columns
+
+
+If your identity is "TenantRole", the input columns for every event from a local source to  
+a central destination (i.e. storeType="CentralBond") includes the fields *Tenant*, *Role*, and *RoleInstance*. A local sourced event  
+includes events from counters, Etw providers, etc... Local sourced events also include derived events  
+with the store type set as local.  
+  
+The identity columns are not included if your store type is local. If you need to refer  
+to those columns in your query for a local store event, you must set them with let clauses  
+explicitly. For example you could do this: 'let MyRole=GetEnvironmentVariable("MONITORING\_ROLE")'  
+See identity comments for more details.
+
+
+
+When your storeType is CentralBond, make sure any derived event that has a local source (i.e. the DE is run by MA and not the central Geneva service) includes all of the identity component names in groupby and select clauses. Those identity names are *Tenant*, *Role*, and *RoleInstance*if you use the default *TenantRole*identity type. If you use your own custom identity components, those should be included in the select and groupby clauses.
+
+
+
+<DerivedEvent source="CounterTable" duration="PT5M" storeType="CentralBond" eventName="CounterRollupQuery">
+
+
+
+<Query> <![CDATA[ **groupby**Tenant, Role, RoleInstance,CounterName let SampleCount=Count() let CounterValue=Average(CounterValue) ]]> </Query>
+
+
+
+</DerivedEvent>
+
+
+
+<DerivedEvent source="CounterTable" duration="PT5M" storeType="CentralBond" eventName="CountersGetNameOnlyQuery">
+
+
+
+<Query> <![CDATA[ **select**Tenant, Role, RoleInstance,CounterName ]]> </Query>
+
+
+
+</DerivedEvent>
+
+
+
+**Time and Partitions ("Central" table format only)**  
+  
+You can override (not applicable for CentralBond) the default behavior for time and identity by explicitly setting the partition  
+and row keys. See the derived event for AlertEtwEvent as an example. That example also specifies  
+which columns are selected by default if you do not restrict fields with either groupby or select.
+
+
+## Language
+
+
+| 
+
+<QUERY> ::= [ <QueryVariable> ]\* | [ "from" <Var Reference> ] <QueryClauses>
+
+ | 
+
+​Var Reference - Matches a previously defined var name. Outside of a VAR clause you cannot reference an event name.
+
+ |
+| 
+
+​<QueryVariable> ::= "var" <name> "=" [ "from" <Event Stream Name> ]< QueryClauses> ";"
+
+ | ​Event Stream Name - This stream name matches either a previously defined query variable in the same query or another event name defined in the configuration. |
+| ​<QueryClauses> ::= [< ConditionalClause> ] [ <QueryClause> ]\* | ​ |
+| ​<ConditionalClause> ::= [< LetClause> ]+ <BlockClause> | ​ |
+| ​<QueryClause> ::= <LetClause> | <WhereClause> | <GroupClause> | <SelectClause> |< JoinClause> | ​ |
+| ​<LetClause> ::= ["let"< VariableName> "=" <expression> [, <VariableName> "=" <expression>]\* ]+ | ​ |
+| ​<WhereClause> ::= "where"< expression> | ​ |
+| ​<GroupClause> ::= "groupby" <VariableName> ["," <VariableName>]\* | ​groupby also supports the 'as' clause. E.g. groupby SourceEvent() as Eventname |
+| ​<SelectClause> ::= "select" <SelectItem> ["," <SelectItem>] | select also supports the 'as' clause. E.g. select 4 as Level​ |
+| ​<SelectItem> ::= <expression> | ​ |
+| ​<BlockClause> ::= "if" "(" <expression> ")" "
+ -- openCurlyBracket -- 
+"< StatementList> "
+ -- closeCurlyBracket -- 
+" [ <else> ] | Assignments within the if-else clauses are not resolved until after all of the if-else clause blocks finish.​ |
+| <NullCoalesce> ::= <variable> "??" <expression> | ​ |
+| <JoinClause> ::= "join"< name> "on" <VariableNameList-outer> <JoinKind>< VariableNameList-inner> | ​Each variable name list must be the same length. The inner fields come from <name>, while the outer fields come from the derived event source event name. |
+| ​<VariableNameList> ::=< VariableName> ["," <VariableName> ]\* | ​ |
+| ​<JoinKind> ::= "equals" | "contains" | ​ |
+| ​<StatementList> ::=< BlockClause> | <statement> [";" <StatementList>]\* | ​ |
+| ​<else> ::= "else" "
+ -- openCurlyBracket -- 
+" <statement-list> "
+ -- closeCurlyBracket -- 
+" | ​ |
+| ​<statement> ::=< VariableName> = <expression> | ​ |
+| ​<VariableName> ::= <name> | ​ |
+| ​<name> ::= <string> | "'"<string>"'" | Use '' if there are spaces |
+| ​<expression> ::= ["!"]["("]< expression> [")"] | ["!"]<node> [ <oper>< expression> ] | <variable> "=="|"!=" "null" | ​Comparison to the keyword "null" or the <NullCoalesce> operator are used to detect when a variable reference is unresolved. This can be used in event streams that have rows with different schemas, where you need to have a default value for a field thatdoes not exist in all rows. |
+| ​<node> ::= <VariableName> |< value> | <function> | <condition> | "TIMESTAMP" | ​ |
+| ​<condition> ::= <expression> "?" <expression> ":" <expression> | ​ |
+| ​<value> ::= <decimal> |< hex> | <float> | "\""<string>"\"" # Literal strings must be quoted with \" | ​ |
+| ​<function> ::=< method>"(" [<args>] ")" | ​ |
+| ​<arg> ::= <expression> | ​ |
+| ​<args> ::= <arg> ["," <arg> ]\* | ​ |
+| ​<hex> ::= "0x"NNNNNNNNNNNNNNNN["L"] | ​NNNNNNNN"`"NNNNNNNN | L indicates an 8 byte number  |  DWORD pair (8 bytes) |
+| ​<decimal> ::= ["-"]N["L"] | "0n"N["L"] | L indicates an 8 byte number |
+| ​<float> ::= ["-"]N"."N["L"] | ​L indicates an 8 byte float |
+| ​<oper> ::= "==" | "!=" | ">" | "<" | ">=" | "<=" | "\*" | "/" | "%" | "+" | "-" | "&&" | "||" | ​ |
+
+
+
+
+
+
+
+QUERY FUNCTIONS  
+  
+The listing of aggregators and functions that you can use inside your expressions are in "[QueryFunctions.h](https://eng.ms/docs/products/geneva/collect/advanced/derivedsample)".
+

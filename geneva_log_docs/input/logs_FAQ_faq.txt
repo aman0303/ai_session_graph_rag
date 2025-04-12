@@ -1,0 +1,231 @@
+# FAQ
+
+For specific questions on the Diagnostics Application please visit the sections covering those topics, including the application specific FAQ and troubleshooting pages. The FAQ below contains information that broadly applies to all diagnostics applications (e.g., availability in all regions, onboarding etc).
+
+## What types of events show up in DGrep?
+
+Events configured with type CentralBond or those that have streaming annotations will be searchable via DGrep.
+
+## Will my data be duplicated and doubled the storage capacity?
+
+Events configured using storage type (e.g. storeType= ) __Local__ or __CentralBond__ will not result in a double upload of data if you create an event stream on the event. By default derived event storage type is __Central__ and the default non-derived event storage type is __Local__. Geneva Logs central storage types that are not CentralBond will result in a double data upload if an event streaming annotation is added. Note that the __CentralBond__ storage type is only supported on data uploaded from MA. See the Geneva Logs configuration documents for more details. CentralBond format is strongly recommended.
+
+## Can I use streaming annotations on derived events?
+
+Yes, but the storeType for the derived event must be set to either __Local__ or __CentralBond__. We only recommend annotations for CentralBond, however, since there are some scenarios that don't work if you use Local. For example, you can't specify an alternative storage group for an event if it is local and more event loss to the Geneva pipeline is expected if you combine annotations and Local. This feature is only supported on derived events run locally by MA; it is not supported with derived events run in the central Geneva Logs service.
+
+## What types of events support streaming annotations?
+
+All MA event types support streaming annotations, but there are some restrictions on derived and dynamic event types.
+
+* DerivedEvents - The MA configured storeType must be either Local or CentralBond.
+* DynamicEvents - The MA configured storeType must be CentralBond.
+* Other Events - If the storeType is not Local or CentralBond, MA will upload the data twice since the data pipeline only works with the CentralBond storeType format.
+
+## How do I rotate my storage and Service Bus keys in Geneva Logs?
+
+You can find the information to rotate your storage and Service Bus keys [here](https://portal.microsoftgeneva.com/documents?page=documents&section=1363da01-b6ed-43d4-970e-f89b011d591f&id=cd4ab5d0-ea70-4f81-874f-5848d4936b38).
+
+## How do I resolve errors when configuring a security group for a new Logs account?
+
+See the [guidance here](../Howtoguides/Manageconfig/securitygroups.md#faq) for various errors that you may come across when onboarding.
+
+## How can I search for a Logs account if I don't know its name?
+
+You can search for a Logs account by using a subscription ID, namespace, configuration ID or a moniker name.
+
+* Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account
+* Go to __Search__, and use the dropdown menu to choose your search option.
+
+    ![SearchAccount](../images/SearchAccount.png)
+
+* Using [mds.exe](https://msblox.visualstudio.com/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_packaging?_a=package&feed=AzureGenevaMonitoring&package=MDS-Tools&protocolType=NuGet), run the following command:
+
+    ```
+    mds.exe account <endpoint> -command:findowner -kind:<Namespace|Storage|AccountSubscription|MonikerSubscription> -name:pattern
+    ```
+
+## How do I share Logs Account links?
+
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account
+2. Go to the page of your choice to share link Configurations, Resources, Account etc.
+3. Click on __Share__ button on top right corner (below profile icon) of your desired page
+4. Click on Copy icon of short link and share it.
+
+![LogsManageShareLink][LogsManageShareLink]
+
+## How do I update the certificates that are already expired or expiring soon?
+
+### Steps to identify the fleet machines which are using expired/expiring certificates
+
+If your team have received an alert incident from Secrets Management/IcM Generation team  by Automation [GenevaActions-ExpiryCertsIcms](https://portal.microsofticm.com/imp/v5/automation/workflows/GenevaActions-ExpiryCertsIcms) with the title contains `[Action Required] An In-Use Certificate is expiring in < 25 days: STID: <<Service Tree GUID>> : <<Service Name>>` then please download attached .HTML file (InUseExpiringCerts.html) from the incident and check for below details:
+
+1. Thumbprint
+2. ExpirationDate
+3. CertIssuer
+4. CertIssuer
+5. ScanDate
+
+![CertExpirySample][CertExpirySample]
+
+Please follow below mentioned steps to find out which machine from the fleet of servers is using the expired/near expiry certificate, by taking the `ScanDate` and search for thumbprint with + or - 1 hour time interval in the below DGrep queries:
+
+> [!NOTE]
+> The below process will only show the servers/machines which are successfully communicating with GCS.
+ 
+1. DGrep Query that take cert. Thumbprint as input and select one `taskId` to input in next DGrep query:  
+    - Pick the taskId from this [DGrep Link][DGrepLink_TaskId]
+2. Select the `taskId` details from above DGrep and pass it as an input to the below mentioned DGrep query. Please use this DGrep query to get the `agent ID`:
+    - Get the Agent ID from this [DGrep Link][DGrepLink_AgentId]
+
+3. Select the `taskId` details from step #1 and pass it as an input to the below mentioned DGrep query. Please use this DGrep query to get the VM IP: addresses (`clientIpAddress` field) that is offending with the certs.
+    - Retrieve the ClientIpAddress from this [DGrep Link][DGrepLink_ClientIpAddress]
+
+4. Please use the below dashboard to monitor the failure error codes - `4xx` and `5xx`. Please edit the widget and enter the correct `MDS (Logs) Account name` to provide failure error codes for that specific MDS (Logs) account name:
+    - [Dashboard link][Dashboard_Link]  
+
+## Steps to update the expiring certificates from Jarvis Portal
+
+> [!NOTE]
+> Unmanaged or self-signed certificates will no longer be supported in Geneva Warm Path. You can view / delete your existing unmanaged certificates, but you will not be able to add any new ones. This is due to a security wave 1 requirement, and we strongly recommend our Geneva customers to use only Managed Identities for monitoring agent communications. Using Managed Identities will ensure that the communications are secure and compliant. For other authentication, please use managed certificates (either dSMS or AKV). If you have any query, please contact us at this email address - NoCertsInGenevaUseMI@microsoft.com.
+
+1. Navigate to [Jarvis -> Account -> Logs Account Settings][LogsAccount] -> Authenticate and select endpoint & account
+2. Go to the **User Roles** page
+3. Click on **View / Add** link under **Managed Certificates** column for **&lt;&lt;AccountName&gt;&gt;_MaCommunication** user role row.
+
+    ![LogsManageCertLink][LogsManageCertLink]
+
+4. Expand respective managed certificate section to see the certificate details
+
+    #### Managed Identities [Preview]
+
+    ![LogsManageCert_MI][LogsManageCert_MI]
+
+    - Provide the **Object ID**, **Tenant ID**, **Description** for _**Object-ID based ACLs**_ or **Azure Resource Type** and **Description** for _**Resource Type-based ACLs**_ and Click on **Save** to save the certificate. Learn more [here][MSI] about Managed Identities.
+
+    #### DSMS Managed Certificates
+
+    ![LogsManageCert_dSMS][LogsManageCert_dSMS]
+
+    - Provide the **Cert. Identity** and **Source Location** of DSMS cert and click on **Save** to save the certificate or click on **Generate New DSMS Certificate** to generate a new certificate. Learn more [here][dSMS] about dSMS certificates.
+    - Click on **_X_** in the table against the expired or expiring soon certificate and then click on **Delete** in the pop-up to remove it.
+
+    #### Key Vault Managed Certificates
+
+    ![LogsManageCert_AKV][LogsManageCert_AKV]
+
+    - Provide the **SAN (Subject alternative name)** and **Description** or click on **Upload certificate** button to upload certificate. Learn more [here][AKV] about Key vault certificates.
+    - Click on **_X_** in the table against the expired or expiring soon certificate and then click on **Delete** in the pop-up to remove it.
+
+    #### AP PKI ACLs
+
+    ![LogsManageCert_APPKI][LogsManageCert_APPKI]
+
+    - Provide the AP PKI ACL value in **Add new AP PKI ACL** text box and click on **Save** to save the certificate. Learn more [here][APPKI] about AP PKI ACLs.
+    - Click on **_X_** in the table against the expired or expiring soon certificate and then click on **Delete** in the pop-up to remove it.
+
+5. Validate to confirm if recently uploaded certificate is updated in the respective section's table for the selected user role.
+
+
+## Why the Agent Explorer is not working as expected when the customer is using a Managed Identity?
+
+If you are using Resource Type based Managed Identity then Agent Explorer may not work correctly. If you are using the ObjectID based Managed Identity then the agent explorer will work correctly.
+
+
+## What Should I Do Upon Receiving the IcM About Recent Changes to My Geneva Warm Path Account?
+
+### Why did I receive an alert from Geneva Warm Path regarding my account?
+
+You received this alert because there have been recent changes made to your Geneva account, specifically related to configuration and user role modifications. As part of the security wave, we are required and committed to keeping you informed about any significant changes to your account, which is why this alert cannot be disabled.
+
+### How can I find more details about the changes to my account?
+
+To gather more information about the changes made to your account, follow these steps:
+
+   - **Step 1:** Check the **Some Failing Combinations** under the Troubleshooting Information section. This section will provide information about the specific operations performed and where they were executed.
+
+   - **Step 2:** Additionally, if in the **Some Failing Combinations**, it indicates that the MdsEnvironment is **Diagnostics Prod**, you can view the DGrep logs enrichment provided with the IcM. 
+   
+        Example of a DGrep Enrichment:![MdsAlertingEnrichment][MdsAlertingEnrichment]
+   
+        Depending on the type of operation, focus on specific columns:
+    
+        - For **Configuration Operation**, look at Config Service Enrichment:
+            - Operation
+            - ConfigId
+            - UserName
+
+        - For **User Role Operation**, focus on Account Service Enrichment:
+            - OperationName
+            - MdsAccount
+            - UserName
+            - Arguments
+   
+   - **Step 3:** If the operation occurs in an MdsEnvironment that is not Diagnostics Prod, no actual enrichments will be displayed. However, you can still click on the Config Service Enrichment (for Config) or Account Service Enrichment (for User Role) links to access the DGrep logs. Remember to change the Endpoint to the MdsEnvironment you obtained from **Some Failing Combinations** and reselect namespaces Mds/mds and WarmPath. If no results appear in the logs, try extending the time range.
+        
+        ![MdsAlertingNoEnrichment][MdsAlertingNoEnrichment]
+
+
+### How can I identify who made the changes?
+
+The **UserName** field in the DGrep logs enrichment represents the credential used to perform this operation. Typically, this credential is owned by your service, indicating that the request was made directly to the MDS service. However, there are cases, such as EV2 deployment and certain operations in Jarvis, where the request is initially made to GCS and then redirected to MDS. In such cases, a Geneva-specific certificate will appear as the UserName.
+
+For example, you will see Managed:d831e66b08ffa3b0d4b6fa12184c9b59.metricsclient.geneva.core.windows.net for Diagnostic Prod. Click [here][GcsToMdsAuthCert] for other gcstomdsauth* certificates we use in each environment and their identity.
+
+It will require additional steps to identify the actual operator in this case. Here are the steps if needed:
+
+1. Gather the **ActivityID** and **PreciseTimeStamp** from the DGrep enrichment table or the DGrep logs from clicking on the enrichment link.
+
+    ![TimeAndActivity][TimeAndActivity]
+2. Open this DGrep [link][GcsActivityId]. 
+3. Replace the Endpoint by the actual MdsEnvironment you obtained from previous steps. Select Mds/mds and WarmPath as the namespaces. 
+    
+    ![DgrepSelection][DgrepSelection]
+4. Replace the search time range by **PreciseTimeStamp**.
+
+    ![TimeRange][TimeRange]
+5. And in the Filter Conditions, replace <Your_Activity_ID> by the actual **ActivityID**. For example, if your activity ID is 00000000-0000-0000-0000-000000000000, you should update the filtering conditions as follows:
+    
+    ![MdsAlertingFiltering][MdsAlertingFiltering]
+
+    The search result will contain two columns: GcsActivityId and MdsActivityId.
+6. Finally, replace the Filtering Conditions with the actual GcsActivityId. Also, make sure to remove any pre-generated queries in the Client Query section.
+    
+    ![MdsAlertingFiltering2][MdsAlertingFiltering2]
+    
+
+### What should I do if I didn't make these changes or suspect unauthorized access?
+
+Make sure you have read through the above TSG. If you did not initiate these changes or suspect unauthorized access to your Geneva account, please raise a [support ticket][InfraQueue].
+****
+<!-- Reference Links -->
+
+[LogsAccount]: https://portal.microsoftgeneva.com/account/logs "Logs Account"
+[MSI]: ../../collect/authentication/managedidentityoverview.md
+[dSMS]: ../../collect/authentication/dsms.md
+[AKV]: ../../collect/authentication/keyvault.md
+[APPKI]: ../../collect/authentication/appki.md
+[DGrepLink_TaskId]: https://portal.microsoftgeneva.com/logs/dgrep?be=DGrep&offset=~1&offsetUnit=Hours&UTC=true&ep=Diagnostics%20PROD&ns=WarmPath&en=CertTelemetryEvents&serverQuery=source%20|%20where%20Thumbprint%20%3D%3D%20"%20"%0A//%20Provide%20Thumbprint%20details%20above%20&serverQueryType=kql&kqlClientQuery=source%0A|%20sort%20by%20PreciseTimeStamp%20asc&chartEditorVisible=true&chartType=line&chartLayers=[["New%20Layer",""]]%20
+[DGrepLink_AgentId]: https://portal.microsoftgeneva.com/logs/dgrep?be=DGrep&offset=~1&offsetUnit=Hours&UTC=false&ep=Diagnostics%20PROD&ns=WarmPath&en=ApiQoSEvents&serverQuery=source%20|%20where%20*%20contains%20"%20"%0A//Provide%20"taskId"%20matching%20thumprint%20from%20previous%20DGrep%20query%0A|%20parse%20inputParams%20with%20*%20"Identity%3D"%20identity%20"%26"%20*%0A|%20extend%20agentId%20%3D%20base64_decodestring(identity)%0A|%20summarize%20by%20agentId,%20result&serverQueryType=kql&kqlClientQuery=source%0A&chartEditorVisible=true&chartType=line&chartLayers=[["New%20Layer",""]]%20
+[DGrepLink_ClientIpAddress]: https://portal.microsoftgeneva.com/logs/dgrep?be=DGrep&offset=~1&offsetUnit=Hours&UTC=false&ep=Diagnostics%20PROD&ns=WarmPath&en=ApiQoSEvents&serverQuery=source%20|%20where%20*%20contains%20"%20"%0A//%20Provide%20"taskId"%20matching%20thumprint%20from%20previous%20DGrep%20query&serverQueryType=kql&kqlClientQuery=source&chartEditorVisible=true&chartType=line&chartLayers=[["New%20Layer",""]]%20
+[Dashboard_Link]: https://portal.microsoftgeneva.com/s/477EEF3F?globalStartTime=1679954040169&globalEndTime=1679957640169&pinGlobalTimeRange=true
+[InfraQueue]: https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354
+[GcsActivityId]: https://portal.microsoftgeneva.com/s/79F43C1B
+[GcsToMdsAuthCert]: https://dev.azure.com/msazure/One/_search?action=contents&text=gcstomdsauth*%20ext%3Axml&type=code&lp=code-Project&filters=ProjectFilters%7BOne%7D&pageSize=25&result=DefaultCollection/One/EngSys-MDA-MDS/GBmaster//src/config/2.0/Authorization/MdsAuthorizationPolicySmoke.xml
+
+
+<!-- Image References-->
+[LogsManageShareLink]: ../images/LogsManageShareLink.png
+[LogsManageCertLink]:../images/LogsManageCertLink.png
+[LogsManageCert_MI]: ../images/LogsManageCertLink2.png
+[LogsManageCert_dSMS]: ../images/LogsManageCertLink3.png
+[LogsManageCert_AKV]: ../images/LogsManageCertLink4.png
+[LogsManageCert_APPKI]: ../images/LogsManageCertLink5.png
+[CertExpirySample]: ../images/CertExpirySample.png
+[MdsAlertingEnrichment]: ../images/MdsAlertingEnrichment.png
+[MdsAlertingNoEnrichment]: ../images/MdsAlertingNoEnrichment.png
+[TimeAndActivity]: ../images/TimeAndActivity.png
+[MdsAlertingFiltering]: ../images/MdsAlertingFiltering.png
+[MdsAlertingFiltering2]: ../images/MdsAlertingFiltering2.png
+[DgrepSelection]: ../images/DgrepSelection.png
+[TimeRange]: ../images/TimeRange.png

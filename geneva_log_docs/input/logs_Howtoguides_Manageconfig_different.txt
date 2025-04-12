@@ -1,0 +1,51 @@
+# Sending Different Event Types to Different Storage Accounts 
+In Geneva Logs it is possible to configure MA to send data to different Storage accounts. You should define multiple accounts in the *Accounts* section in the Config file and then use the *account* attribute in the *Event* section.
+
+This document describes steps to achieve this by configuring Geneva Logs Account and MA to send 3 events to 3 different Storage Accounts.
+
+This document covers both scenarios where your account has only [GCS](./../../concepts/WhatIsGCS.md) enabled, or both [GCS](./../../concepts/WhatIsGCS.md) and [GSM](./../../concepts/WhatIsGSM.md) enabled.
+
+### GSM enabled Geneva Logs Accounts 
+If the account is GSM enabled then you can add a new Storage Account by going to [Jarvis Geneva Logs Manage Resources tab](https://portal.microsoftgeneva.com/account/logs/resources). Once you add a new Storage Group, GSM will create Storage and EventHub accounts on your behalf and configure them to use with your Geneva Logs account.
+
+
+### Non GSM Geneva Logs Accounts
+In this case, you need to create your own Storage and EventHub Account on Azure Portal and then add them in your Geneva Logs account in Jarvis.
+
+#### Configure Geneva Logs Account
+In Jarvis/Manage, you need to add 3 (or more) Account Monikers under your Geneva Logs Account. Typically you have one Storage Account and multiple Mapping Monikers for different regions but you can configure your Account to have more Storage Accounts mapped.
+
+Navigate to the Resources tab, and setup new Account Monikers that point to the Storage Account you want to use. Please note that monikers are *case sensitive*.
+
+### Configure MA to use these Monikers
+In MA Config, add these Monikers in the Accounts section. Make sure to mark one of these as default using *isDefault* attribute.
+
+``` xml
+  <Accounts>
+    <Account moniker="MdsDiagLogsCUS" isDefault="True" />
+    <Account moniker="MdsSecurityLogsEUS" alias="SecLogs" />
+    <Account moniker="MdsSysLogsWUS" alias="SysLogs" />
+  </Accounts>
+```
+The *alias* [attribute](../../../collect/references/schema.md) allows user to use in the imported config instead of Moniker Name by making it constant across all the config files.
+
+#### Route the events to another account
+In the MA Config, update the Events section and use the *account* attribute to route the events to another account. It will force MA to send the logs to those Storage Accounts. Events without the flag will go to the Account marked with *isDefault* attribute.
+
+``` xml
+     <EtwProvider name="SecLogs" format="EventSource" account="MdsSecurityLogsEUS">
+         <DefaultEvent eventName="DefaultEventTable" />
+         <Event name="TestEvent1" eventName="T1" />
+         <Event name="TestEvent2" eventName="T2" logToDefault="true" /> 
+     </EtwProvider>
+
+    <CounterSets storeType="CentralBond" account="MdsSysLogsWUS">
+      <CounterSet sampleRateInSeconds="5" eventName="SystemStats">  
+        <Counter>\Processor(_Total)\% Processor Time</Counter>  
+        <Counter>\Process(System)\Virtual Bytes</Counter>  
+        <Counter>\Process(System)\Working Set</Counter>  
+      </CounterSet>  
+    </CounterSets>  
+```
+
+Now the SecLogs and SystemStats events will go to different Storage Account then the rest of the events.

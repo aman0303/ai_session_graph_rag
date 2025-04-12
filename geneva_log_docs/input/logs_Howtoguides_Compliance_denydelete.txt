@@ -1,0 +1,21 @@
+# Deny Delete Lock
+
+## Role Based Access Control (RBAC) deny assignment in GSM
+To prevent regressions related to [immutable logs](./ImmutableLogs.md), Geneva applies a [deny assignment](https://docs.microsoft.com/en-us/azure/role-based-access-control/deny-assignments) on resources managed by the GenevaWarmPathResourceContributor role. This role is used by [Geneva Storage Management (GSM)](../../concepts/whatisgsm.md) to provision storage accounts and Event Hub resources in customer's subscriptions. The deny assignment is enabled by default on all GSM-managed resources (resource groups, storage accounts, and Event Hub namspaces), and it ensures that subscription administrators do not accidentally make changes to these resources. 
+
+## Removing Deny Delete lock on Resources
+Deny delete lock could be present on Storage Account/Event Hub/Resource Group (GenevaWarmPathManageRG). 
+
+![denydeletelock][denydeletelock]
+
+![denydeletelock2][denydeletelock2]
+
+If you are blocked with deny delete lock while deleting any of the resouces, please 
+1. Make sure that the [monikers (Storage Account and the EventHub) are not present in the logs account](../../howtoguides/manageaccount/monikerdelete.md) for the resources which you are trying to remove from Azure subscription. 
+2. Don’t remove the Geneva permission from the subscription till all the required resources are removed from Azure. This will auto remove the deny delete assignments and allow you to perform the deletion.
+
+If you have followed the above mentioned steps but still you are blocked with deny assignment and receiving errors while deleting from Azure subscription, please create an incident with [Geneva Infrastructure team](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=M1y354) to remove the deny assignment.
+
+<!-- Images -->
+[denydeletelock]: ../../images/denydeletelock.png
+[denydeletelock2]: ../../images/denydeletelock2.png

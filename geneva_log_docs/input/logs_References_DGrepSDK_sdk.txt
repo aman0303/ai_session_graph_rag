@@ -1,0 +1,76 @@
+---
+uid: DGrepSDK.md
+title: DGrepSDK
+---
+
+# DGrep SDK
+
+
+DGrep SDK lets users search their logs programmatically using the same infrastructure that powers the DGrep log search UI. Since DGrep distributes work among many nodes, queries tend to be a lot faster than single machine searches done by [MdsDataAccessClient](../../../consume/logs/mdac/setup.md).
+
+## DGrep SDK package
+
+DGrep SDK is available as a nuget package `Microsoft.Azure.Monitoring.DGrep.SDK` in "Official" package store.
+
+You could connect to the feed and install the package by executing these commands:
+
+```powershell
+nuget.exe sources Add -Name "Official" -Source "https://msazure.pkgs.visualstudio.com/One/_packaging/OneBranch-Consumption/nuget/v3/index.json"
+Install-Package Microsoft.Azure.Monitoring.DGrep.SDK
+```
+
+> [!Important]
+> Existing customers of DGrep SDK via MDS-DataAccessClient package - Please note that MDS-DataAccessClient is now deprecated and is no longer supported.
+
+### Moving from MDS-DataAccessClient to Microsoft.Azure.Monitoring.DGrep.SDK
+If you are a current user of `MDS-DataAccessClient` package and need the latest official DGrep SDK, please move to `Microsoft.Azure.Monitoring.DGrep.SDK` by following 3 simple steps.
+The public API surface has not changed since `MDS-DataAccessClient v78.0.0.18`. It should be a non-breaking change in most cases, unless you are on a really old version of `MDS-DataAccessClient`.
+
+1. Remove `MDS-DataAccessClient` package dependency
+1. Add `Microsoft.Azure.Monitoring.DGrep.SDK` package and its dependencies
+1. Replace all usages of `using Microsoft.Cis.Monitoring.DataAccess.DGrep;` with `using Microsoft.Azure.Monitoring.DGrep.SDK;`
+
+
+## Use cases and recommendations
+
+1. You run one query at a time and execute them on-demand (i.e., interactively). This scenario is best served by `DGrepUserAuthClient` that comes with DGrep SDK. This client requires 2FA and has a limit of 1 query at a time. This is the quickest way to get started.
+
+1. Your queries need to run in parallel or are executed automatically on a scheduled basis and the expected number of queries per day it at most a few hundred. This scenario is best served by `DGrepClient` that comes with DGrep SDK. This client requires certificate authentication and has a limit of 5 concurrent queries. Please read the [authentication](#authentication) section.
+
+1. For more data intensive scenarios (such as active monitoring) or other scenarios not covered by the DGrep SDK, we recommend the [Extensibility SDK](../ExtensibilitySDK/intro.md).
+
+## Authentication
+
+1. **User based authentication:** 
+   
+   If you plan to use user based authentication, no onboarding is required other than making sure that your corp account has access to the desired event (you can validate this by executing a DGrep query in the UI).
+
+1. **Certificate based authentication:**
+
+    If you plan to use certificate based authentication: 
+
+    * please follow [these steps](../../../collect/authentication/keyvaultcreatecert.md) to create an Key Vault certificate issued by OneCert or [these](../../../collect/authentication/dsms.md) for a dSMS Managed certificate.
+    * DGrep supports automatically authorizing the AKV/DSMS certs for any User roles with “read” permission.
+    * In case you already don’t have a user role, create a new **User role with read permission** and add/create the AKV/DSMS cert to it. Now this cert should be authorized to query data via DGrep SDK. [Here are the detailed steps](../../../collect/authentication/keyvaultlogsauthorize.md) to add a managed certificate to Geneva Logs account.
+
+    > [!IMPORTANT]
+    > DGrep accepts only OneCert certificates from Azure KeyVault or trusted certificates from dSMS.
+
+## DGrep Endpoints
+
+DGrep SDK requires users to provide an [MDS Endpoint](../../Resources/endpoints.md#environments-to-onboard-to) and DGrep endpoint address. Below are a list of DGrep endpoints.
+
+
+1. Public cloud: https://dgrepv2-frontend-prod.trafficmanager.net
+1. Mooncake: https://dgrepv2-frontend-prod.trafficmanager.cn
+1. Fairfax: https://dgrepv2-frontend-prod.usgovtrafficmanager.net
+1. USSec: https://dgrepv2-frontend-prod.trafficmanager.microsoft.scloud
+1. USNat: https://dgrepv2-frontend-prod.trafficmanager.eaglex.ic.gov
+
+## Quotas
+
+DGrep is a shared service and it needs to ensure that no single client can exhaust all of its resources. In order to guarantee this, DGrep has an upper limit on the number of outstanding queries per client (more specifically, per client certificate thumbprint). When a client’s quota is exhausted, an attempt to start a new query will fail with `HTTP status 503`.
+
+Queries initiated by the `DGrepClient.RunQueryAsync` or `DGrepClient.StartQueryAsync` methods are considered outstanding until the `IDGrepQuery.CloseAsync` method is called. Queries initiated by `DGrepClient.GetRowSetResultAsync` or `DGrepClient.GetCsvResultAsync` are automatically closed before the task returned by those methods completes. If a query is not closed by the client (for example, if the application crashes), the query is automatically closed between 60 and 90 seconds after the last request received from the client.
+
+*The default quota is 50 outstanding queries per client. It can be adjusted, by contacting us with a proper business justification.*

@@ -1,0 +1,259 @@
+# Secure High-Performance .NET logging
+
+## Overview
+
+### Purpose
+
+#### [Why did this line of code get marked?](#why-did-this-line-of-code-get-marked)
+
+This line of code is marked as a violation of the KPI because it uses string
+interpolation. The regex rule to define whether this line of code is using
+string interpolation is as follows:
+
+```cs
+.Log(?:Critical|Debug|Error|Information|Trace|Warning)\(.*(?:\$|string.Format\()".+".*\)
+```
+
+Refer to this PR for possible and negative cases:
+<https://dev.azure.com/mseng/Domino/_git/2996b0dc-7ca7-421c-9a9f-dc507e3b86a4/pullrequest/793580?_a=files>
+
+#### [What is the engineering challenge that’s being addressed?](#what-is-the-engineering-challenge-thats-being-addressed)
+
+Using string interpolation in logging code violates security best practices for
+several reasons.
+
+First, string interpolation can introduce security vulnerabilities. For example,
+if an attacker uses injection techniques, the interpolated string can result in
+unexpected behavior, potentially allowing unauthorized access or other security
+breaches.
+
+Second, string interpolation lacks a durable identifier (durable ID) to trace
+each line of log data, making tracking and auditing difficult. Without a durable
+ID, it's challenging to trace back to the exact line of code in the source. This
+consistency is crucial for accurately identifying and redacting sensitive
+information without losing the context of the log entries.
+
+Third, string interpolation does not support structured payloads, which hinders
+the ability to use tools for effective log analysis. Structured logging formats,
+such as JSON, provide a more consistent and searchable log output, enabling
+better troubleshooting and monitoring.
+
+Finally, using string interpolation poses significant performance issues.
+The process of creating interpolated strings can be computationally expensive,
+especially in high-frequency logging scenarios. This can lead to unnecessary
+performance overhead and impact the overall efficiency of the application.
+See: <https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2254>.
+
+#### Why is this problem significant? How will this solution help mitigate the issue?
+
+In summary, avoiding string interpolation in .NET logging enhances security,
+performance, and log analysis capabilities. Instead, use compile-time source
+generation that supports structured logging and durable identifiers.
+
+##### What is Durable ID?
+
+Durable IDs are unique identifiers that remain consistent across different log
+entries and sessions. They act like a GPS for debugging and analysis, allowing
+you to trace logs back to the exact line of code in the source. This consistency
+is crucial for accurately identifying and redacting sensitive information
+without losing the context of the log entries.
+
+##### What is the Structured Payload?
+
+Structured payloads refer to the organization of log data into a well-defined
+format, possibly a binary format, or as JSON or XML. This structure makes it
+easier to identify and redact specific fields within the log entries.
+For example, instead of having a flat log message, a structured payload might
+separate different pieces of information into distinct fields, such as user_id,
+transaction_id, and timestamp. This separation allows for more precise redaction
+of sensitive data, such as email addresses or credit card numbers, without
+affecting other parts of the log.
+
+##### Why do we need Durable IDs?
+
+Dropping or redacting portions of a log involves selectively removing or
+obscuring specific data within log entries to protect sensitive information or
+reduce noise. This practice is crucial for maintaining privacy and security, as
+logs often contain personal or confidential data such as email addresses, credit
+card numbers, or API keys. Additionally, dropping unnecessary log entries helps
+in managing log storage efficiently and ensures that only relevant data is
+retained for analysis. See: Logging guidance for .NET library authors. Instead
+of string interpolation, use log message templates, formatting, and
+argument lists.
+
+#### When do the services need to address the problem and what factors contribute to the urgency?
+
+### Monitoring and Reporting
+
+The security violation would be captured with the below security KPI.
+
+- Type: Action Item
+- Name: Secure High-Performance .NET logging
+- Id:  b0b45691-87f3-4d45-84fe-b39393ec9764
+
+## [How to fix violations](#how-to-fix-violations)
+
+Migrate your code away from using string interpolation to do logging.
+There are 2 options to do it. Options 1 is the preferred way to perform the
+migration:
+
+1. Refer to the "Migrate away from using string interpolation to compile-time
+source generation with AI" section to save your time in bulk migration.
+
+2. Migrate manually.
+
+### [Migrate away from using string intepolation to compile-time source generation with AI](#migrate-away-from-using-string-intepolation-to-compile-time-source-generation-with-ai)
+
+### Create your Azure OpenAI Model
+
+#### Step 1
+
+Follow [this doc](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal#deploy-a-model)
+to deploy your AI model on Azure.
+
+#### Step 2: Get the parameters to connect to your AI Model
+
+2.1. Retrieve the endpoint: Once the AI model deployment is successful,
+navigate to your Azure OpenAI Resource. Once inside your OpenAI resource,
+look for a section on the left-hand menu called "Keys and Endpoint." Click
+on it to access the endpoint information. Take a note of the endpoint. You
+will need the endpoint information for the following steps.
+
+2.2. Look for a section on the left-hand menu called "Model deployments",
+click on the "Manage Deployments" button. You will be navigated to the Azure
+OpenAI Studio where you can retrieve the language model and deployment name
+information. For example, the deployment name of the below model is
+"yunlModel" and the language model is "gpt-4". These information will be
+used in the following steps.
+
+![deploymentInfo](../images/deploymentInfo.jpg)
+
+### Create your first commit with AI for string interpolation to compile-time logging source generation
+
+BandishCLI is an AI tool developed by Microsoft Research and M365. Follow the
+steps below to create your first commit with AI.
+
+1. Check whether your codebase is using the latest stable version of
+[Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging/9.0.0-preview.7.24405.7#versions-body-tab)
+package. If not, update to use the latest stable version, which has the
+support for compile-time logging source generation for all supported
+versions of .NET/.NET Standard/.NET Framework.
+
+2. Install the [prerequisites](https://dev.azure.com/O365Exchange/O365%20Core/_git/AISelfServe?path=/sources/dev/readme.md&version=GBmaster&_a=preview&anchor=prerequisites) and [BandishCLI](https://dev.azure.com/O365Exchange/O365%20Core/_git/AISelfServe?path=/sources/dev/readme.md&version=GBmaster&_a=preview&anchor=installing-bandishcli).
+
+3. Use the parameters you've gotten from step 2. to [connect to your Azure
+OpenAI model](https://dev.azure.com/O365Exchange/O365%20Core/_git/AISelfServe?path=/sources/dev/readme.md&version=GBmaster&_a=preview&anchor=1.-running-bandish-transformation-using-public-scenarios).
+
+4. Follow the steps below to create your first pull request for the ILogger
+logging migration with the help of AI!
+
+```powershell
+(BandishCLIRun) PS C:\repos\azure-sdk-for-net\sdk> BandishCLI scenario run -o local_write --scenario-name OTel_ILogger_bestPractice_KB --repo-path <LOCAL_REPO_PATH>
+```
+
+> ***NOTE:*** BandishCLI commit_push and pull_request options for large repo
+> transformation will be supported soon!
+
+Below is an example command of transforming a local repo and create
+AI-generated transformations.
+
+```powershell
+(BandishCLIRun) PS C:\repos\azure-sdk-for-net\sdk> BandishCLI scenario run -o local_write --scenario-name OTel_ILogger_bestPractice_KB --repo-path "C:\repos\azure-sdk-for-net\sdk\eventhub\Microsoft.Azure.WebJobs.Extensions.EventHubs\src\Listeners\"
+```
+
+After BandishCLI finish transformation, you will see the AI-authored output
+files got written to a staging folder locally. You can find the output
+directory from the output logs of the BandishCLI run command.
+
+![outputDirectory](../images/outputDirectory.JPG)
+
+5. Use the below command to update your files in the original repo folder with
+the AI transformed version.
+
+```powershell
+# Update the below param to your <PATH_TO_THE_STAGING_FOLDER_FROM_THE_OUTPUT_OF_BANDISHCLI>.
+# This is from the output of BandishCLI at step 3.4.
+$sourceFolder = "C:\Users\yunl\staging\6d1d17fd-642c-45c8-8ff7-8bf6aee10f98\s"
+# Update the below param to your <ORIGINAL_REPO_PATH>.
+$destinationFolder = "C:\repos\azure-sdk-for-net\sdk\eventhub\Microsoft.Azure.WebJobs.Extensions.EventHubs\src\Listeners\"
+
+$files = Get-ChildItem -Path $sourceFolder -Recurse -Filter "*_fixed.cs"
+
+foreach ($file in $files) 
+
+ -- openCurlyBracket -- 
+
+    Copy-Item -Path $file.FullName -Destination $destinationFolder
+
+ -- closeCurlyBracket -- 
+
+
+$files = Get-ChildItem -Path $destinationFolder -Recurse -Filter "*_fixed.cs"
+
+foreach ($file in $files)
+
+ -- openCurlyBracket -- 
+
+    $newFileName = $file.Name -replace "_fixed.cs$", ".cs"
+    $newFilePath = Join-Path -Path $file.DirectoryName -ChildPath $newFileName
+
+    if (Test-Path -Path $newFilePath) 
+ -- openCurlyBracket -- 
+
+        Remove-Item -Path $newFilePath -Force
+    
+ -- closeCurlyBracket -- 
+
+
+    Rename-Item -Path $file.FullName -NewName $newFileName
+    Write-Output "Updated '$newFilePath' to be the AI transformed version."
+
+ -- closeCurlyBracket -- 
+
+```
+
+6. Now you can see the AI-transformed version in your source control system,
+review it, commit it, and create a PR.
+
+![AICommit](../images/AICommit.JPG)
+
+7. Check out the knowledge-based documents
+[here](https://dev.azure.com/O365Exchange/O365%20Core/_git/AISelfServe?version=GBAISS-Public-KB&path=/OTel_ILogger_bestPractice_KB)
+to learn more about how the AI perform the migration from string
+interpolation to compile-time logging source generation using
+Retrieval-Augmented Generation (RAG).
+
+### Post-Implementation
+
+Now, review the AI-generated code change.
+Use the below regex in the IDE to scan again to check whether there are still
+any matches:
+
+```cs
+.Log(?:Critical|Debug|Error|Information|Trace|Warning)\(.*(?:\$|string.Format\()".+".*\)
+```
+
+If there is no remaining matches. Congratuliations!
+The S360 KPI violation is fixed. Push a new commit to the repo and the KPI
+violation warnings will be resolved.
+
+## Contact Information
+
+Let us know if you have questions regarding the mitigation process by sending an
+email to the support alias.
+"<secureDotnetLogging@microsoft.com>" <secureDotnetLogging@microsoft.com>
+
+## FAQ
+
+### References
+
+- [Dynamic Telemetry](https://github.com/microsoft/DynamicTelemetry)
+
+- [Supercharge Your Logging Code with
+GPT-4](https://microsoft.sharepoint.com/:p:/t/CXP-AzureQuality918/EX52Fnn03LBJuxqqkgvz8hABR9bvyOGpEv8SV_pVH7AhuA?e=ndQATH)
+
+- [ILogger Best Practice with Bandish
+Demo](https://microsoft-my.sharepoint.com/:v:/p/yunl/Ee744iCSjeFJvHiaB1KcpdMBC-IX3xJ4v34sP4Zyl88fTw?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJTdHJlYW1XZWJBcHAiLCJyZWZlcnJhbFZpZXciOiJTaGFyZURpYWxvZy1MaW5rIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXcifX0%3D&e=Eg2Tb3)
+
+- [Five mistakes which you want to avoid while instrumenting .NET
+code](https://microsoft-my.sharepoint.com/:p:/r/personal/reyang_microsoft_com/_layouts/15/Doc.aspx?sourcedoc=%7B3BFBC264-B287-409D-9556-95F8FE950465%7D&file=Five%20mistakes%20which%20you%20want%20to%20avoid%20while%20instrumenting%20.NET%20code.pptx&action=edit&mobileredirect=true&share=IQFkwvs7h7KdQJVWlfj-lQRlAaGoWUU9sfq97g8li4PU4GQ)

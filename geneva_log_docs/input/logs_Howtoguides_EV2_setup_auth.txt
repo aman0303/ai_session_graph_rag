@@ -1,0 +1,20 @@
+# Authentication
+ 
+There are two steps for authentication to the extension. 
+
+1. When Ev2 invokes the extension, it sends a client certificate specified by the deployment along with the extension. This certificate is checked to ensure that it comes from a well-known internal issuer. 
+
+1. When the extension runs on the account, it checks that the certificate’s thumbprint is listed as an unmanaged certificate or if the certificate's SAN is listed as a managed certificate, on the admin role of the account. This prevents services from trying to share an account. You can find certificates by going to **Jarvis** > **Manage** > **Logs** > (Choose your account) > **User Roles** > **MdsAccountAdmin** > **Certificates** or **Managed Certificates**
+
+### Certificates
+
+The Geneva Logs Extension requires a certificate for authentication to prove that your deployment has permissions to modify your existing account. If the account is new, Geneva Logs Extension would register the client certificate's SAN onto the Account's MdsAdmin User Role Managed Certificates section.  Currently, this certificate must meet the following criteria:
+
+- Issued by a well-known issuer for the cloud you're running in. (AME/SSLAdmin/etc.)
+- Certificate should be registered to your Geneva account MdsAccountAdmin User Role as Unmanaged or Managed:
+  - Managed: Your Geneva account must have the SAN for this certificate added as an Managed certificate to the MdsAccountAdmin User Role.
+  - Unmanaged: Your Geneva account must have the thumbprint for this certificate added as an unmanaged certificate to the MdsAccountAdmin User Role.
+  
+> [!NOTE]
+> This certificate is different than the certificate used by the monitoring agent to authenticate to Geneva. 
+> Review our [working example](https://msazure.visualstudio.com/One/_git/GenevaLogs?path=%2Fdocs%2FEV2Extension%2FServiceGroupRootSample%2FRolloutParameters%2F2020-06-01%2FGeneva.Extension.RolloutParameters.json) to learn how to add the MACommunication role your account. 

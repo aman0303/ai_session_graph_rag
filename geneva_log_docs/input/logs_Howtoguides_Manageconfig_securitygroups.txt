@@ -1,0 +1,92 @@
+## Create Security Groups in [IdWeb][IdWeb]
+
+
+The Security Groups created for Geneva Logs must all be onboarded to dSTS for Geneva Logs authentication and authorization to work correctly. 
+dSTS team levies strict rules on SGs that can be onboarded to dSTS. Geneva team does not stipulate these rules. 
+Before you create the SGs it is imperative that you follow all the dSTS requirements by consulting their [Access Control Wiki][AccessControlWiki]
+
+In [IdWeb][IdWeb] create your Security Groups (SG). The scope for Security Group **must be DomainLocal** as you cannot nest people from domains other than Redmond for the Universal Redmond SG's. Any SG registered with Geneva Logs must be in redmond, AME, Torus, RXME and EXME domains (latter 2 are specific for LX environments). You can have multiple SG's registered as admins.
+
+![IdWebGroup][IdWebGroup]
+
+Or, You can use [MyAccess][MyAccess] to create a team/project and manage access. Typically Security groups appear in your token like RRD-&lt;group-id&gt;
+
+>[!Note]
+>[MyAccess](https://myaccess/identityiq/home.jsf) is retiring on FY21 Q4, and will be replaced with [CoreIdentity](https://coreidentity.microsoft.com/).
+
+For AME based access and Security groups, please log on with your AME credentials. Use [OneIdentity][OneIdentity] to verify that you are part of the listed AME based Security Groups.
+
+## Check Membership
+
+To determine whether you have access, please use the links below to get a list of Dsts Security Groups associated with your token. If you do not see your Security group, please reach out to dSTS team by consulting their [Access Control Wiki][AccessControlWiki]
+
+- Test, Smoke, Stage: https://tokendiagnostictest.azurewebsites.net
+- Diag Prod, FirstParty, Billing, External: https://tokendiagnosticprod.azurewebsites.net
+- Fairfax: https://tokendiagnosticfairfax.azurewebsites.net
+- Blackforest: https://tokendiagnosticblackforest.azurewebsites.net
+- Mooncake: https://tokendiagnosticmooncake.azurewebsites.net
+
+## FAQ
+
+You could see the following while onboarding security groups
+
+### Error: Failed to read Redmond Group type for group *"REDMOND\Foobar". Response is not successful: Not Found
+
+![Error Image 5][ErrorImage5]
+
+A. If you just created the Security group, it may take up to 24 hours for it to get reflected. Please wait and try again. Please use the links above to determine membership and whether you see your Security Group in this list. Check for errors in the group name. You may need log in again to refresh the token.
+
+Note: Security Groups that are added to User Roles must be onboarded to dSTS. You can onboard an SG to dSTS through a self-service portal (Go to aka.ms/dscm and choose Release Security Group option). Alternatively, you can use Jarvis UX to simultaneously onboard the SG to dSTS. [Learn More][ControlAccessToLogs]
+
+###
+### Error: *Security group should start with prefix REDMOND\ or AME\ or GME\ or PME\ or PRDTRS01\ or GSGOTRS04\ or DEUTRS02\ or CHNTRS07\ and should not be empty.*.
+
+![Error Image 2][ErrorImage2]
+
+A. Currently, Logs account only accepts Security groups from these domains. We are evaluating other domains Fareast\, Middleast\ etc as alternatives. Currently they are unsupported.
+
+###
+### Error: *You need to be logged in with the same domain to verify security group membership. Your Security group is AME\SampleGroup. User domain is REDMOND. Switch Account credentials or use REDMOND based local domain security group.*
+
+![Error Image 3][ErrorImage3]
+
+A. For verifying Security group membership, you need to use the same credentials as the group. If its a AME based group, please use AME credentials to onboard. You can view the current User domain group by visiting the profile page (top right corner of Jarvis).
+
+###
+### Error: *REDMOND\Foo [Foo] is not a security group.*
+
+![Error Image 4][ErrorImage4]
+
+A. It appears that there is no valid AAD group with that name. Please check for incorrect groups (or special characters). Visit [IdWeb][IdWeb] to check presence of this group.
+
+###
+### Error: *Security group [redmond\samplegroup] is not appearing in your dSTS token. Please make sure that you are member of this security group or enter another one. If this group was recently created, you may need log in again.*
+
+A. Please check your Membership with Security groups using the [link above](#check Membership). You need to be a member of this Security group to proceed with Logs onboarding.
+
+##
+## Security group Roles for Logs
+The canonical list of security groups is
+
+​Permissions|Required/Optional|Description
+---------- |-----------------|-----------
+​Administrator|Required|People that will administer your use of Geneva Logs. ​These people will have the ability to change authorization and access policy for your team's use of Geneva Logs.
+Read/Write with Node Diagnostics|​Required|​People that will operate (DevOps) your use of Geneva Logs and diagnose live site incidents in your service. These people will have the ability make configuration changes to Geneva Logs for your team. For example, add/modify/delete an Alert definition or remotely connect to a node using Node Diagnostics.
+Read/Write without Node Diagnostics|​Optional|​People that will make configuration changes but will not need to use Node Diagnostics.
+​Read Only without Node Diagnostics|Optional, recommended|​People that will have read-only permissions to your telemetry but do not need to use Node Diagnostics.
+​Read Only with Node Diagnostics|​Optional|​People that will have read-only permissions to your telemetry data including using Node Diagnostics to remotely connect to nodes.
+​Exclusive Read|Optional|People that will have exclusive access to data containing Personally Identifiable Information (PII)
+
+
+<!-- Reference links -->
+[IdWeb]: https://idweb/identitymanagement/aspx/groups/MyGroups.aspx
+[AccessControlWiki]: https://microsoft.sharepoint.com/teams/AzureSecurityCompliance/Security/SitePages/Releasing%20Security%20Groups%20to%20dSTS.aspx
+[ControlAccessToLogs]: ~/logs/howtoguides/manageaccount/access.md
+[IdWebGroup]: ../images/IdWebGroup.png "Id Web Group"
+[MyAccess]: https://myaccess "My Access"
+[OneIdentity]: https://oneidentity.core.windows.net/ "One Identity"
+[ErrorImage1]: ../images/ErrorImageSG1.png "Validation Error"
+[ErrorImage2]: ../images/ErrorImageSG2.png "Validation Error"
+[ErrorImage3]: ../images/ErrorImageSG3.png "Validation Error"
+[ErrorImage4]: ../images/ErrorImageSG4.png "Validation Error"
+[ErrorImage5]: ../images/ErrorImageSG5.png "Validation Error"

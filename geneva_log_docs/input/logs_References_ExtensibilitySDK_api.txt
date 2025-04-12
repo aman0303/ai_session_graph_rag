@@ -1,0 +1,287 @@
+---
+title: Extensibility SDK API reference
+description: API reference for extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: udayp
+manager: arunj
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 09/26/2018
+---
+
+# Extensibility SDK API reference
+
+> [!NOTE]
+> This information applies to the original Extensibility SDK `Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension`.
+> For more information, see [Extensibility SDK Overview](./intro.md).
+
+# EventHubDetails
+This class contains information used to connect to the event hubs that will be listened to.  An instance is constructed as follows:
+```cs
+EventHubDetails(
+            string consumerGroupName,
+            string checkpointConnectionString,
+            BrokerKind brokerKind,
+            int maxBatchSize = 32,
+            int minSecondsBetweenCheckpoints = 30,
+            int hoursToLookBackIfNoCheckpoint = 1)
+```
+The parameters are
+- *consumerGroupName*: The name of the consumer group that will be used to connect to the event hub.
+- *checkpointConnectionString*: The connection string to the storage account used to store checkpoint information.
+- *brokerKind*: *BrokerKind.Raw* if you want to consume unscrubbed logs; *BrokerKind.Scrubbed* if you want to consume scrubbed logs.
+- *maxBatchSize*: The maximum number of message you want to recieve in one batch. We recommend leaving it at the default value unless you have a specific reason to not do so.
+- *minSecondsBetweenCheckpoints*: The minimum number of seconds to wait between checkpoints.  **We recommend setting this value to 60**. You will get better performance using a higher value for this parameter, the cost is that if your process crashes, you will recieve duplicate notifications.
+- *hoursToLookBackIfNoCheckpoint*: The number of hours to look back the first time an event hub is listened to.  We recommend leaving this at the default value.
+
+# GenevaAccountDetails
+This class represents the Geneva logs account details.  An instance is constructed as follows:
+```cs
+GenevaAccountDetails(
+            string warmPathEnvironmentName,
+            IEnumerable<string> warmPathAccounts,
+            string certificateName,
+            StoreName storeName,
+            StoreLocation storeLocation,
+            string mdmAccount,
+            string mdmNamespace)
+```
+The parameters are
+- *warmPathEnvironmentName*: The friendly name of the endpoint of the events of interest.  Valid values are: *Test*, *DiagnosticsProd*, and *FirstParty*.
+- *warmPathAccounts*: The list of Geneva log accounts.
+- *certificateName*: The name of the certificate used to authenticate to the Geneva backend services. You can load certificates by subject name, thumbprint, or dsms path. If *certificateName* starts with a / it is interpreted as a dsms path.  
+- *storeName*: The name of the store where the certificate is stored.
+- *storeLocation*: The location of the certificate (*CurrentUser*, *LocalMachine*).
+- *mdmAccount*: The metrics account to which the sdk publishes.  No metrics are published if this parameter is null or empty.
+- *mdmNamespace*: The metrics namespace to which the sdk publishes. No metrics are published if this parameter is null or empty.
+
+# EventFilterDetails
+This class contains information about the events you want to listen to.  An instance is constructed as follows:
+```cs
+EventFilterDetails(
+            string namespaceRegex,
+            string eventNameRegex,
+            string monikerRegex,
+            string locationRegex)
+```
+The parameters are
+- *namespaceRegex*: The regular expression for the namespaces of interest.  Null or empty means that you are interested in all namespaces that you have access to.
+- *eventNameRegex*: The regular expression for the events of interest.  Null or empty means that you are interested in all events with the namespaces of interest.
+- *monikerRegex*: The regular expression for the monikers of interest.  Null or empty means that you are interested in all monikers. 
+- *locationRegex*: The regular expression for the locations of interest.  Null or empty means that you are interested in all locations.
+
+# LogLevel 
+The level of SDK logs to be captured.  Valid values are *LogLevel.Standard* and *LogLevel.Verbose*. The default value is *LogLevel.Standard*; verbose logging may be required for troubleshooting.
+
+# EventListener 
+The listener to capture the SDK logs. The SDK emits ETW logs using the provider Microsoft-Geneva-ExtensibilitySDK. These logs can be collected using PerfView by setting additional providers to *Microsoft-Geneva-ExtensibilitySDK in the Collect dialog. These logs can also be collected using the monitoring agent. This is the recommended approach for production.  **Before contacting us for support, you need to ensure that the extensibility logs are being collected and are searchable in DGrep.**
+
+# EventStreamBase
+This is the class that you need to provide an implementation for.  In particular, you need to provide a concrete implementation for the following method:
+```cs
+Task ProcessBatchAsync(IEnumerable<EventData> eventDataList, CancellationToken cancellationToken)
+```
+where
+- *eventDataList* is a list of *EventData* objects and
+- *cancellationToken* is the cancellation token.
+
+This method should not throw exceptions unless you wish to crash the process.  It is important that you honor the cancellation and return expeditiously.  When this call returns (unless the cancellation token is set), the offsets are committed.  So, under normal operation you should ensure that you have completed all processing before returning.  When the cancellation token is set, the offsets are not committed.  So, when the process restarts, you will recieve notificatons for events that you may have finished processing.
+
+# EventData
+The *EventData* class exposes information about every blob you are handed. These details are intended for use by the Kusto team; typically *EventStreamBase.GetDeserializedRecordsAsync* would be used to get a list of records (see the [sample code](https://msazure.visualstudio.com/DefaultCollection/One/_git/EngSys-MDA-Samples-ExtensibilitySDK?path=%2Fsrc%2FSamples%2FExtensibility.Code%2FSampleAsyncExtension.cs&version=GBmaster))
+```cs
+IList<IDictionary<string, object>> deserializedRecords = await EventStreamBase.GetDeserializedRecordsAsync(eventData, BufferPool, cancellationToken);
+```
+
+The fields exposed by the *EventData* object are:
+```cs
+
+        /// <summary>
+        /// Gets the Event Hub Message version.
+        /// </summary>
+        public int EventDataVerison 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the namespace.
+        /// </summary>
+        public string Namespace 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the name of the event.
+        /// </summary>
+        public string Name 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the version.
+        /// </summary>
+        public string Version 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the Geneva Logs environment.
+        /// </summary>
+        public string MdsEnvironment 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the account moniker.
+        /// </summary>
+        public string AccountMoniker 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the BLOB path.
+        /// </summary>
+        public string BlobPath 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the offset into the BLOB in which to download.
+        /// <value>
+        public long BlobOffset 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the length of the compressed BLOB, in bytes.
+        /// </summary>
+        public long BlobLength 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the BLOB sas URI.
+        /// </summary>
+        public Uri BlobSasUri 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the sas expiry in UTC.
+        /// </summary>
+        public DateTime SasExpiryUtc 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the event hub enqueue UTC.
+        /// </summary>
+        public DateTime EventHubEnqueueUtc 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the offset of the EventData message in Event Hub.
+        /// </summary>
+        public string EventHubOffset 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the sequence number of the EventData message in Event Hub.
+        /// </summary>
+        public long EventHubSequenceNumber 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the event hub shard ID.
+        /// </summary>
+        public string EventHubShardId 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the size of the data in bytes.
+        /// </summary>
+        public long DataSize 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the type of the compression used in the blob.
+        /// </summary>
+        public BlobCompressionType CompressionType 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the settings that apply at the account moniker level.  In most cases, these are empty.
+        /// </summary>
+        public IReadOnlyDictionary<string, string> AccountMonikerSettings 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the Geneva Metrics account. This is for Kusto use only.
+        /// </summary>
+        public string MdmAccount 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the minimum record log level
+        /// </summary>
+        public int MinLevel 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+
+        /// <summary>
+        /// Gets the schema MD5 hashes.
+        /// </summary>
+        public string[] SchemaIds 
+ -- openCurlyBracket -- 
+ get; private set; 
+ -- closeCurlyBracket -- 
+
+```

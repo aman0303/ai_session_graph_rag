@@ -1,0 +1,424 @@
+---
+title: Using the Extensibility SDK
+description: Information on how to use the Extensibility SDK.
+github repo: https://msazure.visualstudio.com/One/_git/EngSys-MDA-GenevaDocs?path=%2F&version=GBmaster
+ms.author: bradbu
+manager: udayp
+ms.service: Geneva Monitoring 
+ms.topic: Exensibility SDK
+ms.date: 12/03/2024
+---
+
+# Using the Extensibility SDK
+
+> [!NOTE]
+> This information applies to the .NET Standard Extensibility SDK `Microsoft.Azure.GenevaLogs.ExtensibilitySdk`.
+> For more information, see [Extensibility SDK Overview](./intro.md).
+
+# Prerequisites
+
+Ensure that you have [set up your account to use the sdk](gettingstarted.md).
+
+# Installation
+
+Install the Extensibility SDK library with NuGet:
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk):
+  Use this package to receive Geneva Log event messages.
+
+- [Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO](https://msazure.visualstudio.com/One/_artifacts/feed/Official/NuGet/Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO):
+  Use this package to receive Geneva Log event messages and deserialize the data into a list of records.
+
+More information can be found here:
+
+- Samples: [Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Samples](https://msazure.visualstudio.com/One/_git/GenevaLogs-Extensibility-SDK?path=/src/Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Samples)
+
+- Source code: [GenevaLogs-Extensibility-SDK](https://msazure.visualstudio.com/One/_git/GenevaLogs-Extensibility-SDK)
+
+# Usage
+
+To consume events using the SDK: 
+
+- You need to implement a class that derives from `EventStreamBase` with an implementation for `ProcessBatchAsync`.
+
+- You need to instantiate an `EventStreamProcessor` and use it to start/stop event processing.
+
+The following sections walk through the details on how to use the SDK.
+
+> [!NOTE]
+> If you are migrating from the original version `Microsoft.Azure.Monitoring.DataPipe.EventStreamExtension`, see [Migrating from the original Extensibility SDK](migratingfromv1.md).
+
+## EventStreamProcessor sample
+
+This example shows how to instantiate, start, and stop the processor:
+
+```cs
+using var processor = new EventStreamProcessor(
+    genevaAccountDetails,
+    eventFilters,
+    eventHubDetails,
+    eventStreamBase,
+    telemetryDetails);
+await processor.StartAsync(cancellationToken).ConfigureAwait(false);
+Console.WriteLine("Processor Started. Press enter to exit.");
+Console.ReadLine();
+await processor.StopAsync(timeout, cancellationToken).ConfigureAwait(false);
+```
+
+# GenevaAccountDetails
+
+This class contains the details of your Geneva Logs account.
+
+The parameters are:
+
+- `logsEnvironment`: The Geneva Logs environment where your data is stored.
+  Valid values are `Smoke`, `Test`, `Stage`, `DiagnosticsProd`, `BillingProd`, `FirstPartyProd`, and `ExternalProd`.
+
+- `authentication`: The method to authenticate to Geneva.
+
+- `mdsAccounts`: The list of Geneva Logs accounts that contains your data.
+  Typically, this list will contain only one item.
+
+## GenevaAccountDetails sample
+
+```cs
+var genevaAccountDetails = new GenevaAccountDetails(
+    LogsEnvironment.Test,
+    genevaAuthentication,
+    ["clouddiag"]);
+```
+
+# GenevaAuthentication
+
+This class contains the details of how to authenticate to Geneva.
+
+> [!NOTE]
+> Be sure to [Authorize the SDK to read your data](./gettingstarted.md#step-3-authorize-the-sdk-to-read-your-data).
+
+The SDK supports the following Geneva authentication methods:
+
+- `GenevaCertificateAuthentication`: Authenticates to Geneva with a certificate.
+  The parameters are:
+
+  - `certificateName`: The certificate subject name.
+    The value may optionally include the `CN=` prefix, which will be removed.
+
+  - `storeLocation`: The store location of the certificate.
+
+  **`GenevaCertificateAuthentication` Sample:**
+
+  ```cs
+  var genevaAuthentication = new GenevaCertificateAuthentication(
+      "my.certificate.subject.name",
+      StoreLocation.LocalMachine);
+  ```
+
+- `GenevaMsiAuthentication`: Authenticates to Geneva with a managed identity (MSI).
+
+  MSI authentication to Logs environments is supported in the following tenants.
+
+  | Logs Environment | Tenant |
+  | - | - |
+  | Smoke, Test, Stage | Microsoft, AME, PME |
+  | ***Prod | AME, PME |
+
+  The parameters are:
+
+  - `msiType`: The MSI type.
+    Valid values are `SystemAssigned` or `UserAssigned`.
+
+  - `clientId`: The client id of the user-assigned managed identity.
+    The value must be null for a system-assigned managed identity.
+
+  **`GenevaMsiAuthentication` Samples:**
+
+  ```cs
+  var genevaAuthentication = new GenevaMsiAuthentication(MsiType.SystemAssigned);
+  ```
+
+  ```cs
+  var genevaAuthentication = new GenevaMsiAuthentication(MsiType.UserAssigned, clientId);
+  ```
+
+# EventFilterDetails
+
+This class contains information about the events you want to process.
+
+The list of event filters are used to determine the events that are processed.
+The full list of events processed is the union of all the events that match any of the filters in the list.
+
+Each filter in the list allows you to specify the following parameters to scope down the events you want to process.
+The events must match the conjunction of all the parameters specified in a filter.
+Do not specify a parameter if you do not want to filter on it.
+
+The parameters are:
+
+- `regions`: A list of regions (exact match, case insensitive).
+  Events will be processed that match any of the regions specified.
+  Do not specify an empty list `[]` or events will be processed in no regions, so no events will be processed for this filter.
+
+- `namespaces`: A list of namespaces (exact match, case insensitive).
+  Events will be processed that match any of the namespaces specified.
+  Do not specify an empty list `[]` or events will be processed in no namespaces, so no events will be processed for this filter.
+
+- `namespaceRegex`: The namespace regular expression (case insensitive).
+
+  > [!IMPORTANT]
+  > It is highly recommended to specify the `namespaces` instead of the `namespaceRegex` if possible.
+  > The `namespaces` are filtered in Geneva backend services and provide better performance than the `namespaceRegex`, which is filtered on the client.
+  > The `namespaceRegex` is provided if necessary.
+
+- `eventNameRegex`: The event name regular expression (case insensitive).
+
+- `monikerRegex`: The moniker regular expression (case insensitive).
+
+> [!WARNING]
+> If you have multiple SDK instances, it is strongly recommended to specify one set of event filters per consumer group.
+> For example, if different instances have different `eventNameRegex` filters for the same Logs account, namespace, region, broker kind, and consumer group, events may be dropped and data loss may occur.
+> This is unusual.
+> It can cause multiple Event Hub processors to run on one Event Hub and consumer group with different behaviors.
+> If you use one set of event filters, this is not a problem.
+
+## EventFilterDetails sample
+
+In this example, all `eastus` and `westus` events will be processed, and `northeurope` events will only be processed in the `ccdiag` namespace.
+
+```cs
+var eventFilters = [
+    EventFilterDetails.CreateFilter(regions: ["eastus", "westus"]),
+    EventFilterDetails.CreateFilter(regions: ["northeurope"], namespaces: ["ccdiag"]),
+];
+```
+
+# EventHubDetails
+
+This class contains the details related to interacting with Event Hubs.
+
+The parameters are:
+
+- `consumerGroup`: The consumer group to use to listen to the Event Hub.
+
+- `brokerKind`: The broker kind.
+  Valid values are `Raw` or `Scrubbed`.
+  This parameter determines whether you process raw events or scrubbed events.
+
+- `maxBatchSize`: The maximum batch size (default 32, minimum 1, maximum `int.MaxValue`).
+  This parameter determines the maximum number of messages that `ProcessBatchAsync` will get for any call.
+
+- `minIntervalBetweenCheckpoints`: The minimum time interval between checkpoints (default 1 minute, minimum 0, maximum 3 minutes).
+  This parameter determines how often Event Hub checkpoints will be updated.
+  A value of 0 means that we checkpoint every time `ProcessBatchAsync` completes.
+  It is recommended to use a value of 1 minute.
+
+- `timeToLookBackIfNoCheckpoint`: The time interval to look back if no checkpoint information is found (default 1 hour, minimum 0, maxiumum 1 day).
+  This parameter determines how far back (relative to the current time) to start processing events on the first time an Event Hub is processed.
+  Subsequent calls will start from the last checkpoint.
+
+> [!NOTE]
+> Unlike the previous Extensibility SDK, you no longer specify the checkpoint storage account.
+> The SDK will automatically use a checkpoint storage account associated with your Geneva Logs moniker.
+> Geneva automatically performs its provisioning and authentication.
+> Consumers can also scale higher, as a single checkpoint storage account is no longer a point of contention or throttling.
+
+## EventHubDetails sample
+
+```cs
+var eventHubDetails = new EventHubDetails(
+    "myConsumerGroup",
+    BrokerKind.Scrubbed);
+```
+
+# TelemetryDetails
+
+This class contains the details related to collecting telemetry.
+
+> [!WARNING]
+> **We require that telemetry be collected and exported to Geneva Monitoring to entertain support requests.**
+
+The parameters are:
+
+- `serviceNamespace`: The value for the [OpenTelemetry service attribute](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.namespace`.
+
+- `serviceName`: The value for the [OpenTelemetry service attribute](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.name`.
+
+  > [!TIP]
+  > The service namespace and name are also emitted as the log category name, meter name, and trace activity source name in the form `
+ -- openCurlyBracket -- 
+serviceNamespace
+ -- closeCurlyBracket -- 
+.
+ -- openCurlyBracket -- 
+serviceName
+ -- closeCurlyBracket -- 
+`.
+
+- `serviceVersion`: The value for the [OpenTelemetry service attribute](https://opentelemetry.io/docs/specs/semconv/resource/#service) `service.version`.
+
+  > [!TIP]
+  > Each consumer should have a unique service namespace, name, and version that reflects the identity of your service.
+
+- `genevaLogConnectionString`: The Geneva Logs OpenTelemetry connection string.
+
+- `genevaMetricConnectionString`: The Geneva Metrics OpenTelemetry connection string.
+
+- `genevaTraceConnectionString`: The Geneva Traces OpenTelemetry connection string.
+
+- `logLevel`: The severity level of SDK logs to export.
+  Valid values are defined here: [`Microsoft.Extensions.Logging.LogLevel`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.loglevel).
+  The default value is `LogLevel.Information` and is required for support.
+  `LogLevel.Debug` may be needed for troubleshooting.
+
+> [!IMPORTANT]
+> `TelemetryDetails` has additional properties for advanced users only.
+> Do not set these properties unless you contact the Extensibility SDK team for more info.
+
+## TelemetryDetails sample
+
+```cs
+var telemetryDetails = new TelemetryDetails(
+    "Microsoft.Azure.GenevaLogs",
+    "ExtensibilitySdkTests",
+    "0.0.0",
+    "EtwSession=OpenTelemetry",
+    "Account=clouddiag;Namespace=ccdiag",
+    "EtwSession=OpenTelemetry");
+```
+
+## Geneva Monitoring OpenTelemetry
+
+The SDK exports OpenTelemetry logs, metrics, and traces to Geneva Monitoring.
+It automatically builds the Geneva log exporter, Geneva metric exporter, and Geneva trace exporter based on the connection strings that you provide in the `TelemetryDetails`.
+
+You need to configure the connection strings and your Monitoring Agent configuration to listen for OpenTelemetry.
+Please follow the instructions in the following guides:
+
+- [Geneva OpenTelemetry Logs](https://eng.ms/docs/products/geneva/collect/instrument/opentelemetrydotnet/otel-logs): see [Step 3: Configure Geneva Agent](https://eng.ms/docs/products/geneva/collect/instrument/opentelemetrydotnet/otel-logs#step-3-configure-geneva-agent).
+
+- [Geneva OpenTelemetry Metrics](https://eng.ms/docs/products/geneva/collect/instrument/opentelemetrydotnet/otel-metrics): see [Step 3: Configure Geneva Agent](https://eng.ms/docs/products/geneva/collect/instrument/opentelemetrydotnet/otel-metrics#step-3-configure-geneva-agent).
+
+- [Geneva OpenTelemetry Traces](https://eng.ms/docs/products/geneva/collect/instrument/opentelemetrydotnet/otel-traces): see [Step 3: Configure Geneva Agent](https://eng.ms/docs/products/geneva/collect/instrument/opentelemetrydotnet/otel-traces#step-3-configure-geneva-agent).
+
+### Sample Monitoring Agent configuration for Geneva OpenTelemetry
+
+This example shows how to configure the Monitoring Agent configuration to listen for OpenTelemetry:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<MonitoringManagement version="1.0" namespace="mynamespace" eventVersion="1" timestamp="2020-06-06T00:00:00.000Z">
+
+  ...
+
+  <Events>
+    <!-- This part tells the agent to listen for OpenTelemetry. -->
+    <OneDSProviders>
+      <OneDSProvider name="OpenTelemetry" storeType="CentralBond">
+        <DefaultEvent eventName="UnknownEvent" />
+        <!-- This is required to export OpenTelemetry logs. -->
+        <Event eventName="Log" />
+        <!-- This is required to export OpenTelemetry traces. -->
+        <Event eventName="Span" />
+      </OneDSProvider>
+    </OneDSProviders>
+  </Events>
+
+  <!-- This is the part which tells the agent to launch and keep MetricsExtension (ME) running, which listens
+  to metrics from the OpenTelemetry SDK and sends them to the backend. -->
+  <Extensions>
+    <Extension extensionName="MetricsExtension">
+      <CommandLine><![CDATA[MetricsExtension.Native.exe]]></CommandLine>
+      <ResourceUsage
+        cpuPercentUsage="10"
+        workingSetThrottling="true"
+        workingSetLimitInMB="1000"
+        memoryLimitInMB="1000"
+        memoryThrottling="true" />
+    </Extension>
+  </Extensions>
+
+</MonitoringManagement>
+```
+
+# EventStreamBase
+
+You need to implement a class that derives from `EventStreamBase` with an implementation for `ProcessBatchAsync`.
+This is the method that will get called when there are messages to be processed.
+
+Details on `ProcessBatchAsync`:
+
+- When this method returns successfully or unsuccessfully, the Event Hub checkpoints will be committed subject to the `EventHubDetails.MinIntervalBetweenCheckpoints`.
+  Under normal operation, you should ensure that all processing is completed before returning.
+- If this method throws an exception, it will be logged, and the rest of the batch will be skipped.
+- This method should use async everywhere possible.
+- This method should perform all necessary retries.
+- If cancellation is requested, this method should cease processing as soon as possible.
+- To abort streaming, restart, and replay events in flight, call `EventStreamProcessor.StopAsync()`.
+- This method must be tolerant of receiving the same event to be processed more than once.
+  Event Hubs attempts to provide exactly-once delivery, but it guarantees at-least-once delivery.
+  Also, shutdown is likely to cause some events to be re-processed upon startup.
+  The SDK attempts to shutdown gracefully and checkpoint completed batches.
+  The SDK does not checkpoint batches in progress as the events completed are unknown.
+- The processors for a given consumer group should be identical and have the same behavior.
+  A consumer group enables multiple processors to read the same streaming data in an event hub.
+  If a consumer group has different processors with different behavior, outages or data loss may occur.
+  For more information, see [Azure Event Hubs - Event consumers](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-features#event-consumers).
+
+## EventStreamBase sample
+
+Most processors use `BlobEventDataReader.GetDeserializedRecordsAsync` to get a list of records.
+The `BlobEventData` also provides information about every blob you may process.
+For details, see [API Referece - Blob Event Data](./reference.md#blobeventdata).
+
+> [!NOTE]
+> Be sure to install NuGet package `Microsoft.Azure.GenevaLogs.ExtensibilitySdk.Blob.IO` to use `BlobEventDataReader`.
+
+- Sample: This example shows how to process events and get a list of records.
+
+  ```cs
+  var eventStreamBase = new LogEventProcessor();
+  
+  // Initialize and start the EventStreamProcessor...
+  
+  public class LogEventProcessor : EventStreamBase
+  
+ -- openCurlyBracket -- 
+
+      private readonly BlobEventDataReader reader = new();
+  
+      public override async Task ProcessBatchAsync(IEnumerable<BlobEventData> eventList, CancellationToken cancellationToken)
+      
+ -- openCurlyBracket -- 
+
+          foreach (var eventData in eventList)
+          
+ -- openCurlyBracket -- 
+
+              try
+              
+ -- openCurlyBracket -- 
+
+                  cancellationToken.ThrowIfCancellationRequested();
+  
+                  var records = await this.reader.GetDeserializedRecordsAsync(eventData, null, cancellationToken).ConfigureAwait(false);
+  
+                  // Process the records...
+              
+ -- closeCurlyBracket -- 
+
+              catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+              
+ -- openCurlyBracket -- 
+
+                  // Handle exceptions...
+              
+ -- closeCurlyBracket -- 
+
+          
+ -- closeCurlyBracket -- 
+
+      
+ -- closeCurlyBracket -- 
+
+  
+ -- closeCurlyBracket -- 
+
+  ```

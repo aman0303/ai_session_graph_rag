@@ -1,0 +1,524 @@
+# Using PowerShell to manage logs
+The Geneva Logs Cmdlets used to manage logs are available in the NuGet package GenevaWarmPathPowerShellCmdlets on MSBlox. 
+
+## Install
+1. Install the [NuGet CLI tool](https://docs.microsoft.com/en-us/nuget/install-nuget-client-tools#nugetexe-cli).
+2. Register required NuGet sources (see [references](./powershell.md#references) section).
+3. Download the GenevaWarmPathPowerShellCmdlets NuGet by running the command below. When prompted, sign in with your regular Microsoft account.
+```bat
+    nuget.exe install GenevaWarmPathPowerShellCmdlets
+```
+
+> [!TIP]  
+> Alternatively you can download the GenevaWarmPathPowerShellCmdlets nuget from [here][GenevaWarmPathPowerShellCmdlets] and install/use it.
+
+> [!WARNING]
+> Geneva Logs PS Cmdlets will work only in PowerShell Desktop Edition. Currently it doesn't support PS Core Edition.
+>  You might receive the similar error if you try to run with PS Core Editions **One or more errors occurred. (Could not load type 'System.Diagnostics.Eventing.EventDescriptor' from assembly 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.)**
+
+## Sign in
+1. Import module
+
+    Module location ..\GenevaWarmPathPowerShellCmdlets\GenevaWarmPathPowerShellCmdlets.[version]\lib\net452
+    The location may be in c:\Windows\SysWOW64.
+```powershell
+    Import-Module .\GenevaWarmPathClient.psm1
+```
+    
+2. Create credential object
+
+    Certificate and dSTS authentication are supported. Certificates can be retrieved by thumbprint or subject distinguished name. By default, certs identified by thumbprint are retrieved from StoreName.My and StoreLocation.LocalMachine.
+    Partial support is also included for Akv and Dsms certificates, which can now also be retrieved by Akv SAN and Dsms URL. However, the cmdlets currently do not support accessing the certificates directly from those systems. Instead, a copy of the certificate must be installed to the local user or machine store.
+    Alternatively, if just in time access to a remote managed cert is necessary, credentials can be created directly based on a certificate object that has been previously retrieved through a tool like the [Azure Powershell Cmdlets](https://docs.microsoft.com/en-us/powershell/azure/?view=azps-4.3.0).
+
+```powershell
+    # Using cert
+    $credential = New-WarmPathCertificateCredential -Thumbprint "<thumbprint>" -StoreName "My" -StoreLocation "LocalMachine"
+
+    # Using local keyvault cert
+    $credential = New-WarmPathCertificateCredential -CertIdentifier "<san>"
+
+    # Using remote keyvault cert
+    $secret = Get-AzKeyVaultSecret -VaultName "<keyvault name>" -Name "<certificate name in keyvault>"
+    $secretByte = [Convert]::FromBase64String($secret.SecretValueText)
+    $authcert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+    $authcert.Import($secretByte, "", "Exportable,PersistKeySet")
+    $credential = New-WarmPathCertificateCredential -CertObject $authcert
+
+    # Using local dSMS cert
+    $credential = New-WarmPathCertificateCredential -CertIdentifier "<dSMS path for certificate>"
+
+    # Using dSTS
+    $credential = New-WarmPathUserCredential
+```
+
+3.  Setup Geneva Logs context. Please refer [here](../Resources/endpoints.md) for the list of Logs environments and endpoints for programmatic management.
+
+```powershell
+    Set-WarmPathContext [-Credential $credential] [-WarmPathEnvironment '<WarmPathEnvironment>'] [-WarmPathAccountName '<MyWarmPathAccount>']  
+    # Example
+    Set-WarmPathContext -Credential $credential -WarmPathEnvironment 'Stage' -WarmPathAccountName 'Mds'
+
+    #WarmPathEnvironment: (Smoke|Test|Stage|DiagnosticsProd|FirstpartyProd|BillingProd|ExternalProd|CaMooncake|CaFairfax|Bleu|Delos)
+```
+
+## Scenarios
+
+### Create and provision an account
+
+1.  Initialize variables. Note that `$environment` value comes from the list [here](../Resources/endpoints.md#endpoints-for-programmatic-management).
+```powershell
+    $environment = "<WarmPathEnvironment>"
+    $account = "<Account name>"
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.UserCredential
+    $adminSecurityGroup = "<Security group name>"
+    $accountAdminAlias= "<alias@microsoft.com>"
+    $serviceTreeGuid = "<Service tree guid>"
+    $namespace = "<Account namespace>"
+    $subscriptionId="<Azure subscription Id>"
+    $location = "<ARM Region Name>"
+    $storageGroupNameAudit = $namespace + "audit"
+    $storageGroupNameDiag = $namespace + "diag"
+    $storageGroupNameSecurity = $namespace + "security"
+    $certThumbprint = "<Thumbprint of cert>"
+    $certIssuer = "<Cert issuer>"
+    $majorVersion = "<major version>"
+    $mainConfigFilePath = "<main config path>"
+    $importsDirPath = "<path to directory containing import files>"
+    $storageReplicationType = "<preferred storage replication type>"
+``` 
+`$storageReplicationType` is an optional parameter. When not specified, the default value is Standard_GRS. Other values that be can set are Standard_ZRS, Standard_LRS, Standard_RAGRS, Standard_GZRS, Standard_RAGZRS.
+
+2.  Create an account object
+```powershell
+    CreateWarmPathAccount -environment $environment -accountName $account -email $accountAdminAlias -isGcsEnabled:$true -isGsmEnabled:$true -adminSecurityGroup:$adminSecurityGroup
+```
+3.  Setup context to an account
+```powershell
+    Set-WarmPathContext -Credential $credential -WarmPathEnvironment $environment -WarmPathAccountName $account
+```
+4.  Create a namespace
+```powershell
+    CreateWarmPathNamespace -environment $environment -accountName $account -namespace $namespace -serviceTreeGuid:$serviceTreeGuid
+```
+5.  Add azure subscription 
+```powershell
+    $subscriptionConfiguration = New-Object Microsoft.Azure.Monitoring.WarmPath.Contracts.WarmPathResources.AzureSubscription
+
+    $subscriptionConfiguration.SubscriptionId = $subscriptionId
+
+    New-WarmPathAzureSubscription -Configuration $subscriptionConfiguration -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+6.  Create default storage groups 
+```powershell
+    New-WarmPathStorageGroup -StorageGroupName $storageGroupNameAudit -Namespace $namespace  -Location $location -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    New-WarmPathStorageGroup -StorageGroupName $storageGroupNameDiag -Namespace $namespace  -Location $location -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    New-WarmPathStorageGroup -StorageGroupName $storageGroupNameSecurity -Namespace $namespace  -Location $location -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+7.  Create MA communication role
+```powershell
+    CreateWarmPathUserRole -environment $environment -namespace $namespace -accountName $account -userRoleId "MaCommunication" -certThumbprint $certThumbprint -certIssuer $certIssuer -isMaCommunication $true
+```
+8.  Upload MA config
+```powershell
+    $configuration = Read-WarmPathMonitoringConfigurationFromDisk -ConfigNamespace $namespace -MajorVersion $MajorVersion -MainConfigFilePath $mainConfigFilePath -ImportConfigFilesDirectory $importsDirPath
+
+    $configuration.IsDeployed = $true
+    New-WarmPathMonitoringConfiguration -WarmPathEnvironment $environment  -WarmPathAccountName $account -Configuration $configuration
+```
+
+9. Deploy MA config
+```powershell
+    Set-WarmPathMonitoringConfiguration -Configuration $configuration -ConfigNamespace $namespace -MajorVersion $majorVersion
+```
+
+### Add Kusto settings to storage group
+```powershell
+@logAnalyticsId = "<Log analytics id>"
+@logAnalyticsDatabase= "<Log analytics database>"
+@region= "Default" # or a valid ARM region eg: australiacentral
+
+$sg = Get-WarmPathStorageGroup -Id $storageGroupName -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+$kustosetting = New-Object  Microsoft.Azure.Monitoring.WarmPath.Contracts.WarmPathResources.RegionBasedKustoSettings -Property @
+ -- openCurlyBracket -- 
+LogAnalyticsId=$logAnalyticsId;LogAnalyticsDatabase=@loogAnalyticsDatabase; Region=@region
+ -- closeCurlyBracket -- 
+
+```
+
+### Add consumer groups to storage group
+```powershell
+$storageGroupName = "<Name of storage group>"
+@consumerGroupToAdd = "<Consumer group to add>"
+
+$sg = Get-WarmPathStorageGroup -Id $storageGroupName -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+$sg.ConsumerGroups.Add($consumerGroupToAdd)
+Set-WarmPathStorageGroup -Configuration $sg -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+
+### Update key rotation policy on storage group
+```powershell
+$storageGroupName = "<Name of storage group>"
+$sg = Get-WarmPathStorageGroup -Id $storageGroupName -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+$sg.KeyRotationIntervalInDays = 90
+
+Set-WarmPathStorageGroup -Configuration $sg -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+$sg.Settings.Add($kustosettings)
+
+Set-WarmPathStorageGroup -Configuration $sg -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+### Add AKV managed cert to Admin user role
+```powershell 
+$adminRole = Get-WarmPathUserRole -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential -Id WarmPathAccountAdmin
+
+$akv = New-WarmPathAkvCertificate -San "<san>" -RootThumbprint "<root thumbprint>" -Description "Admin Cert"
+$adminRole.AkvCertificate.Add($akv)
+
+Set-WarmPathUserRole -Configuration $adminRole -Id WarmPathAccountAdmin -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+
+### Add Managed Identity (MSI) managed cert to MaCommunication user role
+```powershell 
+$UserRole = Get-WarmPathUserRole -WarmPathEnvironment $environment -WarmPathAccountName $account -Id MaCommunication -Credential $credential
+
+$msi = New-Object Microsoft.Azure.Monitoring.WarmPath.Contracts.WarmPathResources.GcsMsiConfig -Property @
+ -- openCurlyBracket -- 
+ObjectId="<ObjectId>";TenantId="<TenantID>";ResourceId="<ResourceId>";Description="MSI cert"
+ -- closeCurlyBracket -- 
+
+$UserRole.MsiConfigs.Add($msi)
+
+Set-WarmPathUserRole -Configuration $UserRole -Id MaCommunication -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+```
+
+### Delete an Account
+
+1. Delete all configs
+
+```powershell 
+    $configs = Get-WarmPathMonitoringConfiguration -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+    foreach($config in $configs) 
+ -- openCurlyBracket -- 
+ Remove-WarmPathMonitoringConfiguration -ConfigNamespace $config.ConfigNamespace -MajorVersion $config.MajorVersion -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential 
+ -- closeCurlyBracket -- 
+
+``` 
+
+2. Delete all monikers not associated with storage groups
+
+```powershell 
+    $monikers = Get-WarmPathMoniker -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+    foreach($moniker in $monikers) 
+ -- openCurlyBracket -- 
+ if ([string]::IsNullOrEmpty($moniker.StorageAccount.StorageGroupName) -eq $true) 
+ -- openCurlyBracket -- 
+ Remove-WarmPathMoniker -Moniker $moniker.Moniker -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential 
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+
+```
+
+3. Delete all storage groups and underlying monikers
+
+```powershell 
+    $sgs = Get-WarmPathStorageGroup -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+    foreach($sg in $sgs) 
+ -- openCurlyBracket -- 
+ Remove-WarmPathStorageGroup -Id $sg.StorageGroupName -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential  
+ -- closeCurlyBracket -- 
+
+```
+
+4. Remove association between Geneva Logs account and  Azure subscription(s)
+
+```powershell 
+     $subs = Get-WarmPathAzureSubscription -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    foreach($sub in $subs)
+    
+ -- openCurlyBracket -- 
+
+        Remove-WarmPathAzureSubscription -Id $sub.SubscriptionId -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+ -- closeCurlyBracket -- 
+
+```
+
+5. Delete Geneva Logs account object
+
+```powershell 
+    $act= Get-WarmPathAccount -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+    Remove-WarmPathAccount -WarmPathEnvironment $environment -WarmPathAccountName $act.AccountName -Credential $credential -Confirm:$true
+```
+
+### Remove azure subscriptions from logs Account
+1. Delete all configs
+
+```powershell 
+    $configs = Get-WarmPathMonitoringConfiguration -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+    foreach($config in $configs) 
+ -- openCurlyBracket -- 
+ Remove-WarmPathMonitoringConfiguration -ConfigNamespace $config.ConfigNamespace -MajorVersion $config.MajorVersion -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential 
+ -- closeCurlyBracket -- 
+
+``` 
+
+2. Delete all monikers not associated with storage groups
+
+```powershell 
+   $monikers = Get-WarmPathMoniker -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    foreach ($moniker in $monikers) 
+    
+ -- openCurlyBracket -- 
+ 
+        Remove-WarmPathMoniker -Moniker $moniker.Moniker -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential 
+    
+ -- closeCurlyBracket -- 
+
+```
+
+3. Delete all storage groups and underlying monikers
+
+```powershell 
+    $sgs = Get-WarmPathStorageGroup -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+    foreach($sg in $sgs) 
+ -- openCurlyBracket -- 
+ Remove-WarmPathStorageGroup -Id $sg.StorageGroupName -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential  
+ -- closeCurlyBracket -- 
+
+```
+
+4. Remove association between Geneva Logs account and  Azure subscription(s)
+
+```powershell 
+     $subs = Get-WarmPathAzureSubscription -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+
+    foreach($sub in $subs)
+    
+ -- openCurlyBracket -- 
+
+        Remove-WarmPathAzureSubscription -Id $sub.SubscriptionId -WarmPathEnvironment $environment -WarmPathAccountName $account -Credential $credential
+    
+ -- closeCurlyBracket -- 
+
+```
+
+### Delete a namespace
+
+1. Delete all configs under the namespace 
+
+```powershell 
+# Below commands assume that you have run Set-WarmPathContext to set your desired Logs environment, account name and credential
+# The namespace to be deleted is assumed to be "mynamespace"
+
+# Enumerate all configurations in your account 
+
+$configs = Get-WarmPathMonitoringConfiguration
+
+# Delete all configurations under the namespace. CAUTION: this is irreversible!
+
+foreach($c in $configs) 
+ -- openCurlyBracket -- 
+ if($c.ConfigNamespace -like "mynamespace*") 
+ -- openCurlyBracket -- 
+ Remove-WarmPathMonitoringConfiguration -ConfigNamespace $c.ConfigNamespace -MajorVersion $c.MajorVersion 
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+
+```
+2. Delete all storage groups and underlying shards (aka moniker)
+
+```powershell 
+# Enumerate all storage groups
+
+$sgs = Get-WarmPathStorageGroup
+
+# Delete all storage groups. CAUTION: this is irreversible!
+# Note: this does not delete the underlying storage accounts and eventhubs
+
+foreach($s in $sgs) 
+ -- openCurlyBracket -- 
+ if($s.StorageGroupName -like "mynamespace*") 
+ -- openCurlyBracket -- 
+ Remove-WarmPathStorageGroup -Id $s.StorageGroupName 
+ -- closeCurlyBracket -- 
+
+ -- closeCurlyBracket -- 
+
+```
+
+3. Remove Agent claim for namespace
+
+```powershell 
+# Retrieve MaCommunication role
+
+$mac = Get-WarmPathUserRole -Id MaCommunication
+
+# Look for any Agent claims on the MaCommunication user role
+
+$agentclaim = $null
+
+foreach($c in $mac.Claims) 
+ -- openCurlyBracket -- 
+ if($c.ClaimKind -eq "Agent" -and $c.ClaimResource -eq "^mynamespace*") 
+ -- openCurlyBracket -- 
+ $agentclaim = $c 
+ -- closeCurlyBracket -- 
+ 
+ -- closeCurlyBracket -- 
+
+
+# Remove Agent claim for the namespace
+
+if($agentclaim -ne $null) 
+ -- openCurlyBracket -- 
+ $mac.Claims.Remove($agentclaim); Set-WarmPathUserRole -Id MaCommunication -Configuration $mac 
+ -- closeCurlyBracket -- 
+
+```
+
+4. Remove namespace
+
+```powershell 
+Remove-WarmPathNamespace -Namespace "mynamespace"
+```
+
+> [!NOTE]  
+> The above example assumes GSM-enabled account. For non-GSM accounts the order of steps is the same, however you should be deleting the monikers that are referenced in the configuration files under the namespace. Also consider [migrating to GSM][MigrateToGSM] to eliminate the need to do manual resource management. 
+
+### Agent and Config Update
+
+Full agent update [documentation is found here](../../collect/manage/upgradeagent.md).
+
+1. Start a New Agent or Config Update
+
+```powershell 
+Import-Module .\GenevaWarmPathClient.psm1
+New-WarmPathAgentUpdate -ConfigNamespace <WarmPathNamespace> -WarmPathEnvironment <WarmPathEnvironment> -WarmPathAccountName <WarmPathAccount> -WorkFlowId <UpdatePlanId> -Kind <Kind> -Version <Version> -NotificationEmailList <NotificationEmailAliases> -Verbose
+
+# Explanation of parameters
+# UpdatePlanId - Name of the Update Plan Id/Name from UI Manage Plans Page Eg: ProdDiaSafeRolloutPlan 
+# Kind - Either 'AgentBinary' or 'Configuration'
+# Version - '42.00.01' for Agent Binary or 'MdsVer99v0.10' for Configuration Version
+# NotificationEmailAliases - Semi colon Email aliases of folks to provide status of update 
+
+Eg: 
+# Config Update
+New-WarmPathAgentUpdate -ConfigNamespace Mds -WarmPathEnvironment DiagnosticsProd -WarmPathAccountName MDS -WorkFlowId ProdDiaSafeRolloutPlan -Kind Configuration -Version MdsVer99v0.10 -NotificationEmailList shreeb -Verbose
+# Agent Update
+New-WarmPathAgentUpdate -ConfigNamespace Mds -WarmPathEnvironment DiagnosticsProd -WarmPathAccountName MDS -WorkFlowId ProdDiaSafeRolloutPlan -Kind AgentBinary -Version 42.00.01 -NotificationEmailList shreeb -Verbose
+
+``` 
+
+2. Stop Agent or Config Update
+
+```powershell 
+    Import-Module .\GenevaWarmPathClient.psm1
+    Remove-WarmPathAgentUpdate -ConfigNamespace <WarmPathNamespace> -WarmPathEnvironment <WarmPathEnvironment> -WarmPathAccountName <WarmPathAccount> -WorkFlowId <UpdatePlanId> -Verbose
+    
+```
+3. Retry Agent or Config Update
+
+```powershell 
+    Import-Module .\GenevaWarmPathClient.psm1
+    Retry-WarmPathAgentUpdate -ConfigNamespace <WarmPathNamespace> -WarmPathEnvironment <WarmPathEnvironment> -WarmPathAccountName <WarmPathAccount> -WorkFlowId <UpdatePlanId> -Verbose
+
+
+# UpdatePlanId - GUID of the run from UI History Page. Eg: w-1979320851_22a46c9a-b09d-425a-8add-615a56434c65
+
+Eg: 
+# Config Retry
+Retry-WarmPathAgentUpdate -ConfigNamespace Mds -WarmPathEnvironment DiagnosticsProd -WarmPathAccountName MDS -WorkFlowId w-1979320851_22a46c9a-b09d-425a-8add-615a56434c65 -Verbose
+
+```
+## References
+
+#### Nuget Sources
+```bat 
+nuget sources add -name AzureGenevaMonitoring -Source https://msblox.pkgs.visualstudio.com/_packaging/AzureGenevaMonitoring/nuget/v3/index.json
+nuget sources add -name Official -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/Official/nuget/index.json
+nuget sources add -name CoreXT -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/CoreXTMirror/nuget/index.json
+nuget sources add -name nugetorg -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/NugetMirror/nuget/index.json
+nuget sources add -name Manual -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/ManualMirror/nuget/index.json
+nuget sources add -name CloudBuild -Source https://cloudbuild.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/CloudBuild/nuget/index.json
+nuget sources add -name DEV -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/Dev/nuget/index.json
+nuget sources add -name OSS -Source https://msazure.pkgs.visualstudio.com/_packaging/OSS/nuget/v3/index.json
+nuget sources add -name MsNuget -Source https://msazure.pkgs.visualstudio.com/DefaultCollection/_apis/packaging/MSNugetMirror/nuget/index.json
+```
+
+#### National Clouds
+
+If you want to run the PowerShell commands in an escort session national clouds, choose the appropriate GenevaWarmPathPowerShellCmdlets folder under the following locations for respective national clouds 
+
+
+**Mooncake:**
+> \\\\caz.gbl\Builds\branches\git_engsys_mda_mds_master\<Latest_Build>\GenevaWarmPathClient
+
+**Blackforest:**
+> \\\\deoe.gbl\Public\builds\branches\git_engsys_mda_mds_master\<Latest_Build>\GenevaWarmPathClient
+
+**Fairfax:**
+> \\\\USOE.GBL\public\Builds\Branches\git_engsys_mda_mds_release\<Latest_Build>\GenevaWarmPathClient
+
+
+> [!NOTE]  
+> If you are using USME credentials in Fairfax, Please set the evenvironment variable **$env:dstsFederationNamespace=usme.gbl​**.   
+If you are using AME credentials in Fairfax, Please set the environment variable **$env:dstsFederationNamespace=ame.gbl​** 
+
+## Automation using Geneva WarmPath Powershell cmdlets
+
+In addition to being used to perform the above-mentioned operations, the Geneva WarmPath Powershell cmdlets can also be used for automating your tasks. Some sample scripts that can used for automation are given below.
+
+#### 1. Retrieving Major and Minor versions of the configuration
+
+```powershell
+    $warmPathEnvironment = "<WarmPathEnvironment>"
+    $warmPathAccountName = "<Account name>"
+    $configNamespace = "<Account config. namespace>"
+    $majorVersion = "<Configuration major version>"
+
+    $credential = New-Object Microsoft.Azure.Monitoring.WarmPath.Cmdlets.UserCredential
+
+    $Configs = Get-WarmPathMonitoringConfiguration -WarmPathEnvironment $warmPathEnvironment -WarmPathAccountName $warmPathAccountName -ConfigNamespace $configNamespace -MajorVersion $majorVersion
+
+    Write-Host "Major Version of configuration" $configNamespace "is:" $Configs.MajorVersion
+    Write-Host "Minor Version of configuration" $configNamespace "is:" $Configs.minorVersion
+
+    #WarmPathEnvironment: (Smoke|Test|Stage|DiagnosticsProd|FirstpartyProd|BillingProd|ExternalProd|CaMooncake|CaFairfax|Bleu|Delos)
+
+```
+
+####  2. Exporting Logs configuration into text file 
+
+```powershell
+    $configs = Get-WarmPathMonitoringConfiguration -WarmPathEnvironment $warmPathEnvironment -WarmPathAccountName $warmPathAccountName -ConfigNamespace $configNamespace -MajorVersion $majorVersion
+
+    $configfile = $configs.Content # view config.
+
+    $importfiles =  $configfile.Imports
+
+    Set-Content -Path "<<path of the file to store>>\<Name of the file with format>" -Value $configfile.MainConfigFile 
+    Set-Content -Path "<<path of the file to store>>\<Name of the file with format>" -Value $importfiles.content 
+
+    # Example
+    Set-Content -Path "C:\Powershell\MainConfigFile.txt" -Value $configfile.MainConfigFile 
+    Set-Content -Path "C:\Powershell\ImportConfigFiles.txt" -Value $importfiles.content 
+
+```
+
+<!-- Reference links -->
+[MigrateToGSM]: ../Howtoguides/Manageaccount/MigrateToGSM.md "Migrating to GSM"
+[GenevaWarmPathPowerShellCmdlets]: https://msblox.visualstudio.com/DefaultCollection/Azure%20Geneva%20Monitoring%20and%20Diagnostics%20Pipeline/_packaging?_a=package&feed=AzureGenevaMonitoring&package=GenevaWarmPathPowerShellCmdlets&protocolType=NuGet&version=1.0.88.12

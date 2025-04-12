@@ -1,0 +1,5 @@
+## Support and Feedback
+
+Review updated [documentation](~/logs/intro.md).
+
+If your questions are still unrsolved, please create an incident using this [template](https://portal.microsofticm.com/imp/v3/incidents/create?tmpl=K2O3nB). 
