@@ -2,7 +2,7 @@
 
 - python -m virtualenv .env  
 
-- .\.env\Scripts\activate  
+- .\\.env\Scripts\activate  
 
 - pip install -r .\requirements.txt  
 
